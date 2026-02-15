@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet,
-  Modal, Alert, Animated, Dimensions, StatusBar,
+  Modal, Alert, Animated, Dimensions, StatusBar, KeyboardAvoidingView, Platform,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SIZES } from '../utils/theme';
@@ -144,10 +145,10 @@ function TaskCard({ task, projectId, colors, onMove, onDelete }) {
   };
   const handleTouchEnd = () => {
     const val = pan._value;
-    if (val > 60 && colIdx < COLUMNS.length - 1) {
+    if (val > 40 && colIdx < COLUMNS.length - 1) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       onMove(task.id, COLUMNS[colIdx + 1].key);
-    } else if (val < -60 && colIdx > 0) {
+    } else if (val < -40 && colIdx > 0) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       onMove(task.id, COLUMNS[colIdx - 1].key);
     }
@@ -335,103 +336,158 @@ function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onD
   );
 }
 
+// Format a Date object as YYYY-MM-DD
+function formatDate(date) {
+  if (!date) return '';
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 // New project modal
 function NewProjectModal({ visible, onClose, onSave, colors }) {
   const [title, setTitle] = useState('');
   const [emoji, setEmoji] = useState('🎯');
   const [color, setColor] = useState('#6C5CE7');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
 
   const handleSave = () => {
     if (!title.trim()) return;
-    onSave({ title: title.trim(), emoji, color, startDate, endDate });
+    onSave({
+      title: title.trim(),
+      emoji,
+      color,
+      startDate: formatDate(startDate),
+      endDate: formatDate(endDate),
+    });
     setTitle('');
     setEmoji('🎯');
     setColor('#6C5CE7');
-    setStartDate('');
-    setEndDate('');
+    setStartDate(null);
+    setEndDate(null);
   };
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.modalOverlay}>
-        <View style={[styles.modal, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-          <Text style={[styles.modalTitle, { color: colors.text }]}>New Project</Text>
+      <KeyboardAvoidingView
+        style={styles.modalOverlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          contentContainerStyle={styles.modalScrollContent}
+          keyboardShouldPersistTaps="handled"
+          bounces={false}
+        >
+          <View style={[styles.modal, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>New Project</Text>
 
-          {/* Project name */}
-          <TextInput
-            style={[styles.modalInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.bg }]}
-            placeholder="Project name"
-            placeholderTextColor={colors.textMuted}
-            value={title}
-            onChangeText={setTitle}
-            selectionColor={colors.accent}
-            autoFocus
-          />
+            {/* Project name */}
+            <TextInput
+              style={[styles.modalInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.bg }]}
+              placeholder="Project name"
+              placeholderTextColor={colors.textMuted}
+              value={title}
+              onChangeText={setTitle}
+              selectionColor={colors.accent}
+              autoFocus
+            />
 
-          {/* Emoji picker */}
-          <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Icon</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.emojiRow}>
-            {EMOJIS.map(e => (
+            {/* Emoji picker */}
+            <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Icon</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.emojiRow}>
+              {EMOJIS.map(e => (
+                <TouchableOpacity
+                  key={e}
+                  style={[styles.emojiBtn, emoji === e && { backgroundColor: colors.accent + '20', borderColor: colors.accent }]}
+                  onPress={() => setEmoji(e)}
+                >
+                  <Text style={styles.emojiBtnText}>{e}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {/* Colour picker */}
+            <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Colour</Text>
+            <View style={styles.colorRow}>
+              {PROJECT_COLORS.map(c => (
+                <TouchableOpacity
+                  key={c}
+                  style={[styles.colorBtn, { backgroundColor: c }, color === c && styles.colorBtnActive]}
+                  onPress={() => setColor(c)}
+                />
+              ))}
+            </View>
+
+            {/* Timeline */}
+            <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Timeline (optional)</Text>
+            <View style={styles.dateRow}>
               <TouchableOpacity
-                key={e}
-                style={[styles.emojiBtn, emoji === e && { backgroundColor: colors.accent + '20', borderColor: colors.accent }]}
-                onPress={() => setEmoji(e)}
+                style={[styles.dateInput, { borderColor: colors.border, backgroundColor: colors.bg }]}
+                onPress={() => setShowStartPicker(true)}
               >
-                <Text style={styles.emojiBtnText}>{e}</Text>
+                <Text style={{ color: startDate ? colors.text : colors.textMuted, fontSize: SIZES.sm }}>
+                  {startDate ? formatDate(startDate) : 'Start date'}
+                </Text>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          {/* Colour picker */}
-          <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Colour</Text>
-          <View style={styles.colorRow}>
-            {PROJECT_COLORS.map(c => (
+              <Text style={[styles.dateSep, { color: colors.textMuted }]}>→</Text>
               <TouchableOpacity
-                key={c}
-                style={[styles.colorBtn, { backgroundColor: c }, color === c && styles.colorBtnActive]}
-                onPress={() => setColor(c)}
+                style={[styles.dateInput, { borderColor: colors.border, backgroundColor: colors.bg }]}
+                onPress={() => setShowEndPicker(true)}
+              >
+                <Text style={{ color: endDate ? colors.text : colors.textMuted, fontSize: SIZES.sm }}>
+                  {endDate ? formatDate(endDate) : 'End date'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {showStartPicker && (
+              <DateTimePicker
+                value={startDate || new Date()}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                themeVariant="dark"
+                accentColor={colors.accent}
+                onChange={(event, selected) => {
+                  setShowStartPicker(Platform.OS === 'ios');
+                  if (selected) setStartDate(selected);
+                }}
               />
-            ))}
-          </View>
+            )}
 
-          {/* Timeline */}
-          <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Timeline (optional)</Text>
-          <View style={styles.dateRow}>
-            <TextInput
-              style={[styles.dateInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.bg }]}
-              placeholder="Start (YYYY-MM-DD)"
-              placeholderTextColor={colors.textMuted}
-              value={startDate}
-              onChangeText={setStartDate}
-              selectionColor={colors.accent}
-            />
-            <Text style={[styles.dateSep, { color: colors.textMuted }]}>→</Text>
-            <TextInput
-              style={[styles.dateInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.bg }]}
-              placeholder="End (YYYY-MM-DD)"
-              placeholderTextColor={colors.textMuted}
-              value={endDate}
-              onChangeText={setEndDate}
-              selectionColor={colors.accent}
-            />
-          </View>
+            {showEndPicker && (
+              <DateTimePicker
+                value={endDate || new Date()}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                themeVariant="dark"
+                accentColor={colors.accent}
+                minimumDate={startDate || undefined}
+                onChange={(event, selected) => {
+                  setShowEndPicker(Platform.OS === 'ios');
+                  if (selected) setEndDate(selected);
+                }}
+              />
+            )}
 
-          {/* Actions */}
-          <View style={styles.modalActions}>
-            <TouchableOpacity onPress={onClose} style={[styles.modalBtn, { backgroundColor: colors.border }]}>
-              <Text style={[styles.modalBtnText, { color: colors.text }]}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleSave}
-              style={[styles.modalBtn, { backgroundColor: color }]}
-            >
-              <Text style={[styles.modalBtnText, { color: '#FFF' }]}>Create</Text>
-            </TouchableOpacity>
+            {/* Actions */}
+            <View style={styles.modalActions}>
+              <TouchableOpacity onPress={onClose} style={[styles.modalBtn, { backgroundColor: colors.border }]}>
+                <Text style={[styles.modalBtnText, { color: colors.text }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleSave}
+                style={[styles.modalBtn, { backgroundColor: color }]}
+              >
+                <Text style={[styles.modalBtnText, { color: '#FFF' }]}>Create</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -605,7 +661,9 @@ const styles = StyleSheet.create({
   // New project modal
   modalOverlay: {
     flex: 1, backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'flex-end',
+  },
+  modalScrollContent: {
+    flexGrow: 1, justifyContent: 'flex-end',
   },
   modal: {
     borderTopLeftRadius: 24, borderTopRightRadius: 24,
@@ -637,8 +695,8 @@ const styles = StyleSheet.create({
   },
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 },
   dateInput: {
-    flex: 1, fontSize: SIZES.sm, borderWidth: 1, borderRadius: 10,
-    paddingHorizontal: 12, paddingVertical: 10,
+    flex: 1, borderWidth: 1, borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 10, justifyContent: 'center',
   },
   dateSep: { fontSize: SIZES.md },
   modalActions: { flexDirection: 'row', gap: 12 },

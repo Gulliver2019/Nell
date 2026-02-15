@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet, Animated, Dimensions,
+  View, Text, TextInput, TouchableOpacity, StyleSheet, Animated, Dimensions, PanResponder,
 } from 'react-native';
 import { SIZES, getBulletTypes, getTaskStates, getSignifiers } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import * as Haptics from 'expo-haptics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const SWIPE_THRESHOLD = 80;
+const SWIPE_THRESHOLD = 60;
 
 export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSchedule, onPress }) {
   const { colors } = useTheme();
@@ -19,8 +19,37 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
   const [editText, setEditText] = useState(entry.text);
   const pan = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const touchStart = useRef(0);
   const isSwiping = useRef(false);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        // Only claim the gesture if horizontal movement exceeds vertical
+        return Math.abs(gestureState.dx) > 10 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy * 1.5);
+      },
+      onPanResponderGrant: () => {
+        isSwiping.current = true;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        pan.setValue(gestureState.dx);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dx > SWIPE_THRESHOLD && entry.type === 'task' && entry.state === 'open') {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          onMigrate?.(entry.id);
+        } else if (gestureState.dx < -SWIPE_THRESHOLD && entry.type === 'task' && entry.state === 'open') {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          onSchedule?.(entry.id);
+        }
+        Animated.spring(pan, { toValue: 0, useNativeDriver: true }).start();
+        setTimeout(() => { isSwiping.current = false; }, 50);
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(pan, { toValue: 0, useNativeDriver: true }).start();
+        setTimeout(() => { isSwiping.current = false; }, 50);
+      },
+    })
+  ).current;
 
   const bulletConfig = entry.type === 'task'
     ? TASK_STATES[entry.state] || TASK_STATES.open
@@ -28,38 +57,12 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
 
   const signifierConfig = entry.signifier ? SIGNIFIERS[entry.signifier] : null;
 
-  const handleTouchStart = (e) => {
-    touchStart.current = e.nativeEvent.pageX;
-    isSwiping.current = false;
-  };
-
-  const handleTouchMove = (e) => {
-    const diff = e.nativeEvent.pageX - touchStart.current;
-    if (Math.abs(diff) > 10) {
-      isSwiping.current = true;
-      pan.setValue(diff);
-    }
-  };
-
-  const handleTouchEnd = () => {
-    const currentVal = pan._value;
-    if (currentVal > SWIPE_THRESHOLD && entry.type === 'task' && entry.state === 'open') {
-      // Swipe right → Migrate to next day
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      onMigrate?.(entry.id);
-    } else if (currentVal < -SWIPE_THRESHOLD && entry.type === 'task' && entry.state === 'open') {
-      // Swipe left → Move to monthly review
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      onSchedule?.(entry.id);
-    }
-    Animated.spring(pan, { toValue: 0, useNativeDriver: true }).start();
-  };
-
-  // Tap toggles done state
+  // Tap cycles: open → complete → cancelled → open
   const handleTap = () => {
     if (entry.type === 'task') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      const newState = entry.state === 'open' ? 'complete' : 'open';
+      const cycle = { open: 'complete', complete: 'cancelled', cancelled: 'open' };
+      const newState = cycle[entry.state] || 'open';
       onUpdate?.(entry.id, { state: newState });
 
       Animated.sequence([
@@ -111,9 +114,7 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
           { transform: [{ translateX: pan }], backgroundColor: colors.bg },
           isInactive && styles.entryInactive,
         ]}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
+        {...panResponder.panHandlers}
       >
         {/* Signifier */}
         <TouchableOpacity onPress={handleSignifierToggle} style={styles.signifierArea}>

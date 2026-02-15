@@ -35,6 +35,9 @@
         "projectId": "594d4fec-6303-4c28-9184-cc0394df01a2"
       }
     },
-    "owner": "justg"
+    "owner": "justg",
+    "plugins": [
+      "@react-native-community/datetimepicker"
+    ]
   }
 }
