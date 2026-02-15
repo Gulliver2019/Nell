@@ -60,6 +60,34 @@ export function AppProvider({ children }) {
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
+  // Auto-migrate: on load, move any "migrated" entries to today
+  useEffect(() => {
+    if (state.loading) return;
+    const today = Storage.getDateKey();
+    const migrated = state.entries.filter(
+      e => e.state === 'migrated' && e.date !== today && !e._migratedToToday
+    );
+    if (migrated.length === 0) return;
+
+    (async () => {
+      for (const entry of migrated) {
+        // Mark original so we don't re-migrate it
+        await Storage.updateEntry(entry.id, { _migratedToToday: true });
+        // Create fresh copy for today
+        await Storage.addEntry({
+          text: entry.text,
+          type: entry.type,
+          signifier: entry.signifier || null,
+          date: today,
+          state: 'open',
+          migratedFrom: entry.id,
+        });
+      }
+      const entries = await Storage.getAllEntries();
+      dispatch({ type: 'SET_ENTRIES', payload: entries });
+    })();
+  }, [state.loading]);
+
   // Entry actions
   const addEntry = useCallback(async (entry) => {
     const newEntry = await Storage.addEntry(entry);

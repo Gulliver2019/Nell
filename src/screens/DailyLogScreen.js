@@ -76,12 +76,10 @@ export default function DailyLogScreen() {
   }, [entries, selectedDate, updateEntry]);
 
   const handleMigrate = useCallback((id) => {
-    // Swipe right → migrate to next day
+    // Swipe right → mark as migrated (shows ">"), task moves to today on next app load
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const tomorrow = new Date(selectedDate + 'T00:00:00');
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    scheduleEntry(id, getDateKey(tomorrow));
-  }, [scheduleEntry, selectedDate]);
+    updateEntry(id, { state: 'migrated' });
+  }, [updateEntry]);
 
   const isToday = selectedDate === today;
 
