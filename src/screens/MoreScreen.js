@@ -73,8 +73,18 @@ export default function MoreScreen({ navigation }) {
             colors={[COLORS.accent + '15', 'transparent']}
             style={StyleSheet.absoluteFillObject}
           />
-          <Text style={styles.title}>CrushedIT</Text>
-          <Text style={styles.subtitle}>Your bullet journal, digitised</Text>
+          <View style={styles.headerRow}>
+            <View>
+              <Text style={styles.title}>CrushedIT</Text>
+              <Text style={styles.subtitle}>Your bullet journal, digitised</Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Help')}
+              style={styles.helpBtn}
+            >
+              <Text style={styles.helpBtnText}>?</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Overall Stats */}
@@ -222,11 +232,18 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.bg },
   content: { paddingBottom: 20 },
   headerBar: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, position: 'relative' },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   title: {
     color: COLORS.text, fontSize: SIZES.xxxl, fontWeight: '800',
     letterSpacing: -1,
   },
   subtitle: { color: COLORS.textMuted, fontSize: SIZES.md, marginTop: 2 },
+  helpBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: COLORS.accent + '20', borderWidth: 1, borderColor: COLORS.accent,
+    alignItems: 'center', justifyContent: 'center', marginTop: 4,
+  },
+  helpBtnText: { color: COLORS.accent, fontSize: SIZES.lg, fontWeight: '700' },
   statsCard: {
     marginHorizontal: 16, borderRadius: SIZES.radiusLg, overflow: 'hidden', marginBottom: 20,
   },

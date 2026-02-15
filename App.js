@@ -2,6 +2,7 @@ import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { AppProvider } from './src/context/AppContext';
@@ -15,8 +16,19 @@ import HabitTrackerScreen from './src/screens/HabitTrackerScreen';
 import ReflectionScreen from './src/screens/ReflectionScreen';
 import IndexScreen from './src/screens/IndexScreen';
 import MoreScreen from './src/screens/MoreScreen';
+import HelpScreen from './src/screens/HelpScreen';
 
 const Tab = createBottomTabNavigator();
+const MoreStack = createStackNavigator();
+
+function MoreStackScreen() {
+  return (
+    <MoreStack.Navigator screenOptions={{ headerShown: false }}>
+      <MoreStack.Screen name="MoreHome" component={MoreScreen} />
+      <MoreStack.Screen name="Help" component={HelpScreen} />
+    </MoreStack.Navigator>
+  );
+}
 
 const TAB_ICONS = {
   Daily: { focused: 'today', unfocused: 'today-outline' },
@@ -66,7 +78,7 @@ export default function App() {
             <Tab.Screen name="Habits" component={HabitTrackerScreen} />
             <Tab.Screen name="Reflect" component={ReflectionScreen} />
             <Tab.Screen name="Index" component={IndexScreen} />
-            <Tab.Screen name="More" component={MoreScreen} />
+            <Tab.Screen name="More" component={MoreStackScreen} />
           </Tab.Navigator>
         </NavigationContainer>
       </AppProvider>
