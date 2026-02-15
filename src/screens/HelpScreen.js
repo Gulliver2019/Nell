@@ -5,7 +5,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SIZES } from '../utils/theme';
+import { SIZES } from '../utils/theme';
+import { useTheme } from '../context/ThemeContext';
 
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
@@ -17,8 +18,8 @@ const SECTIONS = [
     icon: '🚀',
     items: [
       {
-        q: 'What is CrushedIT?',
-        a: 'CrushedIT is a digital bullet journal — a beautifully simple system for organising your tasks, events, notes, habits and reflections. Everything from the original bullet journal methodology, built for your phone.',
+        q: 'What is Goal Digger?',
+        a: 'Goal Digger is a digital bullet journal — a beautifully simple system for organising your tasks, events, notes, habits and reflections. The approach we use in this app follows the popular bullet journaling technique, built for your phone.',
       },
       {
         q: 'What is a bullet journal?',
@@ -98,7 +99,7 @@ const SECTIONS = [
       },
       {
         q: 'What does the progress bar show?',
-        a: 'It shows how many of today\'s tasks you\'ve completed. Chase that 100% — crush it!',
+        a: 'It shows how many of today\'s tasks you\'ve completed. Chase that 100%!',
       },
     ],
   },
@@ -197,6 +198,7 @@ const SECTIONS = [
 ];
 
 function AccordionItem({ item }) {
+  const { colors } = useTheme();
   const [open, setOpen] = useState(false);
 
   const toggle = () => {
@@ -205,33 +207,34 @@ function AccordionItem({ item }) {
   };
 
   return (
-    <TouchableOpacity onPress={toggle} style={styles.accordionItem} activeOpacity={0.7}>
+    <TouchableOpacity onPress={toggle} style={[styles.accordionItem, { borderTopColor: colors.border }]} activeOpacity={0.7}>
       <View style={styles.questionRow}>
-        <Text style={styles.questionText}>{item.q}</Text>
-        <Text style={styles.chevron}>{open ? '−' : '+'}</Text>
+        <Text style={[styles.questionText, { color: colors.text }]}>{item.q}</Text>
+        <Text style={[styles.chevron, { color: colors.accent }]}>{open ? '−' : '+'}</Text>
       </View>
       {open && (
-        <Text style={styles.answerText}>{item.a}</Text>
+        <Text style={[styles.answerText, { color: colors.textSecondary }]}>{item.a}</Text>
       )}
     </TouchableOpacity>
   );
 }
 
 export default function HelpScreen({ navigation }) {
+  const { colors } = useTheme();
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <LinearGradient
-          colors={[COLORS.accentGold + '18', 'transparent']}
+          colors={[colors.accentGold + '18', 'transparent']}
           style={StyleSheet.absoluteFillObject}
         />
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backArrow}>‹</Text>
+          <Text style={[styles.backArrow, { color: colors.accent }]}>‹</Text>
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <Text style={styles.title}>How It Works</Text>
-          <Text style={styles.subtitle}>Your guide to crushing it</Text>
+          <Text style={[styles.title, { color: colors.text }]}>How It Works</Text>
+          <Text style={[styles.subtitle, { color: colors.textMuted }]}>Your guide to crushing it</Text>
         </View>
       </View>
 
@@ -242,48 +245,48 @@ export default function HelpScreen({ navigation }) {
         {/* Quick reference card */}
         <View style={styles.quickRef}>
           <LinearGradient
-            colors={[COLORS.accent + '20', COLORS.accentSecondary + '10']}
-            style={styles.quickRefGradient}
+            colors={[colors.accent + '20', colors.accentSecondary + '10']}
+            style={[styles.quickRefGradient, { borderColor: colors.border }]}
           >
-            <Text style={styles.quickRefTitle}>Quick Reference</Text>
+            <Text style={[styles.quickRefTitle, { color: colors.text }]}>Quick Reference</Text>
             <View style={styles.quickRefGrid}>
               <View style={styles.quickRefCol}>
-                <Text style={styles.quickRefHeader}>Bullets</Text>
-                <Text style={styles.quickRefLine}><Text style={{ color: COLORS.text }}>•</Text>  Task</Text>
-                <Text style={styles.quickRefLine}><Text style={{ color: COLORS.accentSecondary }}>○</Text>  Event</Text>
-                <Text style={styles.quickRefLine}><Text style={{ color: COLORS.textSecondary }}>—</Text>  Note</Text>
+                <Text style={[styles.quickRefHeader, { color: colors.textSecondary }]}>Bullets</Text>
+                <Text style={[styles.quickRefLine, { color: colors.text }]}><Text style={{ color: colors.text }}>•</Text>  Task</Text>
+                <Text style={[styles.quickRefLine, { color: colors.text }]}><Text style={{ color: colors.accentSecondary }}>○</Text>  Event</Text>
+                <Text style={[styles.quickRefLine, { color: colors.text }]}><Text style={{ color: colors.textSecondary }}>—</Text>  Note</Text>
               </View>
               <View style={styles.quickRefCol}>
-                <Text style={styles.quickRefHeader}>States</Text>
-                <Text style={styles.quickRefLine}><Text style={{ color: COLORS.accentGreen }}>✕</Text>  Done</Text>
-                <Text style={styles.quickRefLine}><Text style={{ color: COLORS.accentOrange }}>{'>'}</Text>  Migrated</Text>
-                <Text style={styles.quickRefLine}><Text style={{ color: COLORS.accent }}>{'<'}</Text>  Scheduled</Text>
+                <Text style={[styles.quickRefHeader, { color: colors.textSecondary }]}>States</Text>
+                <Text style={[styles.quickRefLine, { color: colors.text }]}><Text style={{ color: colors.accentGreen }}>✕</Text>  Done</Text>
+                <Text style={[styles.quickRefLine, { color: colors.text }]}><Text style={{ color: colors.accentOrange }}>{'>'}</Text>  Migrated</Text>
+                <Text style={[styles.quickRefLine, { color: colors.text }]}><Text style={{ color: colors.accent }}>{'<'}</Text>  Scheduled</Text>
               </View>
               <View style={styles.quickRefCol}>
-                <Text style={styles.quickRefHeader}>Signifiers</Text>
-                <Text style={styles.quickRefLine}><Text style={{ color: COLORS.accentRed }}>!</Text>  Priority</Text>
-                <Text style={styles.quickRefLine}><Text style={{ color: COLORS.accentGold }}>★</Text>  Inspiration</Text>
-                <Text style={styles.quickRefLine}><Text style={{ color: COLORS.accentSecondary }}>?</Text>  Explore</Text>
+                <Text style={[styles.quickRefHeader, { color: colors.textSecondary }]}>Signifiers</Text>
+                <Text style={[styles.quickRefLine, { color: colors.text }]}><Text style={{ color: colors.accentRed }}>!</Text>  Priority</Text>
+                <Text style={[styles.quickRefLine, { color: colors.text }]}><Text style={{ color: colors.accentGold }}>★</Text>  Inspiration</Text>
+                <Text style={[styles.quickRefLine, { color: colors.text }]}><Text style={{ color: colors.accentSecondary }}>?</Text>  Explore</Text>
               </View>
             </View>
 
-            <View style={styles.gesturesRow}>
-              <Text style={styles.quickRefHeader}>Gestures</Text>
+            <View style={[styles.gesturesRow, { borderTopColor: colors.border }]}>
+              <Text style={[styles.quickRefHeader, { color: colors.textSecondary }]}>Gestures</Text>
               <View style={styles.gestureItem}>
-                <Text style={styles.gestureKey}>Tap •</Text>
-                <Text style={styles.gestureVal}>Cycle task state</Text>
+                <Text style={[styles.gestureKey, { color: colors.accent }]}>Tap •</Text>
+                <Text style={[styles.gestureVal, { color: colors.textSecondary }]}>Cycle task state</Text>
               </View>
               <View style={styles.gestureItem}>
-                <Text style={styles.gestureKey}>Long press</Text>
-                <Text style={styles.gestureVal}>Edit entry text</Text>
+                <Text style={[styles.gestureKey, { color: colors.accent }]}>Long press</Text>
+                <Text style={[styles.gestureVal, { color: colors.textSecondary }]}>Edit entry text</Text>
               </View>
               <View style={styles.gestureItem}>
-                <Text style={styles.gestureKey}>Swipe →</Text>
-                <Text style={styles.gestureVal}>Migrate to today</Text>
+                <Text style={[styles.gestureKey, { color: colors.accent }]}>Swipe →</Text>
+                <Text style={[styles.gestureVal, { color: colors.textSecondary }]}>Migrate to today</Text>
               </View>
               <View style={styles.gestureItem}>
-                <Text style={styles.gestureKey}>Swipe ←</Text>
-                <Text style={styles.gestureVal}>Schedule forward</Text>
+                <Text style={[styles.gestureKey, { color: colors.accent }]}>Swipe ←</Text>
+                <Text style={[styles.gestureVal, { color: colors.textSecondary }]}>Schedule forward</Text>
               </View>
             </View>
           </LinearGradient>
@@ -291,10 +294,10 @@ export default function HelpScreen({ navigation }) {
 
         {/* Accordion sections */}
         {SECTIONS.map((section, idx) => (
-          <View key={idx} style={styles.section}>
+          <View key={idx} style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionIcon}>{section.icon}</Text>
-              <Text style={styles.sectionTitle}>{section.title}</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{section.title}</Text>
             </View>
             {section.items.map((item, i) => (
               <AccordionItem key={i} item={item} />
@@ -304,7 +307,7 @@ export default function HelpScreen({ navigation }) {
 
         <View style={styles.footer}>
           <Text style={styles.footerEmoji}>💜</Text>
-          <Text style={styles.footerText}>Built with love. Now go crush it.</Text>
+          <Text style={[styles.footerText, { color: colors.textMuted }]}>Built with love. Now go dig those goals.</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -312,47 +315,47 @@ export default function HelpScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.bg },
+  safe: { flex: 1 },
   header: {
     flexDirection: 'row', alignItems: 'center', paddingRight: 20,
     paddingTop: 4, paddingBottom: 12, position: 'relative',
   },
   backBtn: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
-  backArrow: { color: COLORS.accent, fontSize: 32, fontWeight: '300' },
+  backArrow: { fontSize: 32, fontWeight: '300' },
   headerContent: { flex: 1 },
-  title: { color: COLORS.text, fontSize: SIZES.xxl, fontWeight: '700' },
-  subtitle: { color: COLORS.textMuted, fontSize: SIZES.md, marginTop: 2 },
+  title: { fontSize: SIZES.xxl, fontWeight: '700' },
+  subtitle: { fontSize: SIZES.md, marginTop: 2 },
   content: { paddingHorizontal: 16, paddingBottom: 40 },
 
   // Quick reference
   quickRef: { borderRadius: SIZES.radiusLg, overflow: 'hidden', marginBottom: 20 },
   quickRefGradient: {
     padding: 16, borderRadius: SIZES.radiusLg,
-    borderWidth: 1, borderColor: COLORS.border,
+    borderWidth: 1,
   },
   quickRefTitle: {
-    color: COLORS.text, fontSize: SIZES.lg, fontWeight: '700', marginBottom: 12,
+    fontSize: SIZES.lg, fontWeight: '700', marginBottom: 12,
   },
   quickRefGrid: { flexDirection: 'row', gap: 12, marginBottom: 16 },
   quickRefCol: { flex: 1 },
   quickRefHeader: {
-    color: COLORS.textSecondary, fontSize: SIZES.xs, fontWeight: '700',
+    fontSize: SIZES.xs, fontWeight: '700',
     textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6,
   },
   quickRefLine: {
-    color: COLORS.text, fontSize: SIZES.sm, lineHeight: 22, fontWeight: '500',
+    fontSize: SIZES.sm, lineHeight: 22, fontWeight: '500',
   },
-  gesturesRow: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: COLORS.border, paddingTop: 12 },
+  gesturesRow: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 12 },
   gestureItem: {
     flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3,
   },
-  gestureKey: { color: COLORS.accent, fontSize: SIZES.sm, fontWeight: '600' },
-  gestureVal: { color: COLORS.textSecondary, fontSize: SIZES.sm },
+  gestureKey: { fontSize: SIZES.sm, fontWeight: '600' },
+  gestureVal: { fontSize: SIZES.sm },
 
   // Sections
   section: {
-    backgroundColor: COLORS.bgCard, borderRadius: SIZES.radiusLg,
-    marginBottom: 12, borderWidth: 1, borderColor: COLORS.border,
+    borderRadius: SIZES.radiusLg,
+    marginBottom: 12, borderWidth: 1,
     overflow: 'hidden',
   },
   sectionHeader: {
@@ -360,29 +363,29 @@ const styles = StyleSheet.create({
     padding: 16, paddingBottom: 4,
   },
   sectionIcon: { fontSize: 20 },
-  sectionTitle: { color: COLORS.text, fontSize: SIZES.base, fontWeight: '700' },
+  sectionTitle: { fontSize: SIZES.base, fontWeight: '700' },
 
   // Accordion
   accordionItem: {
     paddingHorizontal: 16, paddingVertical: 12,
-    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: COLORS.border,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   questionRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
   },
   questionText: {
-    color: COLORS.text, fontSize: SIZES.md, fontWeight: '600', flex: 1, paddingRight: 12,
+    fontSize: SIZES.md, fontWeight: '600', flex: 1, paddingRight: 12,
   },
   chevron: {
-    color: COLORS.accent, fontSize: SIZES.lg, fontWeight: '300', width: 20, textAlign: 'center',
+    fontSize: SIZES.lg, fontWeight: '300', width: 20, textAlign: 'center',
   },
   answerText: {
-    color: COLORS.textSecondary, fontSize: SIZES.md, lineHeight: 22,
+    fontSize: SIZES.md, lineHeight: 22,
     marginTop: 8,
   },
 
   // Footer
   footer: { alignItems: 'center', paddingVertical: 24 },
   footerEmoji: { fontSize: 28, marginBottom: 4 },
-  footerText: { color: COLORS.textMuted, fontSize: SIZES.sm, fontWeight: '500' },
+  footerText: { fontSize: SIZES.sm, fontWeight: '500' },
 });

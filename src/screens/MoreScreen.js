@@ -4,12 +4,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SIZES, TASK_STATES } from '../utils/theme';
+import { SIZES, getTaskStates } from '../utils/theme';
+import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { getDateKey, formatDateShort } from '../utils/storage';
 import * as Haptics from 'expo-haptics';
 
 export default function MoreScreen({ navigation }) {
+  const { colors } = useTheme();
+  const TASK_STATES = getTaskStates(colors);
   const { entries, migrateEntry, updateEntry } = useApp();
 
   // Open tasks from past days (migration candidates)
@@ -65,24 +68,24 @@ export default function MoreScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         {/* Header */}
         <View style={styles.headerBar}>
           <LinearGradient
-            colors={[COLORS.accent + '15', 'transparent']}
+            colors={[colors.accent + '15', 'transparent']}
             style={StyleSheet.absoluteFillObject}
           />
           <View style={styles.headerRow}>
             <View>
-              <Text style={styles.title}>CrushedIT</Text>
-              <Text style={styles.subtitle}>Your bullet journal, digitised</Text>
+              <Text style={[styles.title, { color: colors.text }]}>Goal Digger</Text>
+              <Text style={[styles.subtitle, { color: colors.textMuted }]}>Your bullet journal, digitised</Text>
             </View>
             <TouchableOpacity
               onPress={() => navigation.navigate('Help')}
-              style={styles.helpBtn}
+              style={[styles.helpBtn, { backgroundColor: colors.accent + '20', borderColor: colors.accent }]}
             >
-              <Text style={styles.helpBtnText}>?</Text>
+              <Text style={[styles.helpBtnText, { color: colors.accent }]}>?</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -90,24 +93,24 @@ export default function MoreScreen({ navigation }) {
         {/* Overall Stats */}
         <View style={styles.statsCard}>
           <LinearGradient
-            colors={[COLORS.accent + '15', COLORS.accentSecondary + '08']}
-            style={styles.statsGradient}
+            colors={[colors.accent + '15', colors.accentSecondary + '08']}
+            style={[styles.statsGradient, { borderColor: colors.border }]}
           >
             <View style={styles.bigStat}>
-              <Text style={styles.bigStatValue}>{completionRate}%</Text>
-              <Text style={styles.bigStatLabel}>Completion Rate</Text>
+              <Text style={[styles.bigStatValue, { color: colors.accent }]}>{completionRate}%</Text>
+              <Text style={[styles.bigStatLabel, { color: colors.textMuted }]}>Completion Rate</Text>
             </View>
             <View style={styles.statsGrid}>
               {[
-                { icon: '•', label: 'Tasks', value: stats.totalTasks, color: COLORS.text },
-                { icon: '✕', label: 'Crushed', value: stats.completed, color: COLORS.accentGreen },
-                { icon: '○', label: 'Events', value: stats.events, color: COLORS.accentSecondary },
-                { icon: '—', label: 'Notes', value: stats.notes, color: COLORS.textSecondary },
+                { icon: '•', label: 'Tasks', value: stats.totalTasks, color: colors.text },
+                { icon: '✕', label: 'Done', value: stats.completed, color: colors.accentGreen },
+                { icon: '○', label: 'Events', value: stats.events, color: colors.accentSecondary },
+                { icon: '—', label: 'Notes', value: stats.notes, color: colors.textSecondary },
               ].map(s => (
                 <View key={s.label} style={styles.statItem}>
                   <Text style={[styles.statBullet, { color: s.color }]}>{s.icon}</Text>
-                  <Text style={styles.statValue}>{s.value}</Text>
-                  <Text style={styles.statLabel}>{s.label}</Text>
+                  <Text style={[styles.statValue, { color: colors.text }]}>{s.value}</Text>
+                  <Text style={[styles.statLabel, { color: colors.textMuted }]}>{s.label}</Text>
                 </View>
               ))}
             </View>
@@ -115,19 +118,19 @@ export default function MoreScreen({ navigation }) {
         </View>
 
         {/* Migration Review */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           <View style={styles.sectionHeader}>
             <View>
-              <Text style={styles.sectionTitle}>⚡ Migration Review</Text>
-              <Text style={styles.sectionSub}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>⚡ Migration Review</Text>
+              <Text style={[styles.sectionSub, { color: colors.textMuted }]}>
                 {migrationCandidates.length > 0
                   ? `${migrationCandidates.length} tasks need attention`
                   : 'All caught up!'}
               </Text>
             </View>
             {migrationCandidates.length > 1 && (
-              <TouchableOpacity onPress={handleMigrateAll} style={styles.migrateAllBtn}>
-                <Text style={styles.migrateAllText}>Move All →</Text>
+              <TouchableOpacity onPress={handleMigrateAll} style={[styles.migrateAllBtn, { backgroundColor: colors.accent + '20' }]}>
+                <Text style={[styles.migrateAllText, { color: colors.accent }]}>Move All →</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -135,27 +138,27 @@ export default function MoreScreen({ navigation }) {
           {migrationCandidates.length === 0 ? (
             <View style={styles.emptyMigration}>
               <Text style={styles.emptyIcon}>✨</Text>
-              <Text style={styles.emptyText}>No overdue tasks</Text>
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>No overdue tasks</Text>
             </View>
           ) : (
             migrationCandidates.map(entry => (
-              <View key={entry.id} style={styles.migrationCard}>
+              <View key={entry.id} style={[styles.migrationCard, { borderBottomColor: colors.border }]}>
                 <View style={styles.migrationInfo}>
-                  <Text style={styles.migrationDate}>{formatDateShort(entry.date)}</Text>
-                  <Text style={styles.migrationText} numberOfLines={2}>{entry.text}</Text>
+                  <Text style={[styles.migrationDate, { color: colors.textMuted }]}>{formatDateShort(entry.date)}</Text>
+                  <Text style={[styles.migrationText, { color: colors.text }]} numberOfLines={2}>{entry.text}</Text>
                 </View>
                 <View style={styles.migrationActions}>
                   <TouchableOpacity
                     onPress={() => handleMigrate(entry.id)}
-                    style={styles.migrateBtn}
+                    style={[styles.migrateBtn, { backgroundColor: colors.accentOrange + '20' }]}
                   >
-                    <Text style={styles.migrateBtnText}>{'>'}</Text>
+                    <Text style={[styles.migrateBtnText, { color: colors.accentOrange }]}>{'>'}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => handleCancel(entry.id)}
-                    style={styles.cancelBtn}
+                    style={[styles.cancelBtn, { backgroundColor: colors.accentRed + '15' }]}
                   >
-                    <Text style={styles.cancelBtnText}>✕</Text>
+                    <Text style={[styles.cancelBtnText, { color: colors.accentRed }]}>✕</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -164,48 +167,48 @@ export default function MoreScreen({ navigation }) {
         </View>
 
         {/* Legend */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📖 Key</Text>
+        <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>📖 Key</Text>
           <View style={styles.legendGrid}>
             <View style={styles.legendCol}>
-              <Text style={styles.legendHeader}>Bullets</Text>
+              <Text style={[styles.legendHeader, { color: colors.textSecondary }]}>Bullets</Text>
               {Object.entries(TASK_STATES).map(([key, val]) => (
                 <View key={key} style={styles.legendRow}>
                   <Text style={[styles.legendSymbol, { color: val.color }]}>{val.symbol}</Text>
-                  <Text style={styles.legendLabel}>{val.label}</Text>
+                  <Text style={[styles.legendLabel, { color: colors.text }]}>{val.label}</Text>
                 </View>
               ))}
             </View>
             <View style={styles.legendCol}>
-              <Text style={styles.legendHeader}>Types</Text>
+              <Text style={[styles.legendHeader, { color: colors.textSecondary }]}>Types</Text>
               <View style={styles.legendRow}>
-                <Text style={[styles.legendSymbol, { color: COLORS.accentSecondary }]}>○</Text>
-                <Text style={styles.legendLabel}>Event</Text>
+                <Text style={[styles.legendSymbol, { color: colors.accentSecondary }]}>○</Text>
+                <Text style={[styles.legendLabel, { color: colors.text }]}>Event</Text>
               </View>
               <View style={styles.legendRow}>
-                <Text style={[styles.legendSymbol, { color: COLORS.textSecondary }]}>—</Text>
-                <Text style={styles.legendLabel}>Note</Text>
+                <Text style={[styles.legendSymbol, { color: colors.textSecondary }]}>—</Text>
+                <Text style={[styles.legendLabel, { color: colors.text }]}>Note</Text>
               </View>
-              <Text style={[styles.legendHeader, { marginTop: 12 }]}>Signifiers</Text>
+              <Text style={[styles.legendHeader, { color: colors.textSecondary, marginTop: 12 }]}>Signifiers</Text>
               <View style={styles.legendRow}>
-                <Text style={[styles.legendSymbol, { color: COLORS.accentRed }]}>!</Text>
-                <Text style={styles.legendLabel}>Priority</Text>
-              </View>
-              <View style={styles.legendRow}>
-                <Text style={[styles.legendSymbol, { color: COLORS.accentGold }]}>★</Text>
-                <Text style={styles.legendLabel}>Inspiration</Text>
+                <Text style={[styles.legendSymbol, { color: colors.accentRed }]}>!</Text>
+                <Text style={[styles.legendLabel, { color: colors.text }]}>Priority</Text>
               </View>
               <View style={styles.legendRow}>
-                <Text style={[styles.legendSymbol, { color: COLORS.accentSecondary }]}>?</Text>
-                <Text style={styles.legendLabel}>Explore</Text>
+                <Text style={[styles.legendSymbol, { color: colors.accentGold }]}>★</Text>
+                <Text style={[styles.legendLabel, { color: colors.text }]}>Inspiration</Text>
+              </View>
+              <View style={styles.legendRow}>
+                <Text style={[styles.legendSymbol, { color: colors.accentSecondary }]}>?</Text>
+                <Text style={[styles.legendLabel, { color: colors.text }]}>Explore</Text>
               </View>
             </View>
           </View>
         </View>
 
         {/* Gestures guide */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>👆 Gestures</Text>
+        <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>👆 Gestures</Text>
           <View style={styles.gestureList}>
             {[
               { gesture: 'Tap bullet', action: 'Cycle: open → done → cancelled' },
@@ -214,9 +217,9 @@ export default function MoreScreen({ navigation }) {
               { gesture: 'Swipe right →', action: 'Migrate to today' },
               { gesture: 'Swipe left ←', action: 'Schedule forward' },
             ].map(g => (
-              <View key={g.gesture} style={styles.gestureRow}>
-                <Text style={styles.gestureAction}>{g.gesture}</Text>
-                <Text style={styles.gestureResult}>{g.action}</Text>
+              <View key={g.gesture} style={[styles.gestureRow, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.gestureAction, { color: colors.accent }]}>{g.gesture}</Text>
+                <Text style={[styles.gestureResult, { color: colors.textSecondary }]}>{g.action}</Text>
               </View>
             ))}
           </View>
@@ -229,84 +232,84 @@ export default function MoreScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.bg },
+  safe: { flex: 1 },
   content: { paddingBottom: 20 },
   headerBar: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, position: 'relative' },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   title: {
-    color: COLORS.text, fontSize: SIZES.xxxl, fontWeight: '800',
+    fontSize: SIZES.xxxl, fontWeight: '800',
     letterSpacing: -1,
   },
-  subtitle: { color: COLORS.textMuted, fontSize: SIZES.md, marginTop: 2 },
+  subtitle: { fontSize: SIZES.md, marginTop: 2 },
   helpBtn: {
     width: 36, height: 36, borderRadius: 18,
-    backgroundColor: COLORS.accent + '20', borderWidth: 1, borderColor: COLORS.accent,
+    borderWidth: 1,
     alignItems: 'center', justifyContent: 'center', marginTop: 4,
   },
-  helpBtnText: { color: COLORS.accent, fontSize: SIZES.lg, fontWeight: '700' },
+  helpBtnText: { fontSize: SIZES.lg, fontWeight: '700' },
   statsCard: {
     marginHorizontal: 16, borderRadius: SIZES.radiusLg, overflow: 'hidden', marginBottom: 20,
   },
   statsGradient: {
     padding: 20, borderRadius: SIZES.radiusLg,
-    borderWidth: 1, borderColor: COLORS.border,
+    borderWidth: 1,
   },
   bigStat: { alignItems: 'center', marginBottom: 16 },
-  bigStatValue: { color: COLORS.accent, fontSize: 48, fontWeight: '800' },
-  bigStatLabel: { color: COLORS.textMuted, fontSize: SIZES.sm, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1 },
+  bigStatValue: { fontSize: 48, fontWeight: '800' },
+  bigStatLabel: { fontSize: SIZES.sm, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1 },
   statsGrid: { flexDirection: 'row', justifyContent: 'space-around' },
   statItem: { alignItems: 'center' },
   statBullet: { fontSize: SIZES.lg, fontWeight: '700' },
-  statValue: { color: COLORS.text, fontSize: SIZES.xl, fontWeight: '700' },
-  statLabel: { color: COLORS.textMuted, fontSize: SIZES.xs, marginTop: 2 },
+  statValue: { fontSize: SIZES.xl, fontWeight: '700' },
+  statLabel: { fontSize: SIZES.xs, marginTop: 2 },
   section: {
     marginHorizontal: 16, marginBottom: 20,
-    backgroundColor: COLORS.bgCard, borderRadius: SIZES.radiusLg,
-    padding: 16, borderWidth: 1, borderColor: COLORS.border,
+    borderRadius: SIZES.radiusLg,
+    padding: 16, borderWidth: 1,
   },
   sectionHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
     marginBottom: 12,
   },
-  sectionTitle: { color: COLORS.text, fontSize: SIZES.lg, fontWeight: '700' },
-  sectionSub: { color: COLORS.textMuted, fontSize: SIZES.sm, marginTop: 2 },
+  sectionTitle: { fontSize: SIZES.lg, fontWeight: '700' },
+  sectionSub: { fontSize: SIZES.sm, marginTop: 2 },
   migrateAllBtn: {
-    backgroundColor: COLORS.accent + '20', borderRadius: 12,
+    borderRadius: 12,
     paddingHorizontal: 12, paddingVertical: 6,
   },
-  migrateAllText: { color: COLORS.accent, fontSize: SIZES.sm, fontWeight: '600' },
+  migrateAllText: { fontSize: SIZES.sm, fontWeight: '600' },
   emptyMigration: { alignItems: 'center', paddingVertical: 16 },
   emptyIcon: { fontSize: 32, marginBottom: 4 },
-  emptyText: { color: COLORS.textMuted, fontSize: SIZES.md },
+  emptyText: { fontSize: SIZES.md },
   migrationCard: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.border,
+    paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth,
   },
   migrationInfo: { flex: 1, marginRight: 12 },
-  migrationDate: { color: COLORS.textMuted, fontSize: SIZES.xs, marginBottom: 2 },
-  migrationText: { color: COLORS.text, fontSize: SIZES.md },
+  migrationDate: { fontSize: SIZES.xs, marginBottom: 2 },
+  migrationText: { fontSize: SIZES.md },
   migrationActions: { flexDirection: 'row', gap: 8 },
   migrateBtn: {
     width: 36, height: 36, borderRadius: 18,
-    backgroundColor: COLORS.accentOrange + '20', alignItems: 'center', justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
   },
-  migrateBtnText: { color: COLORS.accentOrange, fontSize: SIZES.lg, fontWeight: '700' },
+  migrateBtnText: { fontSize: SIZES.lg, fontWeight: '700' },
   cancelBtn: {
     width: 36, height: 36, borderRadius: 18,
-    backgroundColor: COLORS.accentRed + '15', alignItems: 'center', justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
   },
-  cancelBtnText: { color: COLORS.accentRed, fontSize: SIZES.md, fontWeight: '700' },
+  cancelBtnText: { fontSize: SIZES.md, fontWeight: '700' },
   legendGrid: { flexDirection: 'row', gap: 20, marginTop: 8 },
   legendCol: { flex: 1 },
-  legendHeader: { color: COLORS.textSecondary, fontSize: SIZES.xs, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 },
+  legendHeader: { fontSize: SIZES.xs, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 },
   legendRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 3 },
   legendSymbol: { fontSize: SIZES.lg, fontWeight: '700', width: 20, textAlign: 'center' },
-  legendLabel: { color: COLORS.text, fontSize: SIZES.sm },
+  legendLabel: { fontSize: SIZES.sm },
   gestureList: { marginTop: 8 },
   gestureRow: {
     flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.border,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  gestureAction: { color: COLORS.accent, fontSize: SIZES.sm, fontWeight: '600' },
-  gestureResult: { color: COLORS.textSecondary, fontSize: SIZES.sm },
+  gestureAction: { fontSize: SIZES.sm, fontWeight: '600' },
+  gestureResult: { fontSize: SIZES.sm },
 });

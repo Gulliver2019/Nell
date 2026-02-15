@@ -4,13 +4,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SIZES, SHADOWS, TASK_STATES } from '../utils/theme';
+import { SIZES, SHADOWS } from '../utils/theme';
+import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { getDateKey, formatDate } from '../utils/storage';
 import EntryItem from '../components/EntryItem';
 import QuickAdd from '../components/QuickAdd';
 
 export default function DailyLogScreen() {
+  const { colors } = useTheme();
   const {
     entries, selectedDate, setSelectedDate, addEntry, updateEntry,
     deleteEntry, migrateEntry, scheduleEntry,
@@ -90,45 +92,45 @@ export default function DailyLogScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       <StatusBar barStyle="light-content" />
       
       {/* Header */}
       <View style={styles.header}>
         <LinearGradient
-          colors={[COLORS.accent + '20', 'transparent']}
+          colors={[colors.accent + '20', 'transparent']}
           style={styles.headerGlow}
         />
         <View style={styles.dateNav}>
           <TouchableOpacity onPress={() => goDay(-1)} style={styles.navButton}>
-            <Text style={styles.navArrow}>‹</Text>
+            <Text style={[styles.navArrow, { color: colors.accent }]}>‹</Text>
           </TouchableOpacity>
           
           <TouchableOpacity onPress={() => setSelectedDate(today)} style={styles.dateCenter}>
-            <Text style={styles.dateLabel}>
+            <Text style={[styles.dateLabel, { color: colors.text }]}>
               {isToday ? 'Today' : formatDate(selectedDate)}
             </Text>
-            {isToday && <Text style={styles.dateSubLabel}>{formatDate(selectedDate)}</Text>}
+            {isToday && <Text style={[styles.dateSubLabel, { color: colors.textSecondary }]}>{formatDate(selectedDate)}</Text>}
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => goDay(1)} style={styles.navButton}>
-            <Text style={styles.navArrow}>›</Text>
+            <Text style={[styles.navArrow, { color: colors.accent }]}>›</Text>
           </TouchableOpacity>
         </View>
 
         {/* Stats bar */}
         {stats.total > 0 && (
           <View style={styles.statsRow}>
-            <View style={styles.progressBar}>
+            <View style={[styles.progressBar, { backgroundColor: colors.border }]}>
               <View
                 style={[
                   styles.progressFill,
-                  { width: `${(stats.done / stats.total) * 100}%` },
+                  { width: `${(stats.done / stats.total) * 100}%`, backgroundColor: colors.accentGreen },
                 ]}
               />
             </View>
-            <Text style={styles.statsText}>
-              {stats.done}/{stats.total} crushed
+            <Text style={[styles.statsText, { color: colors.textSecondary }]}>
+              {stats.done}/{stats.total} done
             </Text>
           </View>
         )}
@@ -143,11 +145,11 @@ export default function DailyLogScreen() {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyIcon}>✦</Text>
-            <Text style={styles.emptyTitle}>
+            <Text style={[styles.emptyIcon, { color: colors.accent }]}>✦</Text>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>
               {isToday ? 'Fresh day, fresh start' : 'Nothing logged'}
             </Text>
-            <Text style={styles.emptySub}>
+            <Text style={[styles.emptySub, { color: colors.textMuted }]}>
               {isToday ? 'Add your first entry below' : 'Navigate to today to add entries'}
             </Text>
           </View>
@@ -163,7 +165,6 @@ export default function DailyLogScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: COLORS.bg,
   },
   header: {
     paddingHorizontal: 16,
@@ -186,7 +187,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   navArrow: {
-    color: COLORS.accent,
     fontSize: 32,
     fontWeight: '300',
   },
@@ -194,13 +194,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dateLabel: {
-    color: COLORS.text,
     fontSize: SIZES.xxl,
     fontWeight: '700',
     letterSpacing: -0.5,
   },
   dateSubLabel: {
-    color: COLORS.textSecondary,
     fontSize: SIZES.sm,
     marginTop: 2,
   },
@@ -213,17 +211,14 @@ const styles = StyleSheet.create({
   progressBar: {
     flex: 1,
     height: 4,
-    backgroundColor: COLORS.border,
     borderRadius: 2,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: COLORS.accentGreen,
     borderRadius: 2,
   },
   statsText: {
-    color: COLORS.textSecondary,
     fontSize: SIZES.xs,
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -243,17 +238,14 @@ const styles = StyleSheet.create({
   },
   emptyIcon: {
     fontSize: 48,
-    color: COLORS.accent,
     marginBottom: 16,
   },
   emptyTitle: {
-    color: COLORS.text,
     fontSize: SIZES.lg,
     fontWeight: '600',
     marginBottom: 4,
   },
   emptySub: {
-    color: COLORS.textMuted,
     fontSize: SIZES.md,
   },
 });

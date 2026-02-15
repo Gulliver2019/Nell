@@ -2,10 +2,15 @@ import React, { useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, Animated,
 } from 'react-native';
-import { COLORS, SIZES, BULLET_TYPES, SIGNIFIERS } from '../utils/theme';
+import { SIZES, getBulletTypes, getSignifiers } from '../utils/theme';
+import { useTheme } from '../context/ThemeContext';
 import * as Haptics from 'expo-haptics';
 
 export default function QuickAdd({ onAdd, placeholder = "What's on your mind?" }) {
+  const { colors } = useTheme();
+  const BULLET_TYPES = getBulletTypes(colors);
+  const SIGNIFIERS = getSignifiers(colors);
+
   const [text, setText] = useState('');
   const [type, setType] = useState('task');
   const [signifier, setSignifier] = useState(null);
@@ -43,14 +48,14 @@ export default function QuickAdd({ onAdd, placeholder = "What's on your mind?" }
   const currentSig = signifier ? SIGNIFIERS[signifier] : null;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.bgCard, borderTopColor: colors.border }]}>
       {/* Success flash */}
-      <Animated.View style={[styles.flash, { opacity: fadeAnim }]} pointerEvents="none" />
+      <Animated.View style={[styles.flash, { opacity: fadeAnim, backgroundColor: colors.accent }]} pointerEvents="none" />
 
-      <View style={styles.inputRow}>
+      <View style={[styles.inputRow, { backgroundColor: colors.bgInput }]}>
         {/* Signifier toggle */}
         <TouchableOpacity onPress={cycleSignifier} style={styles.sigButton}>
-          <Text style={[styles.sigText, currentSig && { color: currentSig.color }]}>
+          <Text style={[styles.sigText, { color: colors.textMuted }, currentSig && { color: currentSig.color }]}>
             {currentSig ? currentSig.symbol : '·'}
           </Text>
         </TouchableOpacity>
@@ -65,12 +70,12 @@ export default function QuickAdd({ onAdd, placeholder = "What's on your mind?" }
         {/* Input */}
         <TextInput
           ref={inputRef}
-          style={styles.input}
+          style={[styles.input, { color: colors.text }]}
           value={text}
           onChangeText={setText}
           placeholder={placeholder}
-          placeholderTextColor={COLORS.textMuted}
-          selectionColor={COLORS.accent}
+          placeholderTextColor={colors.textMuted}
+          selectionColor={colors.accent}
           returnKeyType="done"
           onSubmitEditing={handleSubmit}
           blurOnSubmit={false}
@@ -78,8 +83,8 @@ export default function QuickAdd({ onAdd, placeholder = "What's on your mind?" }
 
         {/* Add button */}
         {text.trim().length > 0 && (
-          <TouchableOpacity onPress={handleSubmit} style={styles.addButton}>
-            <Text style={styles.addIcon}>↵</Text>
+          <TouchableOpacity onPress={handleSubmit} style={[styles.addButton, { backgroundColor: colors.accent }]}>
+            <Text style={[styles.addIcon, { color: colors.text }]}>↵</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -90,12 +95,12 @@ export default function QuickAdd({ onAdd, placeholder = "What's on your mind?" }
           <TouchableOpacity
             key={t}
             onPress={() => { setType(t); Haptics.selectionAsync(); }}
-            style={[styles.hintChip, type === t && styles.hintChipActive]}
+            style={[styles.hintChip, { backgroundColor: colors.bgInput }, type === t && [styles.hintChipActive, { backgroundColor: colors.bgElevated, borderColor: colors.accent + '40' }]]}
           >
             <Text style={[styles.hintBullet, { color: BULLET_TYPES[t].color }]}>
               {BULLET_TYPES[t].symbol}
             </Text>
-            <Text style={[styles.hintText, type === t && styles.hintTextActive]}>
+            <Text style={[styles.hintText, { color: colors.textMuted }, type === t && { color: colors.textSecondary }]}>
               {BULLET_TYPES[t].label}
             </Text>
           </TouchableOpacity>
@@ -110,20 +115,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 12,
-    backgroundColor: COLORS.bgCard,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
     position: 'relative',
   },
   flash: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: COLORS.accent,
     borderRadius: SIZES.radius,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.bgInput,
     borderRadius: SIZES.radius,
     paddingHorizontal: 8,
     minHeight: 44,
@@ -135,7 +136,6 @@ const styles = StyleSheet.create({
   sigText: {
     fontSize: SIZES.lg,
     fontWeight: '700',
-    color: COLORS.textMuted,
   },
   typeButton: {
     width: 28,
@@ -147,7 +147,6 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    color: COLORS.text,
     fontSize: SIZES.base,
     paddingVertical: 10,
     paddingHorizontal: 4,
@@ -156,12 +155,10 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: COLORS.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
   addIcon: {
-    color: COLORS.text,
     fontSize: SIZES.lg,
     fontWeight: '700',
   },
@@ -176,26 +173,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
-    backgroundColor: COLORS.bgInput,
     gap: 4,
   },
   hintChipActive: {
-    backgroundColor: COLORS.bgElevated,
     borderWidth: 1,
-    borderColor: COLORS.accent + '40',
   },
   hintBullet: {
     fontSize: SIZES.sm,
     fontWeight: '700',
   },
   hintText: {
-    color: COLORS.textMuted,
     fontSize: SIZES.xs,
     fontWeight: '500',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-  },
-  hintTextActive: {
-    color: COLORS.textSecondary,
   },
 });

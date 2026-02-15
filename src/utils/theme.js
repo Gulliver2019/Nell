@@ -1,37 +1,9 @@
-// CrushedIT Dark Theme with Bold Accents
-export const COLORS = {
-  // Backgrounds
-  bg: '#0D0D0F',
-  bgCard: '#1A1A1F',
-  bgElevated: '#242429',
-  bgInput: '#2A2A30',
+// Goal Digger Theme Utilities
+// Screens should use useTheme().colors for dynamic theming
+import THEMES from './themes';
 
-  // Accents
-  accent: '#6C5CE7',       // Primary purple
-  accentLight: '#A29BFE',  // Light purple
-  accentSecondary: '#00CEC9', // Teal
-  accentWarm: '#FD79A8',   // Pink
-  accentGold: '#FDCB6E',   // Gold
-  accentGreen: '#00B894',  // Green (completed)
-  accentRed: '#FF6B6B',    // Red (cancelled/delete)
-  accentOrange: '#E17055', // Orange (migrated)
-
-  // Text
-  text: '#FFFFFF',
-  textSecondary: '#8E8E93',
-  textMuted: '#636366',
-  textInverse: '#0D0D0F',
-
-  // Borders
-  border: '#2C2C2E',
-  borderLight: '#3A3A3C',
-
-  // Status
-  success: '#00B894',
-  warning: '#FDCB6E',
-  error: '#FF6B6B',
-  info: '#6C5CE7',
-};
+// Default fallback colors (midnight theme)
+export const COLORS = THEMES.midnight.colors;
 
 export const FONTS = {
   light: { fontWeight: '300' },
@@ -58,39 +30,44 @@ export const SIZES = {
 };
 
 export const SHADOWS = {
-  card: {
-    shadowColor: '#6C5CE7',
+  card: (accent = '#6C5CE7') => ({
+    shadowColor: accent,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 4,
-  },
-  glow: {
-    shadowColor: '#6C5CE7',
+  }),
+  glow: (accent = '#6C5CE7') => ({
+    shadowColor: accent,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 8,
-  },
+  }),
 };
 
-// Bullet Journal Signifiers
-export const BULLET_TYPES = {
-  task: { symbol: '•', label: 'Task', color: COLORS.text },
-  event: { symbol: '○', label: 'Event', color: COLORS.accentSecondary },
-  note: { symbol: '—', label: 'Note', color: COLORS.textSecondary },
-};
+// Dynamic bullet types/states/signifiers based on current theme colors
+export const getBulletTypes = (c) => ({
+  task: { symbol: '\u2022', label: 'Task', color: c.text },
+  event: { symbol: '\u25CB', label: 'Event', color: c.accentSecondary },
+  note: { symbol: '\u2014', label: 'Note', color: c.textSecondary },
+});
 
-export const TASK_STATES = {
-  open: { symbol: '•', label: 'Open', color: COLORS.text },
-  complete: { symbol: '✕', label: 'Done', color: COLORS.accentGreen },
-  migrated: { symbol: '>', label: 'Migrated', color: COLORS.accentOrange },
-  scheduled: { symbol: '<', label: 'Scheduled', color: COLORS.accent },
-  cancelled: { symbol: '—', label: 'Cancelled', color: COLORS.textMuted },
-};
+export const getTaskStates = (c) => ({
+  open: { symbol: '\u2022', label: 'Open', color: c.text },
+  complete: { symbol: '\u2715', label: 'Done', color: c.accentGreen },
+  migrated: { symbol: '>', label: 'Migrated', color: c.accentOrange },
+  scheduled: { symbol: '<', label: 'Scheduled', color: c.accent },
+  cancelled: { symbol: '\u2014', label: 'Cancelled', color: c.textMuted },
+});
 
-export const SIGNIFIERS = {
-  priority: { symbol: '!', label: 'Priority', color: COLORS.accentRed },
-  inspiration: { symbol: '★', label: 'Inspiration', color: COLORS.accentGold },
-  explore: { symbol: '?', label: 'Explore', color: COLORS.accentSecondary },
-};
+export const getSignifiers = (c) => ({
+  priority: { symbol: '!', label: 'Priority', color: c.accentRed },
+  inspiration: { symbol: '\u2605', label: 'Inspiration', color: c.accentGold },
+  explore: { symbol: '?', label: 'Explore', color: c.accentSecondary },
+});
+
+// Static versions for backward compat (use midnight defaults)
+export const BULLET_TYPES = getBulletTypes(COLORS);
+export const TASK_STATES = getTaskStates(COLORS);
+export const SIGNIFIERS = getSignifiers(COLORS);

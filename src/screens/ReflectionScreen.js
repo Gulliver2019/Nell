@@ -4,7 +4,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SIZES } from '../utils/theme';
+import { SIZES } from '../utils/theme';
+import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { getDateKey, formatDate } from '../utils/storage';
 import * as Haptics from 'expo-haptics';
@@ -33,6 +34,7 @@ const PROMPTS = {
 };
 
 export default function ReflectionScreen() {
+  const { colors } = useTheme();
   const { reflections, saveReflection, entries } = useApp();
   const [mode, setMode] = useState('write'); // 'write' or 'history'
   const [reflectionType, setReflectionType] = useState('daily');
@@ -76,7 +78,7 @@ export default function ReflectionScreen() {
   }, [reflections]);
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -84,22 +86,22 @@ export default function ReflectionScreen() {
         {/* Header */}
         <View style={styles.headerBar}>
           <LinearGradient
-            colors={[COLORS.accentWarm + '15', 'transparent']}
+            colors={[colors.accentWarm + '15', 'transparent']}
             style={StyleSheet.absoluteFillObject}
           />
-          <Text style={styles.title}>Reflect</Text>
-          <View style={styles.modeToggle}>
+          <Text style={[styles.title, { color: colors.text }]}>Reflect</Text>
+          <View style={[styles.modeToggle, { backgroundColor: colors.bgInput }]}>
             <TouchableOpacity
               onPress={() => setMode('write')}
-              style={[styles.modeBtn, mode === 'write' && styles.modeBtnActive]}
+              style={[styles.modeBtn, mode === 'write' && [styles.modeBtnActive, { backgroundColor: colors.accent }]]}
             >
-              <Text style={[styles.modeText, mode === 'write' && styles.modeTextActive]}>Write</Text>
+              <Text style={[styles.modeText, { color: colors.textMuted }, mode === 'write' && { color: colors.text }]}>Write</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setMode('history')}
-              style={[styles.modeBtn, mode === 'history' && styles.modeBtnActive]}
+              style={[styles.modeBtn, mode === 'history' && [styles.modeBtnActive, { backgroundColor: colors.accent }]]}
             >
-              <Text style={[styles.modeText, mode === 'history' && styles.modeTextActive]}>History</Text>
+              <Text style={[styles.modeText, { color: colors.textMuted }, mode === 'history' && { color: colors.text }]}>History</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -112,9 +114,9 @@ export default function ReflectionScreen() {
                 <TouchableOpacity
                   key={t}
                   onPress={() => setReflectionType(t)}
-                  style={[styles.typeChip, reflectionType === t && styles.typeChipActive]}
+                  style={[styles.typeChip, { backgroundColor: colors.bgInput }, reflectionType === t && { backgroundColor: colors.accent + '30', borderWidth: 1, borderColor: colors.accent }]}
                 >
-                  <Text style={[styles.typeChipText, reflectionType === t && styles.typeChipTextActive]}>
+                  <Text style={[styles.typeChipText, { color: colors.textMuted }, reflectionType === t && { color: colors.accent }]}>
                     {t === 'daily' ? '📅 Daily' : '📆 Weekly'}
                   </Text>
                 </TouchableOpacity>
@@ -123,32 +125,32 @@ export default function ReflectionScreen() {
 
             {/* Today's context */}
             {todayStats.total > 0 && (
-              <View style={styles.contextCard}>
-                <Text style={styles.contextLabel}>Today's Progress</Text>
-                <Text style={styles.contextValue}>
-                  {todayStats.done}/{todayStats.total} tasks crushed
+              <View style={[styles.contextCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                <Text style={[styles.contextLabel, { color: colors.textMuted }]}>Today's Progress</Text>
+                <Text style={[styles.contextValue, { color: colors.text }]}>
+                  {todayStats.done}/{todayStats.total} tasks done
                   {todayStats.events > 0 ? ` · ${todayStats.events} events` : ''}
                 </Text>
               </View>
             )}
 
             {todayReflection && (
-              <View style={styles.alreadyDone}>
-                <Text style={styles.alreadyText}>✓ You've already reflected today</Text>
+              <View style={[styles.alreadyDone, { backgroundColor: colors.accentGreen + '15' }]}>
+                <Text style={[styles.alreadyText, { color: colors.accentGreen }]}>✓ You've already reflected today</Text>
               </View>
             )}
 
             {/* Mood */}
-            <Text style={styles.sectionLabel}>How did today feel?</Text>
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>How did today feel?</Text>
             <View style={styles.moodRow}>
               {MOODS.map(m => (
                 <TouchableOpacity
                   key={m.value}
                   onPress={() => { setMood(m.value); Haptics.selectionAsync(); }}
-                  style={[styles.moodBtn, mood === m.value && styles.moodBtnActive]}
+                  style={[styles.moodBtn, mood === m.value && { backgroundColor: colors.accent + '20' }]}
                 >
                   <Text style={styles.moodEmoji}>{m.emoji}</Text>
-                  <Text style={[styles.moodLabel, mood === m.value && styles.moodLabelActive]}>
+                  <Text style={[styles.moodLabel, { color: colors.textMuted }, mood === m.value && { color: colors.accent }]}>
                     {m.label}
                   </Text>
                 </TouchableOpacity>
@@ -157,20 +159,20 @@ export default function ReflectionScreen() {
 
             {/* Prompts */}
             {prompts.map(p => (
-              <View key={p.key} style={styles.promptCard}>
+              <View key={p.key} style={[styles.promptCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
                 <View style={styles.promptHeader}>
                   <Text style={styles.promptIcon}>{p.icon}</Text>
-                  <Text style={styles.promptLabel}>{p.label}</Text>
+                  <Text style={[styles.promptLabel, { color: colors.text }]}>{p.label}</Text>
                 </View>
                 <TextInput
-                  style={styles.promptInput}
+                  style={[styles.promptInput, { color: colors.text }]}
                   placeholder={p.placeholder}
-                  placeholderTextColor={COLORS.textMuted}
+                  placeholderTextColor={colors.textMuted}
                   value={answers[p.key] || ''}
                   onChangeText={t => setAnswers(prev => ({ ...prev, [p.key]: t }))}
                   multiline
                   textAlignVertical="top"
-                  selectionColor={COLORS.accent}
+                  selectionColor={colors.accent}
                 />
               </View>
             ))}
@@ -182,12 +184,12 @@ export default function ReflectionScreen() {
               disabled={!hasContent}
             >
               <LinearGradient
-                colors={hasContent ? [COLORS.accent, COLORS.accentWarm] : [COLORS.bgInput, COLORS.bgInput]}
+                colors={hasContent ? [colors.accent, colors.accentWarm] : [colors.bgInput, colors.bgInput]}
                 style={styles.saveGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
               >
-                <Text style={[styles.saveText, !hasContent && { color: COLORS.textMuted }]}>
+                <Text style={[styles.saveText, { color: colors.text }, !hasContent && { color: colors.textMuted }]}>
                   Save Reflection
                 </Text>
               </LinearGradient>
@@ -199,14 +201,14 @@ export default function ReflectionScreen() {
             {sortedReflections.length === 0 ? (
               <View style={styles.empty}>
                 <Text style={styles.emptyIcon}>🪞</Text>
-                <Text style={styles.emptyTitle}>No reflections yet</Text>
-                <Text style={styles.emptyText}>Take a moment to look back on your day</Text>
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>No reflections yet</Text>
+                <Text style={[styles.emptyText, { color: colors.textMuted }]}>Take a moment to look back on your day</Text>
               </View>
             ) : (
               sortedReflections.map(ref => (
-                <View key={ref.id} style={styles.historyCard}>
+                <View key={ref.id} style={[styles.historyCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
                   <View style={styles.historyHeader}>
-                    <Text style={styles.historyDate}>{formatDate(ref.date)}</Text>
+                    <Text style={[styles.historyDate, { color: colors.text }]}>{formatDate(ref.date)}</Text>
                     <Text style={styles.historyMood}>
                       {MOODS.find(m => m.value === ref.mood)?.emoji || '🙂'}
                     </Text>
@@ -214,8 +216,8 @@ export default function ReflectionScreen() {
                   {prompts.map(p => (
                     ref[p.key] ? (
                       <View key={p.key} style={styles.historyItem}>
-                        <Text style={styles.historyLabel}>{p.icon} {p.label}</Text>
-                        <Text style={styles.historyText}>{ref[p.key]}</Text>
+                        <Text style={[styles.historyLabel, { color: colors.textSecondary }]}>{p.icon} {p.label}</Text>
+                        <Text style={[styles.historyText, { color: colors.text }]}>{ref[p.key]}</Text>
                       </View>
                     ) : null
                   ))}
@@ -230,79 +232,73 @@ export default function ReflectionScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.bg },
+  safe: { flex: 1 },
   headerBar: {
     paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12,
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     position: 'relative',
   },
-  title: { color: COLORS.text, fontSize: SIZES.xxl, fontWeight: '700' },
+  title: { fontSize: SIZES.xxl, fontWeight: '700' },
   modeToggle: {
-    flexDirection: 'row', backgroundColor: COLORS.bgInput, borderRadius: 20, padding: 2,
+    flexDirection: 'row', borderRadius: 20, padding: 2,
   },
   modeBtn: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 18 },
-  modeBtnActive: { backgroundColor: COLORS.accent },
-  modeText: { color: COLORS.textMuted, fontSize: SIZES.sm, fontWeight: '600' },
-  modeTextActive: { color: COLORS.text },
+  modeBtnActive: {},
+  modeText: { fontSize: SIZES.sm, fontWeight: '600' },
   content: { paddingHorizontal: 16, paddingBottom: 40 },
   typeRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   typeChip: {
     paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
-    backgroundColor: COLORS.bgInput,
   },
-  typeChipActive: { backgroundColor: COLORS.accent + '30', borderWidth: 1, borderColor: COLORS.accent },
-  typeChipText: { color: COLORS.textMuted, fontSize: SIZES.sm, fontWeight: '600' },
-  typeChipTextActive: { color: COLORS.accent },
+  typeChipText: { fontSize: SIZES.sm, fontWeight: '600' },
   contextCard: {
-    backgroundColor: COLORS.bgCard, borderRadius: SIZES.radius, padding: 12,
-    marginBottom: 16, borderWidth: 1, borderColor: COLORS.border,
+    borderRadius: SIZES.radius, padding: 12,
+    marginBottom: 16, borderWidth: 1,
   },
-  contextLabel: { color: COLORS.textMuted, fontSize: SIZES.xs, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  contextValue: { color: COLORS.text, fontSize: SIZES.md, fontWeight: '500', marginTop: 4 },
+  contextLabel: { fontSize: SIZES.xs, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+  contextValue: { fontSize: SIZES.md, fontWeight: '500', marginTop: 4 },
   alreadyDone: {
-    backgroundColor: COLORS.accentGreen + '15', borderRadius: SIZES.radius,
+    borderRadius: SIZES.radius,
     padding: 10, marginBottom: 16,
   },
-  alreadyText: { color: COLORS.accentGreen, fontSize: SIZES.sm, fontWeight: '600', textAlign: 'center' },
+  alreadyText: { fontSize: SIZES.sm, fontWeight: '600', textAlign: 'center' },
   sectionLabel: {
-    color: COLORS.textSecondary, fontSize: SIZES.md, fontWeight: '600', marginBottom: 12,
+    fontSize: SIZES.md, fontWeight: '600', marginBottom: 12,
   },
   moodRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 },
   moodBtn: { alignItems: 'center', padding: 8, borderRadius: SIZES.radius },
-  moodBtnActive: { backgroundColor: COLORS.accent + '20' },
   moodEmoji: { fontSize: 28 },
-  moodLabel: { color: COLORS.textMuted, fontSize: SIZES.xs, marginTop: 4, fontWeight: '500' },
-  moodLabelActive: { color: COLORS.accent },
+  moodLabel: { fontSize: SIZES.xs, marginTop: 4, fontWeight: '500' },
   promptCard: {
-    backgroundColor: COLORS.bgCard, borderRadius: SIZES.radiusLg,
-    padding: 16, marginBottom: 12, borderWidth: 1, borderColor: COLORS.border,
+    borderRadius: SIZES.radiusLg,
+    padding: 16, marginBottom: 12, borderWidth: 1,
   },
   promptHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
   promptIcon: { fontSize: 18 },
-  promptLabel: { color: COLORS.text, fontSize: SIZES.base, fontWeight: '600' },
+  promptLabel: { fontSize: SIZES.base, fontWeight: '600' },
   promptInput: {
-    color: COLORS.text, fontSize: SIZES.md, lineHeight: 22,
+    fontSize: SIZES.md, lineHeight: 22,
     minHeight: 60, padding: 0,
   },
   saveBtn: { marginTop: 8, borderRadius: SIZES.radius, overflow: 'hidden' },
   saveBtnDisabled: { opacity: 0.5 },
   saveGradient: { padding: 16, alignItems: 'center' },
-  saveText: { color: COLORS.text, fontSize: SIZES.base, fontWeight: '700' },
+  saveText: { fontSize: SIZES.base, fontWeight: '700' },
   empty: { alignItems: 'center', paddingTop: 60 },
   emptyIcon: { fontSize: 48, marginBottom: 8 },
-  emptyTitle: { color: COLORS.text, fontSize: SIZES.lg, fontWeight: '600' },
-  emptyText: { color: COLORS.textMuted, fontSize: SIZES.md, marginTop: 4 },
+  emptyTitle: { fontSize: SIZES.lg, fontWeight: '600' },
+  emptyText: { fontSize: SIZES.md, marginTop: 4 },
   historyCard: {
-    backgroundColor: COLORS.bgCard, borderRadius: SIZES.radiusLg,
-    padding: 16, marginBottom: 12, borderWidth: 1, borderColor: COLORS.border,
+    borderRadius: SIZES.radiusLg,
+    padding: 16, marginBottom: 12, borderWidth: 1,
   },
   historyHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     marginBottom: 12,
   },
-  historyDate: { color: COLORS.text, fontSize: SIZES.base, fontWeight: '600' },
+  historyDate: { fontSize: SIZES.base, fontWeight: '600' },
   historyMood: { fontSize: 24 },
   historyItem: { marginBottom: 10 },
-  historyLabel: { color: COLORS.textSecondary, fontSize: SIZES.sm, fontWeight: '600', marginBottom: 4 },
-  historyText: { color: COLORS.text, fontSize: SIZES.md, lineHeight: 20 },
+  historyLabel: { fontSize: SIZES.sm, fontWeight: '600', marginBottom: 4 },
+  historyText: { fontSize: SIZES.md, lineHeight: 20 },
 });

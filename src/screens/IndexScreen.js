@@ -4,11 +4,16 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SIZES, TASK_STATES, BULLET_TYPES, SIGNIFIERS } from '../utils/theme';
+import { SIZES, getBulletTypes, getTaskStates, getSignifiers } from '../utils/theme';
+import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { formatDateShort, getDateKey } from '../utils/storage';
 
 export default function IndexScreen({ navigation }) {
+  const { colors } = useTheme();
+  const BULLET_TYPES = getBulletTypes(colors);
+  const TASK_STATES = getTaskStates(colors);
+  const SIGNIFIERS = getSignifiers(colors);
   const { entries, collections, searchQuery, setSearchQuery, setSelectedDate } = useApp();
   const [activeFilter, setActiveFilter] = useState('all');
 
@@ -53,7 +58,7 @@ export default function IndexScreen({ navigation }) {
 
     return (
       <TouchableOpacity
-        style={styles.entryCard}
+        style={[styles.entryCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
         onPress={() => {
           if (item.date) setSelectedDate(item.date);
         }}
@@ -67,19 +72,20 @@ export default function IndexScreen({ navigation }) {
               {bulletConfig.symbol}
             </Text>
           </View>
-          <Text style={styles.entryDate}>
+          <Text style={[styles.entryDate, { color: colors.textMuted }]}>
             {item.date ? formatDateShort(item.date) : ''}
           </Text>
         </View>
         <Text style={[
           styles.entryText,
-          item.state === 'complete' && styles.entryTextDone,
+          { color: colors.text },
+          item.state === 'complete' && { color: colors.textMuted, textDecorationLine: 'line-through' },
         ]} numberOfLines={2}>
           {item.text}
         </Text>
         {colName && (
-          <View style={styles.colTag}>
-            <Text style={styles.colTagText}>{colName}</Text>
+          <View style={[styles.colTag, { backgroundColor: colors.bgElevated }]}>
+            <Text style={[styles.colTagText, { color: colors.textSecondary }]}>{colName}</Text>
           </View>
         )}
       </TouchableOpacity>
@@ -87,32 +93,32 @@ export default function IndexScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       {/* Header */}
       <View style={styles.headerBar}>
         <LinearGradient
-          colors={[COLORS.accent + '15', 'transparent']}
+          colors={[colors.accent + '15', 'transparent']}
           style={StyleSheet.absoluteFillObject}
         />
-        <Text style={styles.title}>Index</Text>
-        <Text style={styles.subtitle}>{entries.length} entries</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Index</Text>
+        <Text style={[styles.subtitle, { color: colors.textMuted }]}>{entries.length} entries</Text>
       </View>
 
       {/* Search */}
       <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Text style={styles.searchIcon}>⌕</Text>
+        <View style={[styles.searchBar, { backgroundColor: colors.bgInput }]}>
+          <Text style={[styles.searchIcon, { color: colors.textMuted }]}>⌕</Text>
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: colors.text }]}
             placeholder="Search everything..."
-            placeholderTextColor={COLORS.textMuted}
+            placeholderTextColor={colors.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            selectionColor={COLORS.accent}
+            selectionColor={colors.accent}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Text style={styles.clearIcon}>✕</Text>
+              <Text style={[styles.clearIcon, { color: colors.textMuted }]}>✕</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -128,12 +134,12 @@ export default function IndexScreen({ navigation }) {
           renderItem={({ item: f }) => (
             <TouchableOpacity
               onPress={() => setActiveFilter(f.key)}
-              style={[styles.filterChip, activeFilter === f.key && styles.filterChipActive]}
+              style={[styles.filterChip, { backgroundColor: colors.bgInput }, activeFilter === f.key && { backgroundColor: colors.accent + '25', borderWidth: 1, borderColor: colors.accent }]}
             >
-              <Text style={[styles.filterText, activeFilter === f.key && styles.filterTextActive]}>
+              <Text style={[styles.filterText, { color: colors.textMuted }, activeFilter === f.key && { color: colors.accent }]}>
                 {f.label}
               </Text>
-              <Text style={[styles.filterCount, activeFilter === f.key && styles.filterCountActive]}>
+              <Text style={[styles.filterCount, { color: colors.textMuted, backgroundColor: colors.bgElevated }, activeFilter === f.key && { backgroundColor: colors.accent + '30', color: colors.accent }]}>
                 {f.count}
               </Text>
             </TouchableOpacity>
@@ -151,8 +157,8 @@ export default function IndexScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyIcon}>⌕</Text>
-            <Text style={styles.emptyText}>
+            <Text style={[styles.emptyIcon, { color: colors.textMuted }]}>⌕</Text>
+            <Text style={[styles.emptyText, { color: colors.textMuted }]}>
               {searchQuery ? 'No results found' : 'No entries yet'}
             </Text>
           </View>
@@ -163,43 +169,37 @@ export default function IndexScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.bg },
+  safe: { flex: 1 },
   headerBar: {
     paddingHorizontal: 20, paddingTop: 8, paddingBottom: 8, position: 'relative',
   },
-  title: { color: COLORS.text, fontSize: SIZES.xxl, fontWeight: '700' },
-  subtitle: { color: COLORS.textMuted, fontSize: SIZES.md, marginTop: 2 },
+  title: { fontSize: SIZES.xxl, fontWeight: '700' },
+  subtitle: { fontSize: SIZES.md, marginTop: 2 },
   searchContainer: { paddingHorizontal: 16, paddingBottom: 8 },
   searchBar: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: COLORS.bgInput, borderRadius: SIZES.radius,
+    borderRadius: SIZES.radius,
     paddingHorizontal: 12, height: 44,
   },
-  searchIcon: { color: COLORS.textMuted, fontSize: 18, marginRight: 8 },
-  searchInput: { flex: 1, color: COLORS.text, fontSize: SIZES.base },
-  clearIcon: { color: COLORS.textMuted, fontSize: 14, padding: 4 },
+  searchIcon: { fontSize: 18, marginRight: 8 },
+  searchInput: { flex: 1, fontSize: SIZES.base },
+  clearIcon: { fontSize: 14, padding: 4 },
   filterRow: { marginBottom: 4 },
   filterList: { paddingHorizontal: 16, gap: 6 },
   filterChip: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16,
-    backgroundColor: COLORS.bgInput,
   },
-  filterChipActive: {
-    backgroundColor: COLORS.accent + '25', borderWidth: 1, borderColor: COLORS.accent,
-  },
-  filterText: { color: COLORS.textMuted, fontSize: SIZES.xs, fontWeight: '600' },
-  filterTextActive: { color: COLORS.accent },
+  filterText: { fontSize: SIZES.xs, fontWeight: '600' },
   filterCount: {
-    color: COLORS.textMuted, fontSize: SIZES.xs, fontWeight: '700',
-    backgroundColor: COLORS.bgElevated, paddingHorizontal: 6, paddingVertical: 1,
+    fontSize: SIZES.xs, fontWeight: '700',
+    paddingHorizontal: 6, paddingVertical: 1,
     borderRadius: 8, overflow: 'hidden',
   },
-  filterCountActive: { backgroundColor: COLORS.accent + '30', color: COLORS.accent },
   list: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 40, flexGrow: 1 },
   entryCard: {
-    backgroundColor: COLORS.bgCard, borderRadius: SIZES.radius,
-    padding: 12, marginBottom: 6, borderWidth: 1, borderColor: COLORS.border,
+    borderRadius: SIZES.radius,
+    padding: 12, marginBottom: 6, borderWidth: 1,
   },
   entryHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
@@ -208,15 +208,14 @@ const styles = StyleSheet.create({
   entryBulletRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   sig: { fontSize: SIZES.sm, fontWeight: '700' },
   bullet: { fontSize: SIZES.base, fontWeight: '700' },
-  entryDate: { color: COLORS.textMuted, fontSize: SIZES.xs },
-  entryText: { color: COLORS.text, fontSize: SIZES.md, lineHeight: 20 },
-  entryTextDone: { color: COLORS.textMuted, textDecorationLine: 'line-through' },
+  entryDate: { fontSize: SIZES.xs },
+  entryText: { fontSize: SIZES.md, lineHeight: 20 },
   colTag: {
-    marginTop: 6, backgroundColor: COLORS.bgElevated, borderRadius: 8,
+    marginTop: 6, borderRadius: 8,
     paddingHorizontal: 8, paddingVertical: 2, alignSelf: 'flex-start',
   },
-  colTagText: { color: COLORS.textSecondary, fontSize: SIZES.xs },
+  colTagText: { fontSize: SIZES.xs },
   empty: { alignItems: 'center', paddingTop: 60 },
-  emptyIcon: { fontSize: 48, color: COLORS.textMuted, marginBottom: 8 },
-  emptyText: { color: COLORS.textMuted, fontSize: SIZES.md },
+  emptyIcon: { fontSize: 48, marginBottom: 8 },
+  emptyText: { fontSize: SIZES.md },
 });

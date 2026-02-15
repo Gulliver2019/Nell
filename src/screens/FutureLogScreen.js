@@ -4,11 +4,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SIZES, BULLET_TYPES } from '../utils/theme';
+import { SIZES, getBulletTypes } from '../utils/theme';
+import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { getMonthKey, getMonthName } from '../utils/storage';
 
 export default function FutureLogScreen() {
+  const { colors } = useTheme();
+  const BULLET_TYPES = getBulletTypes(colors);
   const { futureLog, addFutureLogEntry, removeFutureLogEntry } = useApp();
   const [newTexts, setNewTexts] = useState({});
   const [newTypes, setNewTypes] = useState({});
@@ -42,14 +45,14 @@ export default function FutureLogScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       <View style={styles.headerBar}>
         <LinearGradient
-          colors={[COLORS.accentGold + '15', 'transparent']}
+          colors={[colors.accentGold + '15', 'transparent']}
           style={StyleSheet.absoluteFillObject}
         />
-        <Text style={styles.title}>Future Log</Text>
-        <Text style={styles.subtitle}>Plan ahead, dream big</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Future Log</Text>
+        <Text style={[styles.subtitle, { color: colors.textMuted }]}>Plan ahead, dream big</Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
@@ -61,10 +64,10 @@ export default function FutureLogScreen() {
           return (
             <View key={monthKey} style={styles.monthCard}>
               <LinearGradient
-                colors={[COLORS.bgElevated, COLORS.bgCard]}
-                style={styles.cardGradient}
+                colors={[colors.bgElevated, colors.bgCard]}
+                style={[styles.cardGradient, { borderColor: colors.border }]}
               >
-                <Text style={styles.monthTitle}>{getMonthName(monthKey)}</Text>
+                <Text style={[styles.monthTitle, { color: colors.accentGold }]}>{getMonthName(monthKey)}</Text>
 
                 {monthEntries.map(entry => (
                   <TouchableOpacity
@@ -72,15 +75,15 @@ export default function FutureLogScreen() {
                     style={styles.entryRow}
                     onLongPress={() => handleRemove(monthKey, entry.id)}
                   >
-                    <Text style={[styles.entryBullet, { color: BULLET_TYPES[entry.type]?.color || COLORS.text }]}>
+                    <Text style={[styles.entryBullet, { color: BULLET_TYPES[entry.type]?.color || colors.text }]}>
                       {BULLET_TYPES[entry.type]?.symbol || '•'}
                     </Text>
-                    <Text style={styles.entryText}>{entry.text}</Text>
+                    <Text style={[styles.entryText, { color: colors.text }]}>{entry.text}</Text>
                   </TouchableOpacity>
                 ))}
 
                 {/* Add new */}
-                <View style={styles.addRow}>
+                <View style={[styles.addRow, { borderTopColor: colors.border }]}>
                   <TouchableOpacity
                     onPress={() => {
                       const types = ['task', 'event', 'note'];
@@ -92,14 +95,14 @@ export default function FutureLogScreen() {
                     <Text style={[styles.typeText, { color: bullet.color }]}>{bullet.symbol}</Text>
                   </TouchableOpacity>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { color: colors.text }]}
                     placeholder="Add entry..."
-                    placeholderTextColor={COLORS.textMuted}
+                    placeholderTextColor={colors.textMuted}
                     value={newTexts[monthKey] || ''}
                     onChangeText={t => setNewTexts(prev => ({ ...prev, [monthKey]: t }))}
                     onSubmitEditing={() => handleAdd(monthKey)}
                     returnKeyType="done"
-                    selectionColor={COLORS.accent}
+                    selectionColor={colors.accent}
                   />
                 </View>
               </LinearGradient>
@@ -112,37 +115,37 @@ export default function FutureLogScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.bg },
+  safe: { flex: 1 },
   headerBar: {
     paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, position: 'relative',
   },
-  title: { color: COLORS.text, fontSize: SIZES.xxl, fontWeight: '700' },
-  subtitle: { color: COLORS.textMuted, fontSize: SIZES.md, marginTop: 2 },
+  title: { fontSize: SIZES.xxl, fontWeight: '700' },
+  subtitle: { fontSize: SIZES.md, marginTop: 2 },
   content: { paddingHorizontal: 16, paddingBottom: 40 },
   monthCard: {
     marginBottom: 12, borderRadius: SIZES.radiusLg, overflow: 'hidden',
   },
   cardGradient: {
     padding: 16, borderRadius: SIZES.radiusLg,
-    borderWidth: 1, borderColor: COLORS.border,
+    borderWidth: 1,
   },
   monthTitle: {
-    color: COLORS.accentGold, fontSize: SIZES.lg, fontWeight: '700',
+    fontSize: SIZES.lg, fontWeight: '700',
     marginBottom: 12, letterSpacing: 0.5,
   },
   entryRow: {
     flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 6, gap: 8,
   },
   entryBullet: { fontSize: SIZES.base, fontWeight: '700', width: 20, textAlign: 'center', lineHeight: 22 },
-  entryText: { flex: 1, color: COLORS.text, fontSize: SIZES.md, lineHeight: 22 },
+  entryText: { flex: 1, fontSize: SIZES.md, lineHeight: 22 },
   addRow: {
     flexDirection: 'row', alignItems: 'center', marginTop: 8,
-    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: COLORS.border,
+    borderTopWidth: StyleSheet.hairlineWidth,
     paddingTop: 8,
   },
   typeBtn: { width: 28, alignItems: 'center' },
   typeText: { fontSize: SIZES.lg, fontWeight: '700' },
   input: {
-    flex: 1, color: COLORS.text, fontSize: SIZES.md, paddingVertical: 4,
+    flex: 1, fontSize: SIZES.md, paddingVertical: 4,
   },
 });

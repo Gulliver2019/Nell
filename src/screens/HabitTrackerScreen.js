@@ -4,7 +4,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SIZES } from '../utils/theme';
+import { SIZES } from '../utils/theme';
+import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { getDateKey } from '../utils/storage';
 import * as Haptics from 'expo-haptics';
@@ -12,6 +13,7 @@ import * as Haptics from 'expo-haptics';
 const HABIT_ICONS = ['💪', '📚', '🏃', '🧘', '💧', '🎨', '🎵', '✍️', '🥗', '😴', '🧹', '💊', '🚭', '📱', '🌿', '🙏'];
 
 export default function HabitTrackerScreen() {
+  const { colors } = useTheme();
   const { habits, addHabit, toggleHabitDay, deleteHabit } = useApp();
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState('');
@@ -69,21 +71,21 @@ export default function HabitTrackerScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.headerBar}>
           <LinearGradient
-            colors={[COLORS.accentGreen + '15', 'transparent']}
+            colors={[colors.accentGreen + '15', 'transparent']}
             style={StyleSheet.absoluteFillObject}
           />
           <View style={styles.headerRow}>
             <View>
-              <Text style={styles.title}>Habits</Text>
-              <Text style={styles.subtitle}>Consistency is everything</Text>
+              <Text style={[styles.title, { color: colors.text }]}>Habits</Text>
+              <Text style={[styles.subtitle, { color: colors.textMuted }]}>Consistency is everything</Text>
             </View>
             <TouchableOpacity onPress={() => setShowAdd(!showAdd)} style={styles.addBtn}>
-              <LinearGradient colors={[COLORS.accent, COLORS.accentLight]} style={styles.addGradient}>
-                <Text style={styles.addIcon}>+</Text>
+              <LinearGradient colors={[colors.accent, colors.accentLight]} style={styles.addGradient}>
+                <Text style={[styles.addIcon, { color: colors.text }]}>+</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -94,17 +96,17 @@ export default function HabitTrackerScreen() {
           <View style={styles.addSection}>
             <View style={styles.addInputRow}>
               <TextInput
-                style={styles.addInput}
+                style={[styles.addInput, { backgroundColor: colors.bgInput, color: colors.text }]}
                 placeholder="Habit name"
-                placeholderTextColor={COLORS.textMuted}
+                placeholderTextColor={colors.textMuted}
                 value={newName}
                 onChangeText={setNewName}
                 onSubmitEditing={handleAdd}
                 autoFocus
-                selectionColor={COLORS.accent}
+                selectionColor={colors.accent}
               />
-              <TouchableOpacity onPress={handleAdd} style={styles.submitBtn}>
-                <Text style={styles.submitText}>Add</Text>
+              <TouchableOpacity onPress={handleAdd} style={[styles.submitBtn, { backgroundColor: colors.accent }]}>
+                <Text style={[styles.submitText, { color: colors.text }]}>Add</Text>
               </TouchableOpacity>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.iconScroll}>
@@ -112,7 +114,7 @@ export default function HabitTrackerScreen() {
                 <TouchableOpacity
                   key={icon}
                   onPress={() => setNewIcon(icon)}
-                  style={[styles.iconOption, newIcon === icon && styles.iconOptionActive]}
+                  style={[styles.iconOption, { backgroundColor: colors.bgInput }, newIcon === icon && [styles.iconOptionActive, { borderColor: colors.accent }]]}
                 >
                   <Text style={styles.iconOptionText}>{icon}</Text>
                 </TouchableOpacity>
@@ -124,12 +126,12 @@ export default function HabitTrackerScreen() {
         {/* Habit grid */}
         <View style={styles.grid}>
           {/* Day headers */}
-          <View style={styles.gridHeader}>
+          <View style={[styles.gridHeader, { borderBottomColor: colors.border }]}>
             <View style={styles.habitLabel} />
             {days.map(d => (
-              <View key={d.key} style={[styles.dayHeader, d.isToday && styles.dayHeaderToday]}>
-                <Text style={[styles.dayLabel, d.isToday && styles.dayLabelToday]}>{d.label}</Text>
-                <Text style={[styles.dayNum, d.isToday && styles.dayNumToday]}>{d.day}</Text>
+              <View key={d.key} style={[styles.dayHeader, d.isToday && { backgroundColor: colors.accent + '20', borderRadius: 8 }]}>
+                <Text style={[styles.dayLabel, { color: colors.textMuted }, d.isToday && { color: colors.accent }]}>{d.label}</Text>
+                <Text style={[styles.dayNum, { color: colors.textSecondary }, d.isToday && { color: colors.accent }]}>{d.day}</Text>
               </View>
             ))}
           </View>
@@ -137,8 +139,8 @@ export default function HabitTrackerScreen() {
           {habits.length === 0 ? (
             <View style={styles.empty}>
               <Text style={styles.emptyIcon}>🌱</Text>
-              <Text style={styles.emptyTitle}>No habits yet</Text>
-              <Text style={styles.emptyText}>Tap + to start tracking</Text>
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>No habits yet</Text>
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>Tap + to start tracking</Text>
             </View>
           ) : (
             habits.map(habit => {
@@ -146,15 +148,15 @@ export default function HabitTrackerScreen() {
               return (
                 <TouchableOpacity
                   key={habit.id}
-                  style={styles.habitRow}
+                  style={[styles.habitRow, { borderBottomColor: colors.border }]}
                   onLongPress={() => handleDelete(habit)}
                 >
                   <View style={styles.habitLabel}>
                     <Text style={styles.habitIcon}>{habit.icon}</Text>
                     <View style={styles.habitInfo}>
-                      <Text style={styles.habitName} numberOfLines={1}>{habit.name}</Text>
+                      <Text style={[styles.habitName, { color: colors.text }]} numberOfLines={1}>{habit.name}</Text>
                       {streak > 0 && (
-                        <Text style={styles.streakText}>🔥 {streak}d</Text>
+                        <Text style={[styles.streakText, { color: colors.accentOrange }]}>🔥 {streak}d</Text>
                       )}
                     </View>
                   </View>
@@ -166,12 +168,13 @@ export default function HabitTrackerScreen() {
                         key={d.key}
                         style={[
                           styles.cell,
-                          done && styles.cellDone,
-                          d.isToday && styles.cellToday,
+                          { backgroundColor: colors.bgInput },
+                          done && { backgroundColor: colors.accentGreen + '30' },
+                          d.isToday && { borderWidth: 1, borderColor: colors.accent + '40' },
                         ]}
                         onPress={() => handleToggle(habit.id, d.key)}
                       >
-                        {done && <Text style={styles.cellCheck}>✓</Text>}
+                        {done && <Text style={[styles.cellCheck, { color: colors.accentGreen }]}>✓</Text>}
                       </TouchableOpacity>
                     );
                   })}
@@ -183,17 +186,17 @@ export default function HabitTrackerScreen() {
 
         {/* Stats summary */}
         {habits.length > 0 && (
-          <View style={styles.statsSection}>
-            <Text style={styles.statsTitle}>Streaks</Text>
+          <View style={[styles.statsSection, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+            <Text style={[styles.statsTitle, { color: colors.text }]}>Streaks</Text>
             {habits.map(habit => {
               const streak = getStreak(habit);
               const totalDone = Object.values(habit.completions || {}).filter(Boolean).length;
               return (
                 <View key={habit.id} style={styles.statRow}>
                   <Text style={styles.statIcon}>{habit.icon}</Text>
-                  <Text style={styles.statName}>{habit.name}</Text>
-                  <View style={styles.statBadge}>
-                    <Text style={styles.statBadgeText}>
+                  <Text style={[styles.statName, { color: colors.text }]}>{habit.name}</Text>
+                  <View style={[styles.statBadge, { backgroundColor: colors.bgElevated }]}>
+                    <Text style={[styles.statBadgeText, { color: colors.textSecondary }]}>
                       {streak > 0 ? `🔥 ${streak}` : `${totalDone} total`}
                     </Text>
                   </View>
@@ -208,85 +211,78 @@ export default function HabitTrackerScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.bg },
+  safe: { flex: 1 },
   headerBar: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, position: 'relative' },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { color: COLORS.text, fontSize: SIZES.xxl, fontWeight: '700' },
-  subtitle: { color: COLORS.textMuted, fontSize: SIZES.md, marginTop: 2 },
+  title: { fontSize: SIZES.xxl, fontWeight: '700' },
+  subtitle: { fontSize: SIZES.md, marginTop: 2 },
   addBtn: { borderRadius: 20, overflow: 'hidden' },
   addGradient: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  addIcon: { color: COLORS.text, fontSize: 24, fontWeight: '300' },
+  addIcon: { fontSize: 24, fontWeight: '300' },
   addSection: {
     paddingHorizontal: 16, paddingBottom: 16,
   },
   addInputRow: { flexDirection: 'row', gap: 8 },
   addInput: {
-    flex: 1, backgroundColor: COLORS.bgInput, borderRadius: SIZES.radius,
-    padding: 12, color: COLORS.text, fontSize: SIZES.base,
+    flex: 1, borderRadius: SIZES.radius,
+    padding: 12, fontSize: SIZES.base,
   },
   submitBtn: {
-    backgroundColor: COLORS.accent, borderRadius: SIZES.radius,
+    borderRadius: SIZES.radius,
     paddingHorizontal: 20, justifyContent: 'center',
   },
-  submitText: { color: COLORS.text, fontSize: SIZES.md, fontWeight: '600' },
+  submitText: { fontSize: SIZES.md, fontWeight: '600' },
   iconScroll: { marginTop: 8 },
   iconOption: {
     width: 40, height: 40, borderRadius: SIZES.radius,
-    backgroundColor: COLORS.bgInput, alignItems: 'center', justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
     marginRight: 6,
   },
-  iconOptionActive: { borderWidth: 2, borderColor: COLORS.accent },
+  iconOptionActive: { borderWidth: 2 },
   iconOptionText: { fontSize: 20 },
   grid: { paddingHorizontal: 8 },
   gridHeader: {
     flexDirection: 'row', alignItems: 'flex-end', paddingBottom: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.border,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   habitLabel: {
     width: 100, flexDirection: 'row', alignItems: 'center', gap: 6, paddingRight: 4,
   },
   dayHeader: { flex: 1, alignItems: 'center', paddingVertical: 4 },
-  dayHeaderToday: {
-    backgroundColor: COLORS.accent + '20', borderRadius: 8,
-  },
-  dayLabel: { color: COLORS.textMuted, fontSize: SIZES.xs, fontWeight: '500' },
-  dayLabelToday: { color: COLORS.accent },
-  dayNum: { color: COLORS.textSecondary, fontSize: SIZES.sm, fontWeight: '600' },
-  dayNumToday: { color: COLORS.accent },
+  dayLabel: { fontSize: SIZES.xs, fontWeight: '500' },
+  dayNum: { fontSize: SIZES.sm, fontWeight: '600' },
   empty: { alignItems: 'center', paddingVertical: 40 },
   emptyIcon: { fontSize: 48, marginBottom: 8 },
-  emptyTitle: { color: COLORS.text, fontSize: SIZES.lg, fontWeight: '600' },
-  emptyText: { color: COLORS.textMuted, fontSize: SIZES.md, marginTop: 4 },
+  emptyTitle: { fontSize: SIZES.lg, fontWeight: '600' },
+  emptyText: { fontSize: SIZES.md, marginTop: 4 },
   habitRow: {
     flexDirection: 'row', alignItems: 'center', paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.border,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   habitIcon: { fontSize: 18 },
   habitInfo: { flex: 1 },
-  habitName: { color: COLORS.text, fontSize: SIZES.sm, fontWeight: '500' },
-  streakText: { color: COLORS.accentOrange, fontSize: SIZES.xs },
+  habitName: { fontSize: SIZES.sm, fontWeight: '500' },
+  streakText: { fontSize: SIZES.xs },
   cell: {
     flex: 1, aspectRatio: 1, maxHeight: 36,
-    borderRadius: 8, backgroundColor: COLORS.bgInput,
+    borderRadius: 8,
     alignItems: 'center', justifyContent: 'center', margin: 2,
   },
-  cellDone: { backgroundColor: COLORS.accentGreen + '30' },
-  cellToday: { borderWidth: 1, borderColor: COLORS.accent + '40' },
-  cellCheck: { color: COLORS.accentGreen, fontSize: SIZES.md, fontWeight: '700' },
+  cellCheck: { fontSize: SIZES.md, fontWeight: '700' },
   statsSection: {
-    margin: 16, padding: 16, backgroundColor: COLORS.bgCard,
-    borderRadius: SIZES.radiusLg, borderWidth: 1, borderColor: COLORS.border,
+    margin: 16, padding: 16,
+    borderRadius: SIZES.radiusLg, borderWidth: 1,
   },
   statsTitle: {
-    color: COLORS.text, fontSize: SIZES.lg, fontWeight: '700', marginBottom: 12,
+    fontSize: SIZES.lg, fontWeight: '700', marginBottom: 12,
   },
   statRow: {
     flexDirection: 'row', alignItems: 'center', paddingVertical: 6, gap: 8,
   },
   statIcon: { fontSize: 18 },
-  statName: { flex: 1, color: COLORS.text, fontSize: SIZES.md },
+  statName: { flex: 1, fontSize: SIZES.md },
   statBadge: {
-    backgroundColor: COLORS.bgElevated, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 3,
+    borderRadius: 12, paddingHorizontal: 10, paddingVertical: 3,
   },
-  statBadgeText: { color: COLORS.textSecondary, fontSize: SIZES.xs, fontWeight: '600' },
+  statBadgeText: { fontSize: SIZES.xs, fontWeight: '600' },
 });

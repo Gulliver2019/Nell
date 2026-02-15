@@ -2,13 +2,19 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, Animated, Dimensions,
 } from 'react-native';
-import { COLORS, SIZES, TASK_STATES, BULLET_TYPES, SIGNIFIERS } from '../utils/theme';
+import { SIZES, getBulletTypes, getTaskStates, getSignifiers } from '../utils/theme';
+import { useTheme } from '../context/ThemeContext';
 import * as Haptics from 'expo-haptics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SWIPE_THRESHOLD = 80;
 
 export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSchedule, onPress }) {
+  const { colors } = useTheme();
+  const BULLET_TYPES = getBulletTypes(colors);
+  const TASK_STATES = getTaskStates(colors);
+  const SIGNIFIERS = getSignifiers(colors);
+
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(entry.text);
   const pan = useRef(new Animated.Value(0)).current;
@@ -88,17 +94,17 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
       {/* Swipe background hints */}
       <View style={styles.swipeBg}>
         <View style={styles.swipeRight}>
-          <Text style={[styles.swipeIcon, { color: COLORS.accentOrange }]}>{'>'} Migrate</Text>
+          <Text style={[styles.swipeIcon, { color: colors.accentOrange }]}>{'>'} Migrate</Text>
         </View>
         <View style={styles.swipeLeft}>
-          <Text style={[styles.swipeIcon, { color: COLORS.accent }]}>Schedule {'<'}</Text>
+          <Text style={[styles.swipeIcon, { color: colors.accent }]}>Schedule {'<'}</Text>
         </View>
       </View>
 
       <Animated.View
         style={[
           styles.entry,
-          { transform: [{ translateX: pan }] },
+          { transform: [{ translateX: pan }], backgroundColor: colors.bg },
           isInactive && styles.entryInactive,
         ]}
         onTouchStart={handleTouchStart}
@@ -130,14 +136,14 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
         {/* Text */}
         {isEditing ? (
           <TextInput
-            style={styles.editInput}
+            style={[styles.editInput, { color: colors.text, borderBottomColor: colors.accent }]}
             value={editText}
             onChangeText={setEditText}
             onBlur={handleSubmitEdit}
             onSubmitEditing={handleSubmitEdit}
             autoFocus
-            placeholderTextColor={COLORS.textMuted}
-            selectionColor={COLORS.accent}
+            placeholderTextColor={colors.textMuted}
+            selectionColor={colors.accent}
           />
         ) : (
           <TouchableOpacity
@@ -148,8 +154,9 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
             <Text
               style={[
                 styles.text,
-                isCompleted && styles.textComplete,
-                isInactive && styles.textInactive,
+                { color: colors.text },
+                isCompleted && [styles.textComplete, { color: colors.textSecondary }],
+                isInactive && { color: colors.textMuted },
               ]}
               numberOfLines={3}
             >
@@ -191,7 +198,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     paddingVertical: 10,
     paddingHorizontal: 4,
-    backgroundColor: COLORS.bg,
   },
   entryInactive: {
     opacity: 0.5,
@@ -216,32 +222,24 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   bulletComplete: {
-    color: COLORS.accentGreen,
   },
   textArea: {
     flex: 1,
     paddingRight: 8,
   },
   text: {
-    color: COLORS.text,
     fontSize: SIZES.base,
     lineHeight: 22,
   },
   textComplete: {
     textDecorationLine: 'line-through',
-    color: COLORS.textSecondary,
-  },
-  textInactive: {
-    color: COLORS.textMuted,
   },
   editInput: {
     flex: 1,
-    color: COLORS.text,
     fontSize: SIZES.base,
     lineHeight: 22,
     padding: 0,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.accent,
     paddingBottom: 2,
   },
 });
