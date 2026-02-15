@@ -44,29 +44,33 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
   const handleTouchEnd = () => {
     const currentVal = pan._value;
     if (currentVal > SWIPE_THRESHOLD && entry.type === 'task' && entry.state === 'open') {
-      // Swipe right → Migrate (>)
+      // Swipe right → Migrate to next day
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       onMigrate?.(entry.id);
     } else if (currentVal < -SWIPE_THRESHOLD && entry.type === 'task' && entry.state === 'open') {
-      // Swipe left → Schedule (<)
+      // Swipe left → Move to monthly review
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       onSchedule?.(entry.id);
     }
     Animated.spring(pan, { toValue: 0, useNativeDriver: true }).start();
   };
 
-  const handleBulletPress = () => {
+  // Tap toggles done state
+  const handleTap = () => {
     if (entry.type === 'task') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      const newState = entry.state === 'open' ? 'complete' : 
-                       entry.state === 'complete' ? 'cancelled' : 'open';
+      const newState = entry.state === 'open' ? 'complete' : 'open';
       onUpdate?.(entry.id, { state: newState });
-      
+
       Animated.sequence([
         Animated.timing(scaleAnim, { toValue: 1.3, duration: 100, useNativeDriver: true }),
         Animated.timing(scaleAnim, { toValue: 1, duration: 100, useNativeDriver: true }),
       ]).start();
     }
+  };
+
+  const handleBulletPress = () => {
+    handleTap();
   };
 
   const handleSignifierToggle = () => {
@@ -97,7 +101,7 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
           <Text style={[styles.swipeIcon, { color: colors.accentOrange }]}>{'>'} Migrate</Text>
         </View>
         <View style={styles.swipeLeft}>
-          <Text style={[styles.swipeIcon, { color: colors.accent }]}>Schedule {'<'}</Text>
+          <Text style={[styles.swipeIcon, { color: colors.accent }]}>Monthly {'<'}</Text>
         </View>
       </View>
 
@@ -136,7 +140,7 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
         {/* Text */}
         {isEditing ? (
           <TextInput
-            style={[styles.editInput, { color: colors.text, borderBottomColor: colors.accent }]}
+            style={[styles.editInput, { color: colors.text, borderBottomColor: colors.accent, marginLeft: 8 }]}
             value={editText}
             onChangeText={setEditText}
             onBlur={handleSubmitEdit}
@@ -148,7 +152,9 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
         ) : (
           <TouchableOpacity
             style={styles.textArea}
-            onPress={() => onPress?.(entry)}
+            onPress={() => {
+              if (!isSwiping.current) handleTap();
+            }}
             onLongPress={() => setIsEditing(true)}
           >
             <Text
@@ -226,6 +232,7 @@ const styles = StyleSheet.create({
   textArea: {
     flex: 1,
     paddingRight: 8,
+    marginLeft: 8,
   },
   text: {
     fontSize: SIZES.base,

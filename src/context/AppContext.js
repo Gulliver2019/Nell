@@ -9,6 +9,7 @@ const initialState = {
   habits: [],
   reflections: [],
   futureLog: {},
+  projects: [],
   selectedDate: Storage.getDateKey(),
   loading: true,
   searchQuery: '',
@@ -30,6 +31,8 @@ function reducer(state, action) {
       return { ...state, reflections: action.payload };
     case 'SET_FUTURE_LOG':
       return { ...state, futureLog: action.payload };
+    case 'SET_PROJECTS':
+      return { ...state, projects: action.payload };
     case 'SET_SELECTED_DATE':
       return { ...state, selectedDate: action.payload };
     case 'SET_SEARCH':
@@ -44,14 +47,15 @@ export function AppProvider({ children }) {
 
   const loadAll = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
-    const [entries, collections, habits, reflections, futureLog] = await Promise.all([
+    const [entries, collections, habits, reflections, futureLog, projects] = await Promise.all([
       Storage.getAllEntries(),
       Storage.getCollections(),
       Storage.getHabits(),
       Storage.getReflections(),
       Storage.getFutureLog(),
+      Storage.getProjects(),
     ]);
-    dispatch({ type: 'LOAD_ALL', payload: { entries, collections, habits, reflections, futureLog } });
+    dispatch({ type: 'LOAD_ALL', payload: { entries, collections, habits, reflections, futureLog, projects } });
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
@@ -144,6 +148,43 @@ export function AppProvider({ children }) {
     dispatch({ type: 'SET_FUTURE_LOG', payload: futureLog });
   }, []);
 
+  // Project actions
+  const addProject = useCallback(async (project) => {
+    await Storage.addProject(project);
+    const projects = await Storage.getProjects();
+    dispatch({ type: 'SET_PROJECTS', payload: projects });
+  }, []);
+
+  const updateProject = useCallback(async (id, updates) => {
+    await Storage.updateProject(id, updates);
+    const projects = await Storage.getProjects();
+    dispatch({ type: 'SET_PROJECTS', payload: projects });
+  }, []);
+
+  const deleteProject = useCallback(async (id) => {
+    await Storage.deleteProject(id);
+    const projects = await Storage.getProjects();
+    dispatch({ type: 'SET_PROJECTS', payload: projects });
+  }, []);
+
+  const addProjectTask = useCallback(async (projectId, task) => {
+    await Storage.addProjectTask(projectId, task);
+    const projects = await Storage.getProjects();
+    dispatch({ type: 'SET_PROJECTS', payload: projects });
+  }, []);
+
+  const moveProjectTask = useCallback(async (projectId, taskId, toColumn) => {
+    await Storage.moveProjectTask(projectId, taskId, toColumn);
+    const projects = await Storage.getProjects();
+    dispatch({ type: 'SET_PROJECTS', payload: projects });
+  }, []);
+
+  const deleteProjectTask = useCallback(async (projectId, taskId) => {
+    await Storage.deleteProjectTask(projectId, taskId);
+    const projects = await Storage.getProjects();
+    dispatch({ type: 'SET_PROJECTS', payload: projects });
+  }, []);
+
   const setSelectedDate = useCallback((date) => {
     dispatch({ type: 'SET_SELECTED_DATE', payload: date });
   }, []);
@@ -168,6 +209,12 @@ export function AppProvider({ children }) {
     saveReflection,
     addFutureLogEntry,
     removeFutureLogEntry,
+    addProject,
+    updateProject,
+    deleteProject,
+    addProjectTask,
+    moveProjectTask,
+    deleteProjectTask,
     setSelectedDate,
     setSearchQuery,
   };

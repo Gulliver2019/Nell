@@ -7,6 +7,7 @@ const STORAGE_KEYS = {
   REFLECTIONS: 'crushedit_reflections',
   SETTINGS: 'crushedit_settings',
   FUTURE_LOG: 'crushedit_future_log',
+  PROJECTS: 'crushedit_projects',
 };
 
 // Generate unique ID
@@ -333,4 +334,92 @@ export const importAllData = async (data) => {
   if (data.habits) await saveHabits(data.habits);
   if (data.reflections) await AsyncStorage.setItem(STORAGE_KEYS.REFLECTIONS, JSON.stringify(data.reflections));
   if (data.futureLog) await AsyncStorage.setItem(STORAGE_KEYS.FUTURE_LOG, JSON.stringify(data.futureLog));
+};
+
+// Projects CRUD
+export const getProjects = async () => {
+  try {
+    const data = await AsyncStorage.getItem(STORAGE_KEYS.PROJECTS);
+    return data ? JSON.parse(data) : [];
+  } catch (e) {
+    return [];
+  }
+};
+
+export const saveProjects = async (projects) => {
+  await AsyncStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects));
+};
+
+export const addProject = async (project) => {
+  const projects = await getProjects();
+  const newProject = {
+    id: generateId(),
+    createdAt: new Date().toISOString(),
+    title: '',
+    emoji: '🎯',
+    color: '#6C5CE7',
+    startDate: getDateKey(),
+    endDate: '',
+    tasks: [], // { id, text, column: 'todo'|'progress'|'done', createdAt, order }
+    ...project,
+  };
+  projects.push(newProject);
+  await saveProjects(projects);
+  return newProject;
+};
+
+export const updateProject = async (id, updates) => {
+  const projects = await getProjects();
+  const idx = projects.findIndex(p => p.id === id);
+  if (idx !== -1) {
+    projects[idx] = { ...projects[idx], ...updates, updatedAt: new Date().toISOString() };
+    await saveProjects(projects);
+    return projects[idx];
+  }
+  return null;
+};
+
+export const deleteProject = async (id) => {
+  const projects = await getProjects();
+  await saveProjects(projects.filter(p => p.id !== id));
+};
+
+export const addProjectTask = async (projectId, task) => {
+  const projects = await getProjects();
+  const idx = projects.findIndex(p => p.id === projectId);
+  if (idx !== -1) {
+    const newTask = {
+      id: generateId(),
+      text: '',
+      column: 'todo',
+      createdAt: new Date().toISOString(),
+      ...task,
+    };
+    projects[idx].tasks.push(newTask);
+    await saveProjects(projects);
+    return newTask;
+  }
+  return null;
+};
+
+export const moveProjectTask = async (projectId, taskId, toColumn) => {
+  const projects = await getProjects();
+  const idx = projects.findIndex(p => p.id === projectId);
+  if (idx !== -1) {
+    const taskIdx = projects[idx].tasks.findIndex(t => t.id === taskId);
+    if (taskIdx !== -1) {
+      projects[idx].tasks[taskIdx].column = toColumn;
+      projects[idx].tasks[taskIdx].movedAt = new Date().toISOString();
+      await saveProjects(projects);
+    }
+  }
+};
+
+export const deleteProjectTask = async (projectId, taskId) => {
+  const projects = await getProjects();
+  const idx = projects.findIndex(p => p.id === projectId);
+  if (idx !== -1) {
+    projects[idx].tasks = projects[idx].tasks.filter(t => t.id !== taskId);
+    await saveProjects(projects);
+  }
 };

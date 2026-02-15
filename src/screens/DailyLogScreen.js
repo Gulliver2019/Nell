@@ -10,6 +10,7 @@ import { useApp } from '../context/AppContext';
 import { getDateKey, formatDate } from '../utils/storage';
 import EntryItem from '../components/EntryItem';
 import QuickAdd from '../components/QuickAdd';
+import * as Haptics from 'expo-haptics';
 
 export default function DailyLogScreen() {
   const { colors } = useTheme();
@@ -47,37 +48,39 @@ export default function DailyLogScreen() {
   }, [addEntry, selectedDate]);
 
   const handleSchedule = useCallback((id) => {
-    // Schedule to tomorrow by default
-    const tomorrow = new Date(selectedDate + 'T00:00:00');
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    // Swipe left → move to monthly intentions for month-end review
+    const entry = entries.find(e => e.id === id);
+    const monthKey = selectedDate.substring(0, 7); // e.g. "2026-02"
     Alert.alert(
-      'Schedule Entry',
-      'Move this task to tomorrow?',
+      'Monthly Review',
+      'Move this task to your monthly intentions list for review?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Tomorrow', onPress: () => scheduleEntry(id, getDateKey(tomorrow)) },
         {
-          text: 'Next Week',
-          onPress: () => {
-            const nextWeek = new Date(selectedDate + 'T00:00:00');
-            nextWeek.setDate(nextWeek.getDate() + 7);
-            scheduleEntry(id, getDateKey(nextWeek));
+          text: 'Move to Monthly',
+          onPress: async () => {
+            const { addFutureLogEntry } = await import('../utils/storage').then(m => m);
+            // Add to future log for this month as an intention
+            await addFutureLogEntry(monthKey, {
+              id: entry.id + '_monthly',
+              text: entry.text,
+              type: 'task',
+            });
+            // Mark original as scheduled
+            updateEntry(id, { state: 'scheduled' });
           },
         },
       ]
     );
-  }, [scheduleEntry, selectedDate]);
+  }, [entries, selectedDate, updateEntry]);
 
   const handleMigrate = useCallback((id) => {
-    Alert.alert(
-      'Migrate Entry',
-      'Move this task to today?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Migrate', onPress: () => migrateEntry(id) },
-      ]
-    );
-  }, [migrateEntry]);
+    // Swipe right → migrate to next day
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const tomorrow = new Date(selectedDate + 'T00:00:00');
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    scheduleEntry(id, getDateKey(tomorrow));
+  }, [scheduleEntry, selectedDate]);
 
   const isToday = selectedDate === today;
 
