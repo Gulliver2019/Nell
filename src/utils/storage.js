@@ -1,0 +1,336 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const STORAGE_KEYS = {
+  ENTRIES: 'crushedit_entries',
+  COLLECTIONS: 'crushedit_collections',
+  HABITS: 'crushedit_habits',
+  REFLECTIONS: 'crushedit_reflections',
+  SETTINGS: 'crushedit_settings',
+  FUTURE_LOG: 'crushedit_future_log',
+};
+
+// Generate unique ID
+export const generateId = () => {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+};
+
+// Date helpers
+export const getDateKey = (date = new Date()) => {
+  return date.toISOString().split('T')[0];
+};
+
+export const getMonthKey = (date = new Date()) => {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+};
+
+export const formatDate = (dateStr) => {
+  const d = new Date(dateStr + 'T00:00:00');
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]}`;
+};
+
+export const formatDateShort = (dateStr) => {
+  const d = new Date(dateStr + 'T00:00:00');
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${d.getDate()} ${months[d.getMonth()]}`;
+};
+
+export const getMonthName = (monthKey) => {
+  const [year, month] = monthKey.split('-');
+  const months = ['January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'];
+  return `${months[parseInt(month) - 1]} ${year}`;
+};
+
+// Entry CRUD
+export const getAllEntries = async () => {
+  try {
+    const data = await AsyncStorage.getItem(STORAGE_KEYS.ENTRIES);
+    return data ? JSON.parse(data) : [];
+  } catch (e) {
+    console.error('Failed to load entries:', e);
+    return [];
+  }
+};
+
+export const saveAllEntries = async (entries) => {
+  try {
+    await AsyncStorage.setItem(STORAGE_KEYS.ENTRIES, JSON.stringify(entries));
+  } catch (e) {
+    console.error('Failed to save entries:', e);
+  }
+};
+
+export const addEntry = async (entry) => {
+  const entries = await getAllEntries();
+  const newEntry = {
+    id: generateId(),
+    createdAt: new Date().toISOString(),
+    date: getDateKey(),
+    type: 'task',       // task, event, note
+    state: 'open',      // open, complete, migrated, scheduled, cancelled
+    signifier: null,     // priority, inspiration, explore
+    text: '',
+    collection: null,
+    ...entry,
+  };
+  entries.push(newEntry);
+  await saveAllEntries(entries);
+  return newEntry;
+};
+
+export const updateEntry = async (id, updates) => {
+  const entries = await getAllEntries();
+  const idx = entries.findIndex(e => e.id === id);
+  if (idx !== -1) {
+    entries[idx] = { ...entries[idx], ...updates, updatedAt: new Date().toISOString() };
+    await saveAllEntries(entries);
+    return entries[idx];
+  }
+  return null;
+};
+
+export const deleteEntry = async (id) => {
+  const entries = await getAllEntries();
+  const filtered = entries.filter(e => e.id !== id);
+  await saveAllEntries(filtered);
+};
+
+export const getEntriesByDate = async (dateKey) => {
+  const entries = await getAllEntries();
+  return entries.filter(e => e.date === dateKey).sort((a, b) => 
+    new Date(a.createdAt) - new Date(b.createdAt)
+  );
+};
+
+export const getEntriesByMonth = async (monthKey) => {
+  const entries = await getAllEntries();
+  return entries.filter(e => e.date && e.date.startsWith(monthKey));
+};
+
+export const getEntriesByCollection = async (collectionId) => {
+  const entries = await getAllEntries();
+  return entries.filter(e => e.collection === collectionId);
+};
+
+export const getOpenTasks = async () => {
+  const entries = await getAllEntries();
+  return entries.filter(e => e.type === 'task' && e.state === 'open');
+};
+
+// Migrate task to today
+export const migrateEntry = async (id) => {
+  const today = getDateKey();
+  const entries = await getAllEntries();
+  const idx = entries.findIndex(e => e.id === id);
+  if (idx !== -1) {
+    // Mark original as migrated
+    entries[idx] = { ...entries[idx], state: 'migrated', updatedAt: new Date().toISOString() };
+    // Create new entry for today
+    const newEntry = {
+      ...entries[idx],
+      id: generateId(),
+      date: today,
+      state: 'open',
+      createdAt: new Date().toISOString(),
+      migratedFrom: id,
+    };
+    entries.push(newEntry);
+    await saveAllEntries(entries);
+    return newEntry;
+  }
+  return null;
+};
+
+// Schedule entry to future date
+export const scheduleEntry = async (id, futureDate) => {
+  const entries = await getAllEntries();
+  const idx = entries.findIndex(e => e.id === id);
+  if (idx !== -1) {
+    entries[idx] = { ...entries[idx], state: 'scheduled', updatedAt: new Date().toISOString() };
+    const newEntry = {
+      ...entries[idx],
+      id: generateId(),
+      date: futureDate,
+      state: 'open',
+      createdAt: new Date().toISOString(),
+      scheduledFrom: id,
+    };
+    entries.push(newEntry);
+    await saveAllEntries(entries);
+    return newEntry;
+  }
+  return null;
+};
+
+// Collections CRUD
+export const getCollections = async () => {
+  try {
+    const data = await AsyncStorage.getItem(STORAGE_KEYS.COLLECTIONS);
+    return data ? JSON.parse(data) : [];
+  } catch (e) {
+    return [];
+  }
+};
+
+export const saveCollections = async (collections) => {
+  await AsyncStorage.setItem(STORAGE_KEYS.COLLECTIONS, JSON.stringify(collections));
+};
+
+export const addCollection = async (collection) => {
+  const collections = await getCollections();
+  const newCol = {
+    id: generateId(),
+    createdAt: new Date().toISOString(),
+    title: '',
+    icon: '📋',
+    color: '#6C5CE7',
+    ...collection,
+  };
+  collections.push(newCol);
+  await saveCollections(collections);
+  return newCol;
+};
+
+export const deleteCollection = async (id) => {
+  const collections = await getCollections();
+  await saveCollections(collections.filter(c => c.id !== id));
+  // Also remove entries in this collection
+  const entries = await getAllEntries();
+  await saveAllEntries(entries.filter(e => e.collection !== id));
+};
+
+// Habits
+export const getHabits = async () => {
+  try {
+    const data = await AsyncStorage.getItem(STORAGE_KEYS.HABITS);
+    return data ? JSON.parse(data) : [];
+  } catch (e) {
+    return [];
+  }
+};
+
+export const saveHabits = async (habits) => {
+  await AsyncStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(habits));
+};
+
+export const addHabit = async (habit) => {
+  const habits = await getHabits();
+  const newHabit = {
+    id: generateId(),
+    createdAt: new Date().toISOString(),
+    name: '',
+    icon: '✨',
+    color: '#6C5CE7',
+    completions: {}, // { '2024-01-15': true }
+    ...habit,
+  };
+  habits.push(newHabit);
+  await saveHabits(habits);
+  return newHabit;
+};
+
+export const toggleHabitDay = async (habitId, dateKey) => {
+  const habits = await getHabits();
+  const idx = habits.findIndex(h => h.id === habitId);
+  if (idx !== -1) {
+    if (!habits[idx].completions) habits[idx].completions = {};
+    habits[idx].completions[dateKey] = !habits[idx].completions[dateKey];
+    await saveHabits(habits);
+    return habits[idx];
+  }
+  return null;
+};
+
+export const deleteHabit = async (id) => {
+  const habits = await getHabits();
+  await saveHabits(habits.filter(h => h.id !== id));
+};
+
+// Reflections
+export const getReflections = async () => {
+  try {
+    const data = await AsyncStorage.getItem(STORAGE_KEYS.REFLECTIONS);
+    return data ? JSON.parse(data) : [];
+  } catch (e) {
+    return [];
+  }
+};
+
+export const saveReflection = async (reflection) => {
+  const reflections = await getReflections();
+  const newRef = {
+    id: generateId(),
+    createdAt: new Date().toISOString(),
+    date: getDateKey(),
+    type: 'daily', // daily, weekly, monthly
+    gratitude: '',
+    wins: '',
+    challenges: '',
+    tomorrow: '',
+    mood: 3, // 1-5
+    ...reflection,
+  };
+  reflections.push(newRef);
+  await AsyncStorage.setItem(STORAGE_KEYS.REFLECTIONS, JSON.stringify(reflections));
+  return newRef;
+};
+
+// Future Log
+export const getFutureLog = async () => {
+  try {
+    const data = await AsyncStorage.getItem(STORAGE_KEYS.FUTURE_LOG);
+    return data ? JSON.parse(data) : {};
+  } catch (e) {
+    return {};
+  }
+};
+
+export const addFutureLogEntry = async (monthKey, entry) => {
+  const futureLog = await getFutureLog();
+  if (!futureLog[monthKey]) futureLog[monthKey] = [];
+  const newEntry = {
+    id: generateId(),
+    text: '',
+    type: 'task',
+    ...entry,
+  };
+  futureLog[monthKey].push(newEntry);
+  await AsyncStorage.setItem(STORAGE_KEYS.FUTURE_LOG, JSON.stringify(futureLog));
+  return newEntry;
+};
+
+export const removeFutureLogEntry = async (monthKey, entryId) => {
+  const futureLog = await getFutureLog();
+  if (futureLog[monthKey]) {
+    futureLog[monthKey] = futureLog[monthKey].filter(e => e.id !== entryId);
+    await AsyncStorage.setItem(STORAGE_KEYS.FUTURE_LOG, JSON.stringify(futureLog));
+  }
+};
+
+// Search across all entries
+export const searchEntries = async (query) => {
+  const entries = await getAllEntries();
+  const q = query.toLowerCase();
+  return entries.filter(e => e.text && e.text.toLowerCase().includes(q));
+};
+
+// Export all data (for backup)
+export const exportAllData = async () => {
+  const entries = await getAllEntries();
+  const collections = await getCollections();
+  const habits = await getHabits();
+  const reflections = await getReflections();
+  const futureLog = await getFutureLog();
+  return { entries, collections, habits, reflections, futureLog, exportedAt: new Date().toISOString() };
+};
+
+// Import all data (for restore)
+export const importAllData = async (data) => {
+  if (data.entries) await saveAllEntries(data.entries);
+  if (data.collections) await saveCollections(data.collections);
+  if (data.habits) await saveHabits(data.habits);
+  if (data.reflections) await AsyncStorage.setItem(STORAGE_KEYS.REFLECTIONS, JSON.stringify(data.reflections));
+  if (data.futureLog) await AsyncStorage.setItem(STORAGE_KEYS.FUTURE_LOG, JSON.stringify(data.futureLog));
+};
