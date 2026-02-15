@@ -77,16 +77,24 @@ export default function MoreScreen({ navigation }) {
             style={StyleSheet.absoluteFillObject}
           />
           <View style={styles.headerRow}>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={[styles.title, { color: colors.text }]}>Goal Digger</Text>
               <Text style={[styles.subtitle, { color: colors.textMuted }]}>Your bullet journal, digitised</Text>
             </View>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('Help')}
-              style={[styles.helpBtn, { backgroundColor: colors.accent + '20', borderColor: colors.accent }]}
-            >
-              <Text style={[styles.helpBtnText, { color: colors.accent }]}>?</Text>
-            </TouchableOpacity>
+            <View style={styles.headerBtns}>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('ThemePicker')}
+                style={[styles.helpBtn, { backgroundColor: colors.accent + '20', borderColor: colors.accent }]}
+              >
+                <Text style={[styles.helpBtnText, { color: colors.accent }]}>🎨</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Help')}
+                style={[styles.helpBtn, { backgroundColor: colors.accent + '20', borderColor: colors.accent }]}
+              >
+                <Text style={[styles.helpBtnText, { color: colors.accent }]}>?</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -236,6 +244,7 @@ const styles = StyleSheet.create({
   content: { paddingBottom: 20 },
   headerBar: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, position: 'relative' },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  headerBtns: { flexDirection: 'row', gap: 8, marginTop: 4 },
   title: {
     fontSize: SIZES.xxxl, fontWeight: '800',
     letterSpacing: -1,

@@ -78,7 +78,7 @@ function ThemePreviewCard({ themeData, isSelected, onPress }) {
   );
 }
 
-export default function ThemePickerScreen({ isFirstLaunch = false, onDone }) {
+export default function ThemePickerScreen({ isFirstLaunch = false, onDone, navigation }) {
   const { themes, themeId, colors, selectTheme, confirmThemeChoice } = useTheme();
 
   const handleSelect = (id) => {
@@ -89,7 +89,11 @@ export default function ThemePickerScreen({ isFirstLaunch = false, onDone }) {
   const handleConfirm = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     confirmThemeChoice();
-    onDone?.();
+    if (onDone) {
+      onDone();
+    } else if (navigation?.goBack) {
+      navigation.goBack();
+    }
   };
 
   const themeList = Object.values(themes);
