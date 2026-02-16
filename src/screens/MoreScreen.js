@@ -8,6 +8,7 @@ import { SIZES, getTaskStates } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { getDateKey, formatDateShort } from '../utils/storage';
+import GoalDiggerLogo from '../components/GoalDiggerLogo';
 import * as Haptics from 'expo-haptics';
 
 export default function MoreScreen({ navigation }) {
@@ -78,7 +79,7 @@ export default function MoreScreen({ navigation }) {
           />
           <View style={styles.headerRow}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.title, { color: colors.text }]}>Goal Digger</Text>
+              <GoalDiggerLogo color={colors.accent} height={30} style={{ marginBottom: 4 }} />
               <Text style={[styles.subtitle, { color: colors.textMuted }]}>Your bullet journal, digitised</Text>
             </View>
             <View style={styles.headerBtns}>
@@ -219,11 +220,17 @@ export default function MoreScreen({ navigation }) {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>👆 Gestures</Text>
           <View style={styles.gestureList}>
             {[
-              { gesture: 'Tap bullet', action: 'Cycle: open → done → cancelled' },
+              { gesture: 'Tap bullet', action: 'Cycle: open → done → migrate' },
+              { gesture: 'Long press bullet', action: 'Delete entry' },
               { gesture: 'Long press text', action: 'Edit entry' },
               { gesture: 'Tap signifier area', action: 'Cycle: none → ! → ★ → ?' },
+              { gesture: 'Tap 🍅 indicator', action: 'Cycle pomodoro count (0-8)' },
               { gesture: 'Swipe right →', action: 'Migrate to today' },
-              { gesture: 'Swipe left ←', action: 'Schedule forward' },
+              { gesture: 'Swipe left ←', action: 'Schedule to date' },
+              { gesture: 'Long press drag handle', action: 'Reorder entries' },
+              { gesture: '🕐 toggle (header)', action: 'Switch list ↔ time blocks' },
+              { gesture: 'Tap empty time slot', action: 'Assign entry to slot' },
+              { gesture: 'Long press time block', action: 'Unassign from slot' },
             ].map(g => (
               <View key={g.gesture} style={[styles.gestureRow, { borderBottomColor: colors.border }]}>
                 <Text style={[styles.gestureAction, { color: colors.accent }]}>{g.gesture}</Text>

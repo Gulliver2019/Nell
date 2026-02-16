@@ -60,19 +60,31 @@ export function AppProvider({ children }) {
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
-  // Auto-migrate: on load, move any "migrated" entries to today
+  // Auto-migrate: on load, move any open or migrated entries from past days to today
   useEffect(() => {
     if (state.loading) return;
     const today = Storage.getDateKey();
-    const migrated = state.entries.filter(
-      e => e.state === 'migrated' && e.date !== today && !e._migratedToToday
+    const toMigrate = state.entries.filter(
+      e => e.type === 'task'
+        && (e.state === 'open' || (e.state === 'migrated' && !e._migratedToToday))
+        && e.date && e.date < today
+        && !e.collection
     );
-    if (migrated.length === 0) return;
+    if (toMigrate.length === 0) return;
 
     (async () => {
-      for (const entry of migrated) {
-        // Mark original so we don't re-migrate it
-        await Storage.updateEntry(entry.id, { _migratedToToday: true });
+      const allEntries = await Storage.getAllEntries();
+      for (const entry of toMigrate) {
+        // Skip if a copy already exists for today
+        const alreadyCopied = allEntries.some(
+          e => e.migratedFrom === entry.id && e.date === today
+        );
+        if (alreadyCopied) {
+          await Storage.updateEntry(entry.id, { _migratedToToday: true, state: 'migrated' });
+          continue;
+        }
+        // Mark original as migrated so it stays on its original day with ">"
+        await Storage.updateEntry(entry.id, { _migratedToToday: true, state: 'migrated' });
         // Create fresh copy for today
         await Storage.addEntry({
           text: entry.text,
@@ -104,6 +116,12 @@ export function AppProvider({ children }) {
 
   const deleteEntry = useCallback(async (id) => {
     await Storage.deleteEntry(id);
+    const entries = await Storage.getAllEntries();
+    dispatch({ type: 'SET_ENTRIES', payload: entries });
+  }, []);
+
+  const reorderEntries = useCallback(async (orderedIds) => {
+    await Storage.reorderEntries(orderedIds);
     const entries = await Storage.getAllEntries();
     dispatch({ type: 'SET_ENTRIES', payload: entries });
   }, []);
@@ -227,6 +245,7 @@ export function AppProvider({ children }) {
     addEntry,
     updateEntry,
     deleteEntry,
+    reorderEntries,
     migrateEntry,
     scheduleEntry,
     addCollection,

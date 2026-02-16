@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet, Alert, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import { SIZES, SHADOWS } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
@@ -17,7 +18,7 @@ export default function CollectionsScreen() {
   const { colors } = useTheme();
   const {
     collections, entries, addCollection, deleteCollection,
-    addEntry, updateEntry, deleteEntry, migrateEntry,
+    addEntry, updateEntry, deleteEntry, migrateEntry, reorderEntries,
   } = useApp();
 
   const [selectedCollection, setSelectedCollection] = useState(null);
@@ -30,7 +31,10 @@ export default function CollectionsScreen() {
     if (!selectedCollection) return [];
     return entries
       .filter(e => e.collection === selectedCollection.id)
-      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      .sort((a, b) => {
+        if (a.sortOrder != null && b.sortOrder != null) return a.sortOrder - b.sortOrder;
+        return new Date(a.createdAt) - new Date(b.createdAt);
+      });
   }, [entries, selectedCollection]);
 
   const handleCreateCollection = async () => {
@@ -58,6 +62,23 @@ export default function CollectionsScreen() {
     await addEntry({ ...data, collection: selectedCollection.id });
   };
 
+  const handleDragEnd = useCallback(({ data }) => {
+    reorderEntries(data.map(e => e.id));
+  }, [reorderEntries]);
+
+  const renderCollectionEntry = useCallback(({ item, drag, isActive }) => (
+    <ScaleDecorator>
+      <EntryItem
+        entry={item}
+        onUpdate={updateEntry}
+        onDelete={deleteEntry}
+        onMigrate={() => migrateEntry(item.id)}
+        drag={drag}
+        isActive={isActive}
+      />
+    </ScaleDecorator>
+  ), [updateEntry, deleteEntry, migrateEntry]);
+
   // Collection detail view
   if (selectedCollection) {
     return (
@@ -75,17 +96,11 @@ export default function CollectionsScreen() {
           </TouchableOpacity>
         </View>
 
-        <FlatList
+        <DraggableFlatList
           data={collectionEntries}
-          renderItem={({ item }) => (
-            <EntryItem
-              entry={item}
-              onUpdate={updateEntry}
-              onDelete={deleteEntry}
-              onMigrate={() => migrateEntry(item.id)}
-            />
-          )}
+          renderItem={renderCollectionEntry}
           keyExtractor={item => item.id}
+          onDragEnd={handleDragEnd}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={

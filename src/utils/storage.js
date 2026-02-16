@@ -74,6 +74,8 @@ export const addEntry = async (entry) => {
     signifier: null,     // priority, inspiration, explore
     text: '',
     collection: null,
+    pomodoros: 0,        // estimated pomodoro count (each = 25 min)
+    timeBlock: null,     // start time string e.g. "09:00" for time blocking
     ...entry,
   };
   entries.push(newEntry);
@@ -126,8 +128,8 @@ export const migrateEntry = async (id) => {
   const entries = await getAllEntries();
   const idx = entries.findIndex(e => e.id === id);
   if (idx !== -1) {
-    // Mark original as migrated
-    entries[idx] = { ...entries[idx], state: 'migrated', updatedAt: new Date().toISOString() };
+    // Mark original as migrated (and flag so auto-migrate skips it)
+    entries[idx] = { ...entries[idx], state: 'migrated', _migratedToToday: true, updatedAt: new Date().toISOString() };
     // Create new entry for today
     const newEntry = {
       ...entries[idx],
@@ -308,6 +310,16 @@ export const removeFutureLogEntry = async (monthKey, entryId) => {
     futureLog[monthKey] = futureLog[monthKey].filter(e => e.id !== entryId);
     await AsyncStorage.setItem(STORAGE_KEYS.FUTURE_LOG, JSON.stringify(futureLog));
   }
+};
+
+// Reorder entries by providing an ordered list of IDs
+export const reorderEntries = async (orderedIds) => {
+  const entries = await getAllEntries();
+  orderedIds.forEach((id, index) => {
+    const entry = entries.find(e => e.id === id);
+    if (entry) entry.sortOrder = index;
+  });
+  await saveAllEntries(entries);
 };
 
 // Search across all entries

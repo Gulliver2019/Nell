@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet, Animated, Dimensions,
+  View, Text, TextInput, TouchableOpacity, StyleSheet, Animated, Dimensions, Alert,
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { SIZES, getBulletTypes, getTaskStates, getSignifiers } from '../utils/theme';
@@ -9,7 +9,7 @@ import * as Haptics from 'expo-haptics';
 
 const SWIPE_THRESHOLD = 80;
 
-export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSchedule, onPress }) {
+export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSchedule, onPress, drag, isActive }) {
   const { colors } = useTheme();
   const BULLET_TYPES = getBulletTypes(colors);
   const TASK_STATES = getTaskStates(colors);
@@ -39,7 +39,7 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
         <Animated.Text
           style={[styles.swipeActionText, { color: colors.accent, transform: [{ translateX: trans }] }]}
         >
-          {'<'} Monthly
+          {'<'} Schedule
         </Animated.Text>
       </View>
     );
@@ -74,11 +74,11 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
     swipeableRef.current?.close();
   };
 
-  // Tap cycles: open → complete → cancelled → open
+  // Tap cycles: open → complete → migrated → cancelled → open
   const handleTap = () => {
     if (entry.type === 'task') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      const cycle = { open: 'complete', complete: 'open', cancelled: 'open', migrated: 'open' };
+      const cycle = { open: 'complete', complete: 'migrated', migrated: 'open', cancelled: 'open' };
       const newState = cycle[entry.state] || 'open';
       onUpdate?.(entry.id, { state: newState });
 
@@ -89,12 +89,26 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
     }
   };
 
+  const handleDelete = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Alert.alert('Delete Entry', 'Are you sure you want to delete this entry?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => onDelete?.(entry.id) },
+    ]);
+  };
+
   const handleSignifierToggle = () => {
     Haptics.selectionAsync();
     const signifiers = [null, 'priority', 'inspiration', 'explore'];
     const currentIdx = signifiers.indexOf(entry.signifier);
     const next = signifiers[(currentIdx + 1) % signifiers.length];
     onUpdate?.(entry.id, { signifier: next });
+  };
+
+  const handlePomodoroTap = () => {
+    Haptics.selectionAsync();
+    const next = ((entry.pomodoros || 0) + 1) % 9; // cycle 0-8
+    onUpdate?.(entry.id, { pomodoros: next });
   };
 
   const handleSubmitEdit = () => {
@@ -115,8 +129,15 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
         styles.entry,
         { backgroundColor: colors.bg },
         isInactive && styles.entryInactive,
+        isActive && { backgroundColor: colors.bgElevated, opacity: 0.9 },
       ]}
     >
+      {/* Drag handle */}
+      {drag && (
+        <TouchableOpacity onLongPress={drag} delayLongPress={150} style={styles.dragHandle}>
+          <Text style={[styles.dragIcon, { color: colors.textMuted }]}>⠿</Text>
+        </TouchableOpacity>
+      )}
       {/* Signifier */}
       <TouchableOpacity onPress={handleSignifierToggle} style={styles.signifierArea}>
         {signifierConfig && (
@@ -127,7 +148,7 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
       </TouchableOpacity>
 
       {/* Bullet */}
-      <TouchableOpacity onPress={handleTap} style={styles.bulletArea}>
+      <TouchableOpacity onPress={handleTap} onLongPress={handleDelete} style={styles.bulletArea}>
         <Animated.Text
           style={[
             styles.bullet,
@@ -157,17 +178,26 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
           onPress={handleTap}
           onLongPress={() => setIsEditing(true)}
         >
-          <Text
-            style={[
-              styles.text,
-              { color: colors.text },
-              isCompleted && [styles.textComplete, { color: colors.textSecondary }],
-              isInactive && { color: colors.textMuted },
-            ]}
-            numberOfLines={3}
-          >
-            {entry.text}
-          </Text>
+          <View style={styles.textRow}>
+            <Text
+              style={[
+                styles.text,
+                { color: colors.text },
+                isCompleted && [styles.textComplete, { color: colors.textSecondary }],
+                isInactive && { color: colors.textMuted },
+              ]}
+              numberOfLines={3}
+            >
+              {entry.text}
+            </Text>
+            {(entry.pomodoros || 0) > 0 && (
+              <TouchableOpacity onPress={handlePomodoroTap} hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}>
+                <Text style={[styles.pomoIndicator, { color: colors.accentGold }]}>
+                  🍅{entry.pomodoros > 1 ? entry.pomodoros : ''}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </TouchableOpacity>
       )}
     </View>
@@ -199,6 +229,16 @@ const styles = StyleSheet.create({
   container: {
     position: 'relative',
     marginBottom: 2,
+  },
+  dragHandle: {
+    width: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 1,
+  },
+  dragIcon: {
+    fontSize: SIZES.md,
+    fontWeight: '700',
   },
   swipeAction: {
     justifyContent: 'center',
@@ -250,9 +290,19 @@ const styles = StyleSheet.create({
     paddingRight: 8,
     marginLeft: 8,
   },
+  textRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
   text: {
     fontSize: SIZES.base,
     lineHeight: 22,
+    flex: 1,
+  },
+  pomoIndicator: {
+    fontSize: SIZES.xs,
+    marginLeft: 6,
   },
   textComplete: {
     textDecorationLine: 'line-through',

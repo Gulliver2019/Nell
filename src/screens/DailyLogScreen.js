@@ -1,26 +1,35 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useRef } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet, StatusBar, Alert,
+  View, Text, TouchableOpacity, StyleSheet, StatusBar, Alert, Modal,
   KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Ionicons } from '@expo/vector-icons';
 import { SIZES, SHADOWS } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { getDateKey, formatDate } from '../utils/storage';
 import EntryItem from '../components/EntryItem';
 import QuickAdd from '../components/QuickAdd';
+import TimeBlockView from '../components/TimeBlockView';
 import * as Haptics from 'expo-haptics';
 
 export default function DailyLogScreen() {
   const { colors } = useTheme();
   const {
     entries, selectedDate, setSelectedDate, addEntry, updateEntry,
-    deleteEntry, migrateEntry, scheduleEntry,
+    deleteEntry, migrateEntry, scheduleEntry, reorderEntries,
   } = useApp();
 
   const today = getDateKey();
+  const [scheduleEntryId, setScheduleEntryId] = useState(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'timeblock'
+  const listRef = useRef(null);
+  const shouldScrollRef = useRef(false);
 
   // Navigate dates
   const goDay = (offset) => {
@@ -32,7 +41,10 @@ export default function DailyLogScreen() {
   const dayEntries = useMemo(() => {
     return entries
       .filter(e => e.date === selectedDate && !e.collection)
-      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      .sort((a, b) => {
+        if (a.sortOrder != null && b.sortOrder != null) return a.sortOrder - b.sortOrder;
+        return new Date(a.createdAt) - new Date(b.createdAt);
+      });
   }, [entries, selectedDate]);
 
   const stats = useMemo(() => {
@@ -45,35 +57,31 @@ export default function DailyLogScreen() {
   }, [dayEntries]);
 
   const handleAdd = useCallback(async (data) => {
-    await addEntry({ ...data, date: selectedDate });
+    const result = await addEntry({ ...data, date: selectedDate });
+    shouldScrollRef.current = true;
+    return result;
   }, [addEntry, selectedDate]);
 
   const handleSchedule = useCallback((id) => {
-    // Swipe left → move to monthly intentions for month-end review
-    const entry = entries.find(e => e.id === id);
-    const monthKey = selectedDate.substring(0, 7); // e.g. "2026-02"
-    Alert.alert(
-      'Monthly Review',
-      'Move this task to your monthly intentions list for review?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Move to Monthly',
-          onPress: async () => {
-            const { addFutureLogEntry } = await import('../utils/storage').then(m => m);
-            // Add to future log for this month as an intention
-            await addFutureLogEntry(monthKey, {
-              id: entry.id + '_monthly',
-              text: entry.text,
-              type: 'task',
-            });
-            // Mark original as scheduled
-            updateEntry(id, { state: 'scheduled' });
-          },
-        },
-      ]
-    );
-  }, [entries, selectedDate, updateEntry]);
+    setScheduleEntryId(id);
+    setShowDatePicker(true);
+  }, []);
+
+  const handleDatePicked = useCallback(async (event, selectedDateVal) => {
+    if (Platform.OS === 'android') setShowDatePicker(false);
+    if (event.type === 'dismissed' || !selectedDateVal) {
+      setShowDatePicker(false);
+      setScheduleEntryId(null);
+      return;
+    }
+    const targetDate = getDateKey(selectedDateVal);
+    if (scheduleEntryId) {
+      await scheduleEntry(scheduleEntryId, targetDate);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+    setShowDatePicker(false);
+    setScheduleEntryId(null);
+  }, [scheduleEntryId, scheduleEntry]);
 
   const handleMigrate = useCallback((id) => {
     // Swipe right → mark as migrated (shows ">"), task moves to today on next app load
@@ -83,15 +91,23 @@ export default function DailyLogScreen() {
 
   const isToday = selectedDate === today;
 
-  const renderEntry = ({ item }) => (
-    <EntryItem
-      entry={item}
-      onUpdate={updateEntry}
-      onDelete={deleteEntry}
-      onMigrate={handleMigrate}
-      onSchedule={handleSchedule}
-    />
-  );
+  const renderEntry = useCallback(({ item, drag, isActive }) => (
+    <ScaleDecorator>
+      <EntryItem
+        entry={item}
+        onUpdate={updateEntry}
+        onDelete={deleteEntry}
+        onMigrate={handleMigrate}
+        onSchedule={handleSchedule}
+        drag={drag}
+        isActive={isActive}
+      />
+    </ScaleDecorator>
+  ), [updateEntry, deleteEntry, handleMigrate, handleSchedule]);
+
+  const handleDragEnd = useCallback(({ data }) => {
+    reorderEntries(data.map(e => e.id));
+  }, [reorderEntries]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
@@ -135,32 +151,106 @@ export default function DailyLogScreen() {
             <Text style={[styles.statsText, { color: colors.textSecondary }]}>
               {stats.done}/{stats.total} done
             </Text>
+            {/* View toggle */}
+            <TouchableOpacity
+              onPress={() => { setViewMode(v => v === 'list' ? 'timeblock' : 'list'); Haptics.selectionAsync(); }}
+              style={styles.viewToggle}
+            >
+              <Ionicons
+                name={viewMode === 'list' ? 'time-outline' : 'list-outline'}
+                size={20}
+                color={colors.accent}
+              />
+            </TouchableOpacity>
+          </View>
+        )}
+        {stats.total === 0 && (
+          <View style={styles.toggleOnly}>
+            <TouchableOpacity
+              onPress={() => { setViewMode(v => v === 'list' ? 'timeblock' : 'list'); Haptics.selectionAsync(); }}
+              style={styles.viewToggle}
+            >
+              <Ionicons
+                name={viewMode === 'list' ? 'time-outline' : 'list-outline'}
+                size={20}
+                color={colors.accent}
+              />
+            </TouchableOpacity>
           </View>
         )}
       </View>
 
       {/* Entries */}
-      <FlatList
-        data={dayEntries}
-        renderItem={renderEntry}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={[styles.emptyIcon, { color: colors.accent }]}>✦</Text>
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>
-              {isToday ? 'Fresh day, fresh start' : 'Nothing logged'}
-            </Text>
-            <Text style={[styles.emptySub, { color: colors.textMuted }]}>
-              {isToday ? 'Add your first entry below' : 'Navigate to today to add entries'}
-            </Text>
-          </View>
-        }
-      />
+      {viewMode === 'list' ? (
+        <DraggableFlatList
+          ref={listRef}
+          data={dayEntries}
+          renderItem={renderEntry}
+          keyExtractor={item => item.id}
+          onDragEnd={handleDragEnd}
+          onContentSizeChange={() => {
+            if (shouldScrollRef.current) {
+              shouldScrollRef.current = false;
+              listRef.current?.scrollToEnd({ animated: true });
+            }
+          }}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <Text style={[styles.emptyIcon, { color: colors.accent }]}>✦</Text>
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>
+                {isToday ? 'Fresh day, fresh start' : 'Nothing logged'}
+              </Text>
+              <Text style={[styles.emptySub, { color: colors.textMuted }]}>
+                {isToday ? 'Add your first entry below' : 'Navigate to today to add entries'}
+              </Text>
+            </View>
+          }
+        />
+      ) : (
+        <TimeBlockView
+          entries={dayEntries}
+          onUpdate={updateEntry}
+          colors={colors}
+        />
+      )}
 
       {/* Quick Add */}
-      <QuickAdd onAdd={handleAdd} />
+      <QuickAdd onAdd={handleAdd} onUpdateLast={updateEntry} />
+
+      {/* Date Picker for scheduling */}
+      {showDatePicker && Platform.OS === 'ios' && (
+        <Modal transparent animationType="slide">
+          <View style={styles.datePickerOverlay}>
+            <View style={[styles.datePickerContainer, { backgroundColor: colors.bgCard }]}>
+              <View style={styles.datePickerHeader}>
+                <Text style={[styles.datePickerTitle, { color: colors.text }]}>Schedule to date</Text>
+                <TouchableOpacity onPress={() => { setShowDatePicker(false); setScheduleEntryId(null); }}>
+                  <Text style={[styles.datePickerCancel, { color: colors.accentRed }]}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={new Date()}
+                mode="date"
+                display="inline"
+                minimumDate={new Date()}
+                themeVariant="dark"
+                accentColor={colors.accent}
+                onChange={handleDatePicked}
+              />
+            </View>
+          </View>
+        </Modal>
+      )}
+      {showDatePicker && Platform.OS === 'android' && (
+        <DateTimePicker
+          value={new Date()}
+          mode="date"
+          minimumDate={new Date()}
+          onChange={handleDatePicked}
+        />
+      )}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -231,6 +321,17 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  viewToggle: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toggleOnly: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 4,
+  },
   list: {
     paddingHorizontal: 16,
     paddingTop: 8,
@@ -254,5 +355,30 @@ const styles = StyleSheet.create({
   },
   emptySub: {
     fontSize: SIZES.md,
+  },
+  datePickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'flex-end',
+  },
+  datePickerContainer: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingBottom: 40,
+  },
+  datePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  datePickerTitle: {
+    fontSize: SIZES.lg,
+    fontWeight: '700',
+  },
+  datePickerCancel: {
+    fontSize: SIZES.md,
+    fontWeight: '600',
   },
 });

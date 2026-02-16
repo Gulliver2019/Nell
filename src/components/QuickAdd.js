@@ -6,7 +6,7 @@ import { SIZES, getBulletTypes, getSignifiers } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import * as Haptics from 'expo-haptics';
 
-export default function QuickAdd({ onAdd, placeholder = "What's on your mind?" }) {
+export default function QuickAdd({ onAdd, onUpdateLast, placeholder = "What's on your mind?" }) {
   const { colors } = useTheme();
   const BULLET_TYPES = getBulletTypes(colors);
   const SIGNIFIERS = getSignifiers(colors);
@@ -14,20 +14,44 @@ export default function QuickAdd({ onAdd, placeholder = "What's on your mind?" }
   const [text, setText] = useState('');
   const [type, setType] = useState('task');
   const [signifier, setSignifier] = useState(null);
+  const [pomodoroPrompt, setPomodoroPrompt] = useState(false);
+  const [pomoCount, setPomoCount] = useState(0);
+  const [lastEntryId, setLastEntryId] = useState(null);
   const inputRef = useRef(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!text.trim()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onAdd({ text: text.trim(), type, signifier });
+    const result = await onAdd({ text: text.trim(), type, signifier });
     setText('');
     setSignifier(null);
+    // Show pomodoro prompt
+    if (result?.id) {
+      setLastEntryId(result.id);
+      setPomoCount(0);
+      setPomodoroPrompt(true);
+    }
     // Flash animation
     Animated.sequence([
       Animated.timing(fadeAnim, { toValue: 1, duration: 150, useNativeDriver: true }),
       Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
     ]).start();
+  };
+
+  const handlePomoConfirm = () => {
+    if (pomoCount > 0 && lastEntryId && onUpdateLast) {
+      onUpdateLast(lastEntryId, { pomodoros: pomoCount });
+    }
+    setPomodoroPrompt(false);
+    setLastEntryId(null);
+    setPomoCount(0);
+  };
+
+  const handlePomoSkip = () => {
+    setPomodoroPrompt(false);
+    setLastEntryId(null);
+    setPomoCount(0);
   };
 
   const cycleType = () => {
@@ -51,6 +75,36 @@ export default function QuickAdd({ onAdd, placeholder = "What's on your mind?" }
     <View style={[styles.container, { backgroundColor: colors.bgCard, borderTopColor: colors.border }]}>
       {/* Success flash */}
       <Animated.View style={[styles.flash, { opacity: fadeAnim, backgroundColor: colors.accent }]} pointerEvents="none" />
+
+      {/* Pomodoro prompt */}
+      {pomodoroPrompt && (
+        <View style={[styles.pomoPrompt, { backgroundColor: colors.bgElevated, borderBottomColor: colors.border }]}>
+          <Text style={[styles.pomoLabel, { color: colors.textSecondary }]}>🍅 Pomodoros?</Text>
+          <View style={styles.pomoStepper}>
+            <TouchableOpacity
+              onPress={() => { setPomoCount(Math.max(0, pomoCount - 1)); Haptics.selectionAsync(); }}
+              style={[styles.pomoBtn, { backgroundColor: colors.bgInput }]}
+            >
+              <Text style={[styles.pomoBtnText, { color: colors.text }]}>−</Text>
+            </TouchableOpacity>
+            <Text style={[styles.pomoCount, { color: colors.accent }]}>{pomoCount}</Text>
+            <TouchableOpacity
+              onPress={() => { setPomoCount(Math.min(12, pomoCount + 1)); Haptics.selectionAsync(); }}
+              style={[styles.pomoBtn, { backgroundColor: colors.bgInput }]}
+            >
+              <Text style={[styles.pomoBtnText, { color: colors.text }]}>+</Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity onPress={handlePomoConfirm} style={[styles.pomoAction, { backgroundColor: colors.accent }]}>
+            <Text style={[styles.pomoActionText, { color: colors.textInverse }]}>
+              {pomoCount > 0 ? `Add ${pomoCount}` : 'Skip'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handlePomoSkip} style={styles.pomoSkip}>
+            <Text style={[styles.pomoSkipText, { color: colors.textMuted }]}>✕</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <View style={[styles.inputRow, { backgroundColor: colors.bgInput }]}>
         {/* Signifier toggle */}
@@ -187,5 +241,57 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  pomoPrompt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    marginBottom: 6,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: 8,
+  },
+  pomoLabel: {
+    fontSize: SIZES.sm,
+    fontWeight: '600',
+  },
+  pomoStepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  pomoBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pomoBtnText: {
+    fontSize: SIZES.lg,
+    fontWeight: '600',
+    lineHeight: 22,
+  },
+  pomoCount: {
+    fontSize: SIZES.lg,
+    fontWeight: '700',
+    minWidth: 20,
+    textAlign: 'center',
+  },
+  pomoAction: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  pomoActionText: {
+    fontSize: SIZES.sm,
+    fontWeight: '700',
+  },
+  pomoSkip: {
+    padding: 4,
+  },
+  pomoSkipText: {
+    fontSize: SIZES.md,
+    fontWeight: '600',
   },
 });
