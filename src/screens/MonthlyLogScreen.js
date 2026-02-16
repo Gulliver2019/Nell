@@ -14,9 +14,10 @@ import EntryFormFlyout from '../components/EntryFormFlyout';
 export default function MonthlyLogScreen() {
   const { colors } = useTheme();
   const TASK_STATES = getTaskStates(colors);
-  const { entries, setSelectedDate, addEntry } = useApp();
+  const { entries, setSelectedDate, addEntry, updateEntry } = useApp();
   const [currentMonth, setCurrentMonth] = useState(getMonthKey());
   const [flyoutVisible, setFlyoutVisible] = useState(false);
+  const [editingEntry, setEditingEntry] = useState(null);
 
   const goMonth = (offset) => {
     const [y, m] = currentMonth.split('-').map(Number);
@@ -172,7 +173,15 @@ export default function MonthlyLogScreen() {
             <Text style={[styles.emptyText, { color: colors.textMuted }]}>No tasks this month</Text>
           ) : (
             monthTasks.map(task => (
-              <View key={task.id} style={[styles.taskRow, { borderBottomColor: colors.border }]}>
+              <TouchableOpacity
+                key={task.id}
+                style={[styles.taskRow, { borderBottomColor: colors.border }]}
+                onPress={() => {
+                  setEditingEntry(task);
+                  setFlyoutVisible(true);
+                }}
+                activeOpacity={0.7}
+              >
                 <Text style={[styles.taskDate, { color: colors.textMuted }]}>
                   {formatDateShort(task.date)}
                 </Text>
@@ -189,17 +198,26 @@ export default function MonthlyLogScreen() {
                 >
                   {task.text}
                 </Text>
-              </View>
+                <Text style={[styles.editHint, { color: colors.textMuted }]}>✎</Text>
+              </TouchableOpacity>
             ))
           )}
         </View>
       </ScrollView>
 
-      <FAB onPress={() => setFlyoutVisible(true)} />
+      <FAB onPress={() => { setEditingEntry(null); setFlyoutVisible(true); }} />
       <EntryFormFlyout
         visible={flyoutVisible}
-        onClose={() => setFlyoutVisible(false)}
-        onSubmit={async (data) => { await addEntry({ ...data }); }}
+        onClose={() => { setFlyoutVisible(false); setEditingEntry(null); }}
+        onSubmit={async (data) => {
+          if (data.id) {
+            const { id, ...updates } = data;
+            await updateEntry(id, updates);
+          } else {
+            await addEntry({ ...data });
+          }
+        }}
+        entry={editingEntry}
         visibleFields={['text', 'type', 'signifier', 'date']}
       />
     </SafeAreaView>
@@ -252,4 +270,5 @@ const styles = StyleSheet.create({
   taskDate: { fontSize: SIZES.xs, width: 48, fontWeight: '500' },
   taskBullet: { fontSize: SIZES.base, fontWeight: '700', width: 20, textAlign: 'center' },
   taskText: { flex: 1, fontSize: SIZES.md },
+  editHint: { fontSize: SIZES.sm, marginLeft: 8, fontWeight: '600' },
 });
