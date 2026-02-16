@@ -1,9 +1,10 @@
-import React, { useMemo, useState, useCallback, useRef } from 'react';
+import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, StatusBar, Alert, Modal,
-  KeyboardAvoidingView, Platform, useWindowDimensions,
+  Platform, Keyboard, Animated as RNAnimated,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { LinearGradient } from 'expo-linear-gradient';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -19,7 +20,7 @@ import * as Haptics from 'expo-haptics';
 
 export default function DailyLogScreen() {
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const {
     entries, selectedDate, setSelectedDate, addEntry, updateEntry,
     deleteEntry, migrateEntry, scheduleEntry, reorderEntries,
@@ -31,6 +32,35 @@ export default function DailyLogScreen() {
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'timeblock'
   const listRef = useRef(null);
   const shouldScrollRef = useRef(false);
+  const keyboardPadding = useRef(new RNAnimated.Value(0)).current;
+
+  // Keyboard handling — adjust bottom padding when keyboard shows/hides
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const onShow = (e) => {
+      // Keyboard height includes the area behind the tab bar, so subtract it
+      const kbHeight = e.endCoordinates.height - tabBarHeight;
+      RNAnimated.timing(keyboardPadding, {
+        toValue: Math.max(0, kbHeight),
+        duration: Platform.OS === 'ios' ? e.duration : 250,
+        useNativeDriver: false,
+      }).start();
+    };
+
+    const onHide = (e) => {
+      RNAnimated.timing(keyboardPadding, {
+        toValue: 0,
+        duration: Platform.OS === 'ios' ? (e.duration || 250) : 250,
+        useNativeDriver: false,
+      }).start();
+    };
+
+    const sub1 = Keyboard.addListener(showEvent, onShow);
+    const sub2 = Keyboard.addListener(hideEvent, onHide);
+    return () => { sub1.remove(); sub2.remove(); };
+  }, [keyboardPadding, tabBarHeight]);
 
   // Navigate dates
   const goDay = (offset) => {
@@ -113,7 +143,7 @@ export default function DailyLogScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       <StatusBar barStyle="light-content" />
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? insets.bottom + 49 : 0}>
+      <RNAnimated.View style={[styles.flex, { paddingBottom: keyboardPadding }]}>
       
       {/* Header */}
       <View style={styles.header}>
@@ -252,7 +282,7 @@ export default function DailyLogScreen() {
           onChange={handleDatePicked}
         />
       )}
-      </KeyboardAvoidingView>
+      </RNAnimated.View>
     </SafeAreaView>
   );
 }
