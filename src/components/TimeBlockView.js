@@ -93,7 +93,7 @@ export default function TimeBlockView({ entries, onUpdate, colors }) {
 
     if (block && block.isStart) {
       const { entry, totalSlots } = block;
-      const pomodoroText = entry.pomodoros > 0 ? `${'🍅'.repeat(Math.min(entry.pomodoros, 4))}${entry.pomodoros > 4 ? ` ×${entry.pomodoros}` : ''}` : '';
+      const pomodoroText = entry.pomodoros > 0 ? `[${entry.pomodoros}]` : '';
       const isComplete = entry.state === 'complete';
 
       return (
@@ -168,7 +168,7 @@ export default function TimeBlockView({ entries, onUpdate, colors }) {
                   {entry.text}
                 </Text>
                 {entry.pomodoros > 0 && (
-                  <Text style={[styles.unassignedPomo, { color: colors.accentGold }]}>🍅{entry.pomodoros}</Text>
+                  <Text style={[styles.unassignedPomo, { color: colors.accentGold }]}>[{entry.pomodoros}]</Text>
                 )}
               </View>
             ))}
@@ -207,7 +207,7 @@ export default function TimeBlockView({ entries, onUpdate, colors }) {
                   </Text>
                   {item.pomodoros > 0 && (
                     <Text style={[styles.modalEntryPomo, { color: colors.accentGold }]}>
-                      🍅{item.pomodoros}
+                      [{item.pomodoros}]
                     </Text>
                   )}
                 </TouchableOpacity>

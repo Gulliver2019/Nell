@@ -1,9 +1,9 @@
 import React, { useMemo, useState, useCallback, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, StatusBar, Alert, Modal,
-  KeyboardAvoidingView, Platform,
+  KeyboardAvoidingView, Platform, useWindowDimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -19,6 +19,7 @@ import * as Haptics from 'expo-haptics';
 
 export default function DailyLogScreen() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const {
     entries, selectedDate, setSelectedDate, addEntry, updateEntry,
     deleteEntry, migrateEntry, scheduleEntry, reorderEntries,
@@ -112,7 +113,7 @@ export default function DailyLogScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       <StatusBar barStyle="light-content" />
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={0}>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? insets.bottom + 49 : 0}>
       
       {/* Header */}
       <View style={styles.header}>

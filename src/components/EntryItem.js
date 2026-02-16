@@ -193,9 +193,12 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
             {(entry.pomodoros || 0) > 0 && (
               <TouchableOpacity onPress={handlePomodoroTap} hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}>
                 <Text style={[styles.pomoIndicator, { color: colors.accentGold }]}>
-                  🍅{entry.pomodoros > 1 ? entry.pomodoros : ''}
+                  [{entry.pomodoros}]
                 </Text>
               </TouchableOpacity>
+            )}
+            {entry.timeBlock && (
+              <Text style={[styles.timeBlockIcon, { color: colors.accentOrange }]}>🧱</Text>
             )}
           </View>
         </TouchableOpacity>
@@ -303,6 +306,11 @@ const styles = StyleSheet.create({
   pomoIndicator: {
     fontSize: SIZES.xs,
     marginLeft: 6,
+    fontWeight: '700',
+  },
+  timeBlockIcon: {
+    fontSize: SIZES.xs,
+    marginLeft: 4,
   },
   textComplete: {
     textDecorationLine: 'line-through',
