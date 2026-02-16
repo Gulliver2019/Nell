@@ -9,6 +9,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SIZES } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
+import FAB from '../components/FAB';
+import EntryFormFlyout from '../components/EntryFormFlyout';
 import * as Haptics from 'expo-haptics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -191,20 +193,18 @@ function TaskCard({ task, projectId, colors, onMove, onDelete }) {
 
 // Kanban board detail view
 function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onDeleteTask }) {
-  const [newTaskText, setNewTaskText] = useState('');
-  const [addingToColumn, setAddingToColumn] = useState(null);
+  const [flyoutVisible, setFlyoutVisible] = useState(false);
+  const [addingToColumn, setAddingToColumn] = useState('todo');
   const scrollRef = useRef(null);
 
   const total = project.tasks.length;
   const done = project.tasks.filter(t => t.column === 'done').length;
   const progress = total > 0 ? Math.round((done / total) * 100) : 0;
 
-  const handleAddTask = (column) => {
-    if (!newTaskText.trim()) return;
+  const handleAddTask = (data) => {
+    if (!data.text?.trim()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onAddTask({ text: newTaskText.trim(), column });
-    setNewTaskText('');
-    setAddingToColumn(null);
+    onAddTask({ text: data.text.trim(), column: addingToColumn });
   };
 
   return (
@@ -275,31 +275,12 @@ function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onD
                   </View>
                 </View>
                 <TouchableOpacity
-                  onPress={() => setAddingToColumn(addingToColumn === col.key ? null : col.key)}
+                  onPress={() => { setAddingToColumn(col.key); setFlyoutVisible(true); }}
                   style={[styles.addTaskBtn, { backgroundColor: colColor + '15' }]}
                 >
                   <Text style={[styles.addTaskBtnText, { color: colColor }]}>+</Text>
                 </TouchableOpacity>
               </View>
-
-              {/* Add task input */}
-              {addingToColumn === col.key && (
-                <View style={[styles.addTaskRow, { borderColor: colColor }]}>
-                  <TextInput
-                    style={[styles.addTaskInput, { color: colors.text }]}
-                    placeholder="Add a task..."
-                    placeholderTextColor={colors.textMuted}
-                    value={newTaskText}
-                    onChangeText={setNewTaskText}
-                    onSubmitEditing={() => handleAddTask(col.key)}
-                    autoFocus
-                    selectionColor={colColor}
-                  />
-                  <TouchableOpacity onPress={() => handleAddTask(col.key)}>
-                    <Text style={[styles.addTaskSend, { color: colColor }]}>↵</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
 
               {/* Tasks */}
               <ScrollView showsVerticalScrollIndicator={false} style={styles.columnScroll}>
@@ -332,6 +313,14 @@ function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onD
           ← Swipe tasks between columns →
         </Text>
       </View>
+
+      <FAB onPress={() => { setAddingToColumn('todo'); setFlyoutVisible(true); }} />
+      <EntryFormFlyout
+        visible={flyoutVisible}
+        onClose={() => setFlyoutVisible(false)}
+        onSubmit={handleAddTask}
+        visibleFields={['text']}
+      />
     </View>
   );
 }

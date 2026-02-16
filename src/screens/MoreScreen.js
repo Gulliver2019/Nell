@@ -220,11 +220,12 @@ export default function MoreScreen({ navigation }) {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>👆 Gestures</Text>
           <View style={styles.gestureList}>
             {[
+              { gesture: 'Tap + button', action: 'Add new entry (flyout form)' },
+              { gesture: 'Tap ✎ pencil', action: 'Edit entry (flyout form)' },
               { gesture: 'Tap bullet', action: 'Cycle: open → done → migrate' },
               { gesture: 'Long press bullet', action: 'Delete entry' },
-              { gesture: 'Long press text', action: 'Edit entry' },
               { gesture: 'Tap signifier area', action: 'Cycle: none → ! → ★ → ?' },
-              { gesture: 'Tap 🍅 indicator', action: 'Cycle pomodoro count (0-8)' },
+              { gesture: 'Tap [N] indicator', action: 'Cycle pomodoro count (0-8)' },
               { gesture: 'Swipe right →', action: 'Migrate to today' },
               { gesture: 'Swipe left ←', action: 'Schedule to date' },
               { gesture: 'Long press drag handle', action: 'Reorder entries' },

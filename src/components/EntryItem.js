@@ -9,7 +9,7 @@ import * as Haptics from 'expo-haptics';
 
 const SWIPE_THRESHOLD = 80;
 
-export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSchedule, onPress, drag, isActive }) {
+export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSchedule, onEdit, onPress, drag, isActive }) {
   const { colors } = useTheme();
   const BULLET_TYPES = getBulletTypes(colors);
   const TASK_STATES = getTaskStates(colors);
@@ -200,6 +200,15 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
             {entry.timeBlock && (
               <Text style={[styles.timeBlockIcon, { color: colors.accentOrange }]}>🧱</Text>
             )}
+            {onEdit && (
+              <TouchableOpacity
+                onPress={() => onEdit(entry)}
+                hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}
+                style={styles.editBtn}
+              >
+                <Text style={[styles.editIcon, { color: colors.textMuted }]}>✎</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </TouchableOpacity>
       )}
@@ -311,6 +320,14 @@ const styles = StyleSheet.create({
   timeBlockIcon: {
     fontSize: SIZES.xs,
     marginLeft: 4,
+  },
+  editBtn: {
+    marginLeft: 6,
+    padding: 2,
+  },
+  editIcon: {
+    fontSize: SIZES.sm,
+    fontWeight: '600',
   },
   textComplete: {
     textDecorationLine: 'line-through',

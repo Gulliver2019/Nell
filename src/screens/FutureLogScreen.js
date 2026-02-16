@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -8,13 +8,15 @@ import { SIZES, getBulletTypes } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { getMonthKey, getMonthName } from '../utils/storage';
+import FAB from '../components/FAB';
+import EntryFormFlyout from '../components/EntryFormFlyout';
 
 export default function FutureLogScreen() {
   const { colors } = useTheme();
   const BULLET_TYPES = getBulletTypes(colors);
   const { futureLog, addFutureLogEntry, removeFutureLogEntry } = useApp();
-  const [newTexts, setNewTexts] = useState({});
-  const [newTypes, setNewTypes] = useState({});
+  const [flyoutVisible, setFlyoutVisible] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(null);
 
   // Generate next 6 months
   const months = useMemo(() => {
@@ -27,14 +29,12 @@ export default function FutureLogScreen() {
     return result;
   }, []);
 
-  const handleAdd = async (monthKey) => {
-    const text = newTexts[monthKey]?.trim();
-    if (!text) return;
-    await addFutureLogEntry(monthKey, {
-      text,
-      type: newTypes[monthKey] || 'task',
+  const handleAdd = async (data) => {
+    if (!selectedMonth) return;
+    await addFutureLogEntry(selectedMonth, {
+      text: data.text,
+      type: data.type || 'task',
     });
-    setNewTexts(prev => ({ ...prev, [monthKey]: '' }));
   };
 
   const handleRemove = (monthKey, entryId) => {
@@ -58,8 +58,6 @@ export default function FutureLogScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         {months.map(monthKey => {
           const monthEntries = futureLog[monthKey] || [];
-          const type = newTypes[monthKey] || 'task';
-          const bullet = BULLET_TYPES[type];
 
           return (
             <View key={monthKey} style={styles.monthCard}>
@@ -67,7 +65,15 @@ export default function FutureLogScreen() {
                 colors={[colors.bgElevated, colors.bgCard]}
                 style={[styles.cardGradient, { borderColor: colors.border }]}
               >
-                <Text style={[styles.monthTitle, { color: colors.accentGold }]}>{getMonthName(monthKey)}</Text>
+                <View style={styles.monthHeader}>
+                  <Text style={[styles.monthTitle, { color: colors.accentGold }]}>{getMonthName(monthKey)}</Text>
+                  <TouchableOpacity
+                    onPress={() => { setSelectedMonth(monthKey); setFlyoutVisible(true); }}
+                    style={[styles.monthAddBtn, { backgroundColor: colors.accent + '15' }]}
+                  >
+                    <Text style={[styles.monthAddBtnText, { color: colors.accent }]}>+</Text>
+                  </TouchableOpacity>
+                </View>
 
                 {monthEntries.map(entry => (
                   <TouchableOpacity
@@ -82,34 +88,22 @@ export default function FutureLogScreen() {
                   </TouchableOpacity>
                 ))}
 
-                {/* Add new */}
-                <View style={[styles.addRow, { borderTopColor: colors.border }]}>
-                  <TouchableOpacity
-                    onPress={() => {
-                      const types = ['task', 'event', 'note'];
-                      const next = types[(types.indexOf(type) + 1) % types.length];
-                      setNewTypes(prev => ({ ...prev, [monthKey]: next }));
-                    }}
-                    style={styles.typeBtn}
-                  >
-                    <Text style={[styles.typeText, { color: bullet.color }]}>{bullet.symbol}</Text>
-                  </TouchableOpacity>
-                  <TextInput
-                    style={[styles.input, { color: colors.text }]}
-                    placeholder="Add entry..."
-                    placeholderTextColor={colors.textMuted}
-                    value={newTexts[monthKey] || ''}
-                    onChangeText={t => setNewTexts(prev => ({ ...prev, [monthKey]: t }))}
-                    onSubmitEditing={() => handleAdd(monthKey)}
-                    returnKeyType="done"
-                    selectionColor={colors.accent}
-                  />
-                </View>
+                {monthEntries.length === 0 && (
+                  <Text style={[styles.emptyMonth, { color: colors.textMuted }]}>No entries yet</Text>
+                )}
               </LinearGradient>
             </View>
           );
         })}
       </ScrollView>
+
+      <FAB onPress={() => { setSelectedMonth(months[0]); setFlyoutVisible(true); }} />
+      <EntryFormFlyout
+        visible={flyoutVisible}
+        onClose={() => { setFlyoutVisible(false); setSelectedMonth(null); }}
+        onSubmit={handleAdd}
+        visibleFields={['text', 'type']}
+      />
     </SafeAreaView>
   );
 }
@@ -131,21 +125,21 @@ const styles = StyleSheet.create({
   },
   monthTitle: {
     fontSize: SIZES.lg, fontWeight: '700',
-    marginBottom: 12, letterSpacing: 0.5,
+    letterSpacing: 0.5, flex: 1,
   },
+  monthHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  monthAddBtn: {
+    width: 28, height: 28, borderRadius: 14,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  monthAddBtnText: { fontSize: 18, fontWeight: '600' },
+  emptyMonth: { fontSize: SIZES.sm, paddingVertical: 4 },
   entryRow: {
     flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 6, gap: 8,
   },
   entryBullet: { fontSize: SIZES.base, fontWeight: '700', width: 20, textAlign: 'center', lineHeight: 22 },
   entryText: { flex: 1, fontSize: SIZES.md, lineHeight: 22 },
-  addRow: {
-    flexDirection: 'row', alignItems: 'center', marginTop: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: 8,
-  },
-  typeBtn: { width: 28, alignItems: 'center' },
-  typeText: { fontSize: SIZES.lg, fontWeight: '700' },
-  input: {
-    flex: 1, fontSize: SIZES.md, paddingVertical: 4,
-  },
 });

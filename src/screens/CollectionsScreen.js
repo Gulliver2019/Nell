@@ -9,7 +9,8 @@ import { SIZES, SHADOWS } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import EntryItem from '../components/EntryItem';
-import QuickAdd from '../components/QuickAdd';
+import FAB from '../components/FAB';
+import EntryFormFlyout from '../components/EntryFormFlyout';
 
 const ICONS = ['📋', '🎯', '📚', '💡', '🏃', '🎨', '🛒', '✈️', '💰', '🎵', '🍽️', '🧘', '💼', '🌱', '❤️', '⭐'];
 const ACCENT_COLORS = ['#6C5CE7', '#00CEC9', '#FD79A8', '#FDCB6E', '#00B894', '#E17055', '#FF6B6B', '#74B9FF'];
@@ -26,6 +27,8 @@ export default function CollectionsScreen() {
   const [newTitle, setNewTitle] = useState('');
   const [newIcon, setNewIcon] = useState('📋');
   const [newColor, setNewColor] = useState(ACCENT_COLORS[0]);
+  const [flyoutVisible, setFlyoutVisible] = useState(false);
+  const [editingEntry, setEditingEntry] = useState(null);
 
   const collectionEntries = useMemo(() => {
     if (!selectedCollection) return [];
@@ -59,7 +62,17 @@ export default function CollectionsScreen() {
   };
 
   const handleAddEntry = async (data) => {
-    await addEntry({ ...data, collection: selectedCollection.id });
+    if (data.id) {
+      const { id, ...updates } = data;
+      await updateEntry(id, updates);
+    } else {
+      await addEntry({ ...data, collection: selectedCollection.id });
+    }
+  };
+
+  const handleEditEntry = (entry) => {
+    setEditingEntry(entry);
+    setFlyoutVisible(true);
   };
 
   const handleDragEnd = useCallback(({ data }) => {
@@ -73,6 +86,7 @@ export default function CollectionsScreen() {
         onUpdate={updateEntry}
         onDelete={deleteEntry}
         onMigrate={() => migrateEntry(item.id)}
+        onEdit={handleEditEntry}
         drag={drag}
         isActive={isActive}
       />
@@ -111,7 +125,15 @@ export default function CollectionsScreen() {
           }
         />
 
-        <QuickAdd onAdd={handleAddEntry} placeholder="Add to collection..." />
+        <FAB onPress={() => { setEditingEntry(null); setFlyoutVisible(true); }} />
+        <EntryFormFlyout
+          visible={flyoutVisible}
+          onClose={() => { setFlyoutVisible(false); setEditingEntry(null); }}
+          onSubmit={handleAddEntry}
+          entry={editingEntry}
+          visibleFields={['text', 'type', 'signifier', 'pomodoros']}
+          extraData={{ collection: selectedCollection.id }}
+        />
       </SafeAreaView>
     );
   }

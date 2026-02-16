@@ -1,10 +1,9 @@
-import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react';
+import React, { useMemo, useState, useCallback, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, StatusBar, Alert, Modal,
-  Platform, Keyboard, Animated as RNAnimated,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { LinearGradient } from 'expo-linear-gradient';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -14,13 +13,13 @@ import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { getDateKey, formatDate } from '../utils/storage';
 import EntryItem from '../components/EntryItem';
-import QuickAdd from '../components/QuickAdd';
+import FAB from '../components/FAB';
+import EntryFormFlyout from '../components/EntryFormFlyout';
 import TimeBlockView from '../components/TimeBlockView';
 import * as Haptics from 'expo-haptics';
 
 export default function DailyLogScreen() {
   const { colors } = useTheme();
-  const tabBarHeight = useBottomTabBarHeight();
   const {
     entries, selectedDate, setSelectedDate, addEntry, updateEntry,
     deleteEntry, migrateEntry, scheduleEntry, reorderEntries,
@@ -30,37 +29,10 @@ export default function DailyLogScreen() {
   const [scheduleEntryId, setScheduleEntryId] = useState(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'timeblock'
+  const [flyoutVisible, setFlyoutVisible] = useState(false);
+  const [editingEntry, setEditingEntry] = useState(null);
   const listRef = useRef(null);
   const shouldScrollRef = useRef(false);
-  const keyboardPadding = useRef(new RNAnimated.Value(0)).current;
-
-  // Keyboard handling — adjust bottom padding when keyboard shows/hides
-  useEffect(() => {
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-
-    const onShow = (e) => {
-      // Keyboard height includes the area behind the tab bar, so subtract it
-      const kbHeight = e.endCoordinates.height - tabBarHeight;
-      RNAnimated.timing(keyboardPadding, {
-        toValue: Math.max(0, kbHeight),
-        duration: Platform.OS === 'ios' ? e.duration : 250,
-        useNativeDriver: false,
-      }).start();
-    };
-
-    const onHide = (e) => {
-      RNAnimated.timing(keyboardPadding, {
-        toValue: 0,
-        duration: Platform.OS === 'ios' ? (e.duration || 250) : 250,
-        useNativeDriver: false,
-      }).start();
-    };
-
-    const sub1 = Keyboard.addListener(showEvent, onShow);
-    const sub2 = Keyboard.addListener(hideEvent, onHide);
-    return () => { sub1.remove(); sub2.remove(); };
-  }, [keyboardPadding, tabBarHeight]);
 
   // Navigate dates
   const goDay = (offset) => {
@@ -88,10 +60,20 @@ export default function DailyLogScreen() {
   }, [dayEntries]);
 
   const handleAdd = useCallback(async (data) => {
-    const result = await addEntry({ ...data, date: selectedDate });
-    shouldScrollRef.current = true;
-    return result;
-  }, [addEntry, selectedDate]);
+    if (data.id) {
+      // Edit mode
+      const { id, ...updates } = data;
+      await updateEntry(id, updates);
+    } else {
+      await addEntry({ ...data, date: data.date || selectedDate });
+      shouldScrollRef.current = true;
+    }
+  }, [addEntry, updateEntry, selectedDate]);
+
+  const handleEdit = useCallback((entry) => {
+    setEditingEntry(entry);
+    setFlyoutVisible(true);
+  }, []);
 
   const handleSchedule = useCallback((id) => {
     setScheduleEntryId(id);
@@ -130,11 +112,12 @@ export default function DailyLogScreen() {
         onDelete={deleteEntry}
         onMigrate={handleMigrate}
         onSchedule={handleSchedule}
+        onEdit={handleEdit}
         drag={drag}
         isActive={isActive}
       />
     </ScaleDecorator>
-  ), [updateEntry, deleteEntry, handleMigrate, handleSchedule]);
+  ), [updateEntry, deleteEntry, handleMigrate, handleSchedule, handleEdit]);
 
   const handleDragEnd = useCallback(({ data }) => {
     reorderEntries(data.map(e => e.id));
@@ -143,7 +126,7 @@ export default function DailyLogScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       <StatusBar barStyle="light-content" />
-      <RNAnimated.View style={[styles.flex, { paddingBottom: keyboardPadding }]}>
+      <View style={styles.flex}>
       
       {/* Header */}
       <View style={styles.header}>
@@ -234,7 +217,7 @@ export default function DailyLogScreen() {
                 {isToday ? 'Fresh day, fresh start' : 'Nothing logged'}
               </Text>
               <Text style={[styles.emptySub, { color: colors.textMuted }]}>
-                {isToday ? 'Add your first entry below' : 'Navigate to today to add entries'}
+                {isToday ? 'Tap + to add your first entry' : 'Navigate to today to add entries'}
               </Text>
             </View>
           }
@@ -247,8 +230,15 @@ export default function DailyLogScreen() {
         />
       )}
 
-      {/* Quick Add */}
-      <QuickAdd onAdd={handleAdd} onUpdateLast={updateEntry} />
+      {/* FAB + Flyout */}
+      <FAB onPress={() => { setEditingEntry(null); setFlyoutVisible(true); }} />
+      <EntryFormFlyout
+        visible={flyoutVisible}
+        onClose={() => { setFlyoutVisible(false); setEditingEntry(null); }}
+        onSubmit={handleAdd}
+        entry={editingEntry}
+        visibleFields={['text', 'type', 'signifier', 'pomodoros', 'timeBlock', 'date']}
+      />
 
       {/* Date Picker for scheduling */}
       {showDatePicker && Platform.OS === 'ios' && (
@@ -282,7 +272,7 @@ export default function DailyLogScreen() {
           onChange={handleDatePicked}
         />
       )}
-      </RNAnimated.View>
+      </View>
     </SafeAreaView>
   );
 }

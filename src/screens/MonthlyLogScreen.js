@@ -8,12 +8,15 @@ import { SIZES, getTaskStates } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { getMonthKey, getMonthName, getDateKey, formatDateShort } from '../utils/storage';
+import FAB from '../components/FAB';
+import EntryFormFlyout from '../components/EntryFormFlyout';
 
 export default function MonthlyLogScreen() {
   const { colors } = useTheme();
   const TASK_STATES = getTaskStates(colors);
-  const { entries, setSelectedDate } = useApp();
+  const { entries, setSelectedDate, addEntry } = useApp();
   const [currentMonth, setCurrentMonth] = useState(getMonthKey());
+  const [flyoutVisible, setFlyoutVisible] = useState(false);
 
   const goMonth = (offset) => {
     const [y, m] = currentMonth.split('-').map(Number);
@@ -191,6 +194,14 @@ export default function MonthlyLogScreen() {
           )}
         </View>
       </ScrollView>
+
+      <FAB onPress={() => setFlyoutVisible(true)} />
+      <EntryFormFlyout
+        visible={flyoutVisible}
+        onClose={() => setFlyoutVisible(false)}
+        onSubmit={async (data) => { await addEntry({ ...data }); }}
+        visibleFields={['text', 'type', 'signifier', 'date']}
+      />
     </SafeAreaView>
   );
 }
