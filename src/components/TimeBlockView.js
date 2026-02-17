@@ -232,6 +232,14 @@ export default function TimeBlockView({ entries, onUpdate, colors }) {
               );
             })}
           </ScrollView>
+          {selectedEntry && (
+            <TouchableOpacity
+              style={[styles.cancelSelectBtn, { borderColor: colors.textMuted }]}
+              onPress={() => { setSelectedEntry(null); Haptics.selectionAsync(); }}
+            >
+              <Text style={[styles.cancelSelectText, { color: colors.textMuted }]}>✕ Cancel</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
@@ -303,6 +311,18 @@ const styles = StyleSheet.create({
   unassignedList: {
     gap: 8,
     paddingRight: 16,
+  },
+  cancelSelectBtn: {
+    alignSelf: 'flex-end',
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  cancelSelectText: {
+    fontSize: SIZES.xs,
+    fontWeight: '600',
   },
   unassignedChip: {
     flexDirection: 'row',
