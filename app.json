@@ -37,13 +37,7 @@
     },
     "owner": "justg",
     "plugins": [
-      "@react-native-community/datetimepicker",
-      [
-        "expo-notifications",
-        {
-          "sounds": []
-        }
-      ]
+      "@react-native-community/datetimepicker"
     ]
   }
 }
