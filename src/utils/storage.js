@@ -435,3 +435,16 @@ export const deleteProjectTask = async (projectId, taskId) => {
     await saveProjects(projects);
   }
 };
+
+export const reorderProjectTasks = async (projectId, column, orderedTaskIds) => {
+  const projects = await getProjects();
+  const idx = projects.findIndex(p => p.id === projectId);
+  if (idx === -1) return;
+  const colTasks = projects[idx].tasks.filter(t => t.column === column);
+  const otherTasks = projects[idx].tasks.filter(t => t.column !== column);
+  const sorted = orderedTaskIds
+    .map(id => colTasks.find(t => t.id === id))
+    .filter(Boolean);
+  projects[idx].tasks = [...otherTasks, ...sorted];
+  await saveProjects(projects);
+};

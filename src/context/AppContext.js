@@ -265,6 +265,12 @@ export function AppProvider({ children }) {
     dispatch({ type: 'SET_PROJECTS', payload: projects });
   }, []);
 
+  const reorderProjectTasks = useCallback(async (projectId, column, orderedTaskIds) => {
+    await Storage.reorderProjectTasks(projectId, column, orderedTaskIds);
+    const projects = await Storage.getProjects();
+    dispatch({ type: 'SET_PROJECTS', payload: projects });
+  }, []);
+
   const setSelectedDate = useCallback((date) => {
     dispatch({ type: 'SET_SELECTED_DATE', payload: date });
   }, []);
@@ -297,6 +303,7 @@ export function AppProvider({ children }) {
     addProjectTask,
     moveProjectTask,
     deleteProjectTask,
+    reorderProjectTasks,
     setSelectedDate,
     setSearchQuery,
   };

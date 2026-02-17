@@ -1,11 +1,12 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet,
-  Modal, Alert, Animated, Dimensions, StatusBar, KeyboardAvoidingView, Platform,
+  Modal, Alert, Dimensions, StatusBar, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import { SIZES } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
@@ -133,66 +134,69 @@ function ProjectIndexBoard({ projects, onSelect, onAdd, colors }) {
   );
 }
 
-// Kanban task card
-function TaskCard({ task, projectId, colors, onMove, onDelete }) {
-  const pan = useRef(new Animated.Value(0)).current;
-  const touchStart = useRef(0);
-
+// Kanban task card with arrow buttons
+function TaskCard({ task, colors, onMove, onDelete, drag, isActive }) {
   const colIdx = COLUMNS.findIndex(c => c.key === task.column);
-
-  const handleTouchStart = (e) => { touchStart.current = e.nativeEvent.pageX; };
-  const handleTouchMove = (e) => {
-    const diff = e.nativeEvent.pageX - touchStart.current;
-    if (Math.abs(diff) > 10) pan.setValue(diff);
-  };
-  const handleTouchEnd = () => {
-    const val = pan._value;
-    if (val > 40 && colIdx < COLUMNS.length - 1) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      onMove(task.id, COLUMNS[colIdx + 1].key);
-    } else if (val < -40 && colIdx > 0) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      onMove(task.id, COLUMNS[colIdx - 1].key);
-    }
-    Animated.spring(pan, { toValue: 0, useNativeDriver: true }).start();
-  };
+  const canGoLeft = colIdx > 0;
+  const canGoRight = colIdx < COLUMNS.length - 1;
 
   return (
-    <Animated.View
-      style={[styles.taskCard, {
-        backgroundColor: colors.bg,
-        borderColor: colors.border,
-        transform: [{ translateX: pan }],
-      }]}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
-      <Text
-        style={[
-          styles.taskText,
-          { color: colors.text },
-          task.column === 'done' && { textDecorationLine: 'line-through', color: colors.textMuted },
-        ]}
-        numberOfLines={3}
-      >
-        {task.text}
-      </Text>
+    <ScaleDecorator>
       <TouchableOpacity
-        onPress={() => {
-          Haptics.selectionAsync();
-          onDelete(task.id);
-        }}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        style={[styles.taskCard, {
+          backgroundColor: colors.bg,
+          borderColor: isActive ? colors.accent : colors.border,
+        }]}
+        onLongPress={drag}
+        activeOpacity={0.8}
+        delayLongPress={150}
       >
-        <Text style={[styles.taskDelete, { color: colors.textMuted }]}>✕</Text>
+        {/* Left arrow */}
+        <TouchableOpacity
+          onPress={() => { if (canGoLeft) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onMove(task.id, COLUMNS[colIdx - 1].key); } }}
+          style={[styles.arrowBtn, !canGoLeft && { opacity: 0.2 }]}
+          disabled={!canGoLeft}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Text style={[styles.arrowText, { color: colors.accent }]}>‹</Text>
+        </TouchableOpacity>
+
+        {/* Task text */}
+        <Text
+          style={[
+            styles.taskText,
+            { color: colors.text },
+            task.column === 'done' && { textDecorationLine: 'line-through', color: colors.textMuted },
+          ]}
+          numberOfLines={3}
+        >
+          {task.text}
+        </Text>
+
+        {/* Right arrow */}
+        <TouchableOpacity
+          onPress={() => { if (canGoRight) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onMove(task.id, COLUMNS[colIdx + 1].key); } }}
+          style={[styles.arrowBtn, !canGoRight && { opacity: 0.2 }]}
+          disabled={!canGoRight}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Text style={[styles.arrowText, { color: colors.accent }]}>›</Text>
+        </TouchableOpacity>
+
+        {/* Delete */}
+        <TouchableOpacity
+          onPress={() => { Haptics.selectionAsync(); onDelete(task.id); }}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Text style={[styles.taskDelete, { color: colors.textMuted }]}>✕</Text>
+        </TouchableOpacity>
       </TouchableOpacity>
-    </Animated.View>
+    </ScaleDecorator>
   );
 }
 
 // Kanban board detail view
-function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onDeleteTask }) {
+function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onDeleteTask, onReorderTasks }) {
   const [flyoutVisible, setFlyoutVisible] = useState(false);
   const [addingToColumn, setAddingToColumn] = useState('todo');
   const scrollRef = useRef(null);
@@ -206,6 +210,17 @@ function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onD
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onAddTask({ text: data.text.trim(), column: addingToColumn });
   };
+
+  const renderTask = useCallback(({ item, drag, isActive }) => (
+    <TaskCard
+      task={item}
+      colors={colors}
+      onMove={onMoveTask}
+      onDelete={onDeleteTask}
+      drag={drag}
+      isActive={isActive}
+    />
+  ), [colors, onMoveTask, onDeleteTask]);
 
   return (
     <View style={{ flex: 1 }}>
@@ -256,9 +271,7 @@ function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onD
         contentContainerStyle={styles.columnsContainer}
       >
         {COLUMNS.map(col => {
-          const columnTasks = project.tasks
-            .filter(t => t.column === col.key)
-            .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+          const columnTasks = project.tasks.filter(t => t.column === col.key);
           const colColor = col.key === 'done' ? colors.accentGreen
             : col.key === 'progress' ? colors.accentOrange
             : colors.textMuted;
@@ -282,35 +295,35 @@ function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onD
                 </TouchableOpacity>
               </View>
 
-              {/* Tasks */}
-              <ScrollView showsVerticalScrollIndicator={false} style={styles.columnScroll}>
-                {columnTasks.map(task => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    projectId={project.id}
-                    colors={colors}
-                    onMove={onMoveTask}
-                    onDelete={onDeleteTask}
-                  />
-                ))}
-                {columnTasks.length === 0 && (
-                  <View style={styles.emptyColumn}>
-                    <Text style={[styles.emptyColumnText, { color: colors.textMuted }]}>
-                      {col.key === 'todo' ? 'Add tasks to get started' : 'Swipe tasks here'}
-                    </Text>
-                  </View>
-                )}
-              </ScrollView>
+              {/* Tasks — draggable for reorder */}
+              <View style={styles.columnScroll}>
+                <DraggableFlatList
+                  data={columnTasks}
+                  renderItem={renderTask}
+                  keyExtractor={item => item.id}
+                  onDragEnd={({ data }) => {
+                    onReorderTasks(col.key, data.map(t => t.id));
+                  }}
+                  showsVerticalScrollIndicator={false}
+                  ListEmptyComponent={
+                    <View style={styles.emptyColumn}>
+                      <Text style={[styles.emptyColumnText, { color: colors.textMuted }]}>
+                        {col.key === 'todo' ? 'Add tasks to get started' : 'Move tasks here with ‹ ›'}
+                      </Text>
+                    </View>
+                  }
+                  contentContainerStyle={{ paddingBottom: 8 }}
+                />
+              </View>
             </View>
           );
         })}
       </ScrollView>
 
-      {/* Swipe hint */}
+      {/* Hint */}
       <View style={[styles.swipeHint, { backgroundColor: colors.bgCard, borderTopColor: colors.border }]}>
         <Text style={[styles.swipeHintText, { color: colors.textMuted }]}>
-          ← Swipe tasks between columns →
+          ‹ › move between columns · hold to reorder
         </Text>
       </View>
 
@@ -483,7 +496,7 @@ function NewProjectModal({ visible, onClose, onSave, colors }) {
 
 export default function ProjectsScreen() {
   const { colors } = useTheme();
-  const { projects, addProject, updateProject, deleteProject, addProjectTask, moveProjectTask, deleteProjectTask } = useApp();
+  const { projects, addProject, updateProject, deleteProject, addProjectTask, moveProjectTask, deleteProjectTask, reorderProjectTasks } = useApp();
   const [selectedProject, setSelectedProject] = useState(null);
   const [showNewModal, setShowNewModal] = useState(false);
 
@@ -525,6 +538,7 @@ export default function ProjectsScreen() {
           onAddTask={(task) => addProjectTask(activeProject.id, task)}
           onMoveTask={(taskId, toCol) => moveProjectTask(activeProject.id, taskId, toCol)}
           onDeleteTask={(taskId) => deleteProjectTask(activeProject.id, taskId)}
+          onReorderTasks={(column, orderedIds) => reorderProjectTasks(activeProject.id, column, orderedIds)}
         />
       ) : (
         <ProjectIndexBoard
@@ -633,11 +647,17 @@ const styles = StyleSheet.create({
 
   taskCard: {
     borderRadius: 12, borderWidth: 1,
-    padding: 12, marginBottom: 8,
-    flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between',
+    padding: 10, marginBottom: 8,
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+  },
+  arrowBtn: {
+    width: 28, height: 28, alignItems: 'center', justifyContent: 'center',
+  },
+  arrowText: {
+    fontSize: 22, fontWeight: '300',
   },
   taskText: { fontSize: SIZES.sm, flex: 1, lineHeight: 20 },
-  taskDelete: { fontSize: 12, marginLeft: 8, marginTop: 2 },
+  taskDelete: { fontSize: 12, marginLeft: 4 },
 
   emptyColumn: { paddingVertical: 24, alignItems: 'center' },
   emptyColumnText: { fontSize: SIZES.sm, textAlign: 'center' },
