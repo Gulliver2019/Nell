@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList,
-  Alert, Animated, Keyboard,
+  Alert, Animated, Keyboard, ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
