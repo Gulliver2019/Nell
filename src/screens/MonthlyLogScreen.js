@@ -1,8 +1,9 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert,
+  View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SIZES, getBulletTypes, getTaskStates, getSignifiers } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
@@ -23,6 +24,8 @@ export default function MonthlyLogScreen() {
   const [flyoutVisible, setFlyoutVisible] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
   const [addingToDay, setAddingToDay] = useState(null); // dateKey for FAB per-day add
+  const [convertEntry, setConvertEntry] = useState(null); // entry being converted to daily
+  const [convertDate, setConvertDate] = useState(new Date());
 
   const goMonth = (offset) => {
     const [y, m] = currentMonth.split('-').map(Number);
@@ -102,12 +105,23 @@ export default function MonthlyLogScreen() {
   }, []);
 
   const handleAddToDaily = useCallback(async (entry) => {
-    const { id, source, createdAt, ...rest } = entry;
-    await addEntry({ ...rest, source: 'daily' });
-    // Mark original monthly entry as added
+    // Open date picker modal
+    setConvertEntry(entry);
+    setConvertDate(entry.date ? new Date(entry.date + 'T00:00:00') : new Date());
+  }, []);
+
+  const confirmConvertToDaily = useCallback(async () => {
+    if (!convertEntry) return;
+    const { id, source, createdAt, ...rest } = convertEntry;
+    const y = convertDate.getFullYear();
+    const m = String(convertDate.getMonth() + 1).padStart(2, '0');
+    const d = String(convertDate.getDate()).padStart(2, '0');
+    const targetDate = `${y}-${m}-${d}`;
+    await addEntry({ ...rest, date: targetDate, source: 'daily' });
     await updateEntry(id, { _addedToDaily: true });
-    Alert.alert('Added', `"${entry.text}" added to daily for ${entry.date}`);
-  }, [addEntry, updateEntry]);
+    setConvertEntry(null);
+    Alert.alert('Added', `"${convertEntry.text}" added to daily for ${targetDate}`);
+  }, [convertEntry, convertDate, addEntry, updateEntry]);
 
   const getBullet = (entry) => {
     if (entry.type === 'task') {
@@ -305,6 +319,43 @@ export default function MonthlyLogScreen() {
         entry={editingEntry}
         visibleFields={addingToDay ? ['text', 'type', 'signifier'] : ['text', 'type', 'signifier', 'date']}
       />
+
+      {/* Convert to Daily date picker modal */}
+      <Modal visible={!!convertEntry} transparent animationType="fade">
+        <View style={styles.convertOverlay}>
+          <View style={[styles.convertModal, { backgroundColor: colors.bgCard }]}>
+            <Text style={[styles.convertTitle, { color: colors.text }]}>Add to Daily</Text>
+            <Text style={[styles.convertSubtitle, { color: colors.textMuted }]} numberOfLines={2}>
+              {convertEntry?.text}
+            </Text>
+            <Text style={[styles.convertLabel, { color: colors.textSecondary }]}>Pick a date:</Text>
+            <DateTimePicker
+              value={convertDate}
+              mode="date"
+              display="inline"
+              themeVariant="dark"
+              accentColor={colors.accent}
+              onChange={(event, selected) => {
+                if (selected) setConvertDate(selected);
+              }}
+            />
+            <View style={styles.convertActions}>
+              <TouchableOpacity
+                style={[styles.convertBtn, { backgroundColor: colors.bgInput }]}
+                onPress={() => setConvertEntry(null)}
+              >
+                <Text style={[styles.convertBtnText, { color: colors.textMuted }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.convertBtn, { backgroundColor: colors.accentGreen }]}
+                onPress={confirmConvertToDaily}
+              >
+                <Text style={[styles.convertBtnText, { color: '#fff' }]}>Add to Daily</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -371,4 +422,30 @@ const styles = StyleSheet.create({
   },
   addToDailyText: { fontSize: SIZES.xs, fontWeight: '700' },
   addedBadge: { fontSize: SIZES.xs, fontWeight: '500', marginLeft: 4 },
+
+  // Convert to Daily modal
+  convertOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 20,
+  },
+  convertModal: {
+    borderRadius: 20, padding: 20,
+  },
+  convertTitle: {
+    fontSize: SIZES.xl, fontWeight: '700', textAlign: 'center', marginBottom: 4,
+  },
+  convertSubtitle: {
+    fontSize: SIZES.sm, textAlign: 'center', marginBottom: 12,
+  },
+  convertLabel: {
+    fontSize: SIZES.xs, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8,
+  },
+  convertActions: {
+    flexDirection: 'row', gap: 12, marginTop: 16,
+  },
+  convertBtn: {
+    flex: 1, paddingVertical: 12, borderRadius: SIZES.radius, alignItems: 'center',
+  },
+  convertBtnText: {
+    fontSize: SIZES.base, fontWeight: '700',
+  },
 });
