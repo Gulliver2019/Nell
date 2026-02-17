@@ -21,6 +21,7 @@ import MoreScreen from './src/screens/MoreScreen';
 import HelpScreen from './src/screens/HelpScreen';
 import ThemePickerScreen from './src/screens/ThemePickerScreen';
 import ProjectsScreen from './src/screens/ProjectsScreen';
+import ShoppingListScreen from './src/screens/ShoppingListScreen';
 
 const Tab = createBottomTabNavigator();
 const MoreStack = createStackNavigator();
@@ -41,6 +42,7 @@ const TAB_ICONS = {
   Future: { focused: 'rocket', unfocused: 'rocket-outline' },
   Projects: { focused: 'briefcase', unfocused: 'briefcase-outline' },
   Collections: { focused: 'folder', unfocused: 'folder-outline' },
+  Shopping: { focused: 'cart', unfocused: 'cart-outline' },
   Habits: { focused: 'checkmark-circle', unfocused: 'checkmark-circle-outline' },
   Reflect: { focused: 'heart', unfocused: 'heart-outline' },
   Index: { focused: 'search', unfocused: 'search-outline' },
@@ -121,6 +123,7 @@ function AppContent() {
         <Tab.Screen name="Future" component={FutureLogScreen} />
         <Tab.Screen name="Projects" component={ProjectsScreen} />
         <Tab.Screen name="Collections" component={CollectionsScreen} />
+        <Tab.Screen name="Shopping" component={ShoppingListScreen} />
         <Tab.Screen name="Habits" component={HabitTrackerScreen} />
         <Tab.Screen name="Reflect" component={ReflectionScreen} />
         <Tab.Screen name="Index" component={IndexScreen} />
