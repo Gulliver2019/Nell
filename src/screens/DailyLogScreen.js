@@ -256,6 +256,7 @@ export default function DailyLogScreen() {
           entries={dayEntries}
           onUpdate={updateEntry}
           colors={colors}
+          dateKey={selectedDate}
         />
       )}
 
