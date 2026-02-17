@@ -14,12 +14,18 @@ const STORAGE_KEY = 'crushedit_shopping';
 
 const CATEGORIES = [
   { key: 'all', label: 'All', icon: '🛒' },
-  { key: 'groceries', label: 'Groceries', icon: '🥦' },
+  { key: 'produce', label: 'Produce', icon: '🥦' },
+  { key: 'meat', label: 'Meat', icon: '🥩' },
+  { key: 'bakery', label: 'Bakery', icon: '🍞' },
+  { key: 'medicine', label: 'Medicine', icon: '💊' },
+  { key: 'readymeals', label: 'Ready Meals', icon: '🍱' },
+  { key: 'cookemeats', label: 'Cooke Meats', icon: '🍗' },
+  { key: 'dairy', label: 'Dairy', icon: '🧀' },
+  { key: 'sauces', label: 'Sauces', icon: '🫙' },
+  { key: 'beverages', label: 'Beverages', icon: '🥤' },
+  { key: 'goodies', label: 'Goodies', icon: '🍫' },
+  { key: 'pet', label: 'Pet', icon: '🐾' },
   { key: 'household', label: 'Household', icon: '🏠' },
-  { key: 'health', label: 'Health', icon: '💊' },
-  { key: 'clothing', label: 'Clothing', icon: '👕' },
-  { key: 'electronics', label: 'Electronics', icon: '📱' },
-  { key: 'other', label: 'Other', icon: '📦' },
 ];
 
 const CATEGORY_MAP = {};
@@ -31,7 +37,7 @@ export default function ShoppingListScreen() {
   const { colors } = useTheme();
   const [items, setItems] = useState([]);
   const [text, setText] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('groceries');
+  const [selectedCategory, setSelectedCategory] = useState('produce');
   const [filterCategory, setFilterCategory] = useState('all');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
 
@@ -271,7 +277,7 @@ export default function ShoppingListScreen() {
       )}
 
       {/* Filter chips */}
-      <View style={styles.filterRow}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
         {CATEGORIES.map(cat => {
           const isActive = filterCategory === cat.key;
           const count = cat.key === 'all'
@@ -296,9 +302,7 @@ export default function ShoppingListScreen() {
             </TouchableOpacity>
           );
         })}
-      </View>
-
-      {/* Items list */}
+      </ScrollView>
       <FlatList
         data={displayItems}
         renderItem={renderItem}
