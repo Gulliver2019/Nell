@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
   },
   filterChip: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 14, borderWidth: 1, borderColor: 'transparent',
+    paddingHorizontal: 10, paddingVertical: 2, borderRadius: 10, borderWidth: 1, borderColor: 'transparent', height: 20, justifyContent: 'center',
   },
   filterLabel: { fontSize: SIZES.xs, fontWeight: '600' },
   filterCount: { fontSize: 10, fontWeight: '700' },

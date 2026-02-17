@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
   fabStack: {
     position: 'absolute',
     bottom: 90,
-    left: 20,
+    right: 20,
     alignItems: 'center',
     gap: 12,
     zIndex: 10,
