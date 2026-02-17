@@ -38,6 +38,7 @@ export const formatDateShort = (dateStr) => {
 };
 
 export const getMonthName = (monthKey) => {
+  if (!monthKey || typeof monthKey !== 'string') return '';
   const [year, month] = monthKey.split('-');
   const months = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
