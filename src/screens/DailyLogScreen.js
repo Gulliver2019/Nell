@@ -22,10 +22,11 @@ export default function DailyLogScreen() {
   const { colors } = useTheme();
   const {
     entries, selectedDate, setSelectedDate, addEntry, updateEntry,
-    deleteEntry, migrateEntry, scheduleEntry, reorderEntries,
+    deleteEntry, migrateEntry, scheduleEntry, reorderEntries, migratePastEntries,
   } = useApp();
 
   const today = getDateKey();
+  const isToday = selectedDate === today;
   const [scheduleEntryId, setScheduleEntryId] = useState(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'timeblock'
@@ -58,6 +59,22 @@ export default function DailyLogScreen() {
       open: tasks.filter(t => t.state === 'open').length,
     };
   }, [dayEntries]);
+
+  // Count open tasks on past days that can be migrated to today
+  const migrateableCount = useMemo(() => {
+    if (isToday) return 0;
+    return dayEntries.filter(
+      e => e.type === 'task' && (e.state === 'open' || (e.state === 'migrated' && !e._migratedToToday))
+    ).length;
+  }, [dayEntries, isToday]);
+
+  const handleMigrateAll = useCallback(async () => {
+    const count = await migratePastEntries();
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    if (count > 0) {
+      Alert.alert('Migrated', `${count} task${count > 1 ? 's' : ''} moved to today`);
+    }
+  }, [migratePastEntries]);
 
   const handleAdd = useCallback(async (data) => {
     if (data.id) {
@@ -101,8 +118,6 @@ export default function DailyLogScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     updateEntry(id, { state: 'migrated' });
   }, [updateEntry]);
-
-  const isToday = selectedDate === today;
 
   const renderEntry = useCallback(({ item, drag, isActive }) => (
     <ScaleDecorator>
@@ -193,6 +208,20 @@ export default function DailyLogScreen() {
           </View>
         )}
       </View>
+
+      {/* Migrate to Today button for past days */}
+      {!isToday && migrateableCount > 0 && (
+        <TouchableOpacity
+          style={[styles.migrateBar, { backgroundColor: colors.accent + '20', borderColor: colors.accent + '40' }]}
+          onPress={handleMigrateAll}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="arrow-forward-circle-outline" size={18} color={colors.accent} />
+          <Text style={[styles.migrateBarText, { color: colors.accent }]}>
+            Migrate {migrateableCount} task{migrateableCount > 1 ? 's' : ''} to today
+          </Text>
+        </TouchableOpacity>
+      )}
 
       {/* Entries */}
       {viewMode === 'list' ? (
@@ -352,6 +381,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     marginTop: 4,
+  },
+  migrateBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    gap: 8,
+  },
+  migrateBarText: {
+    fontSize: SIZES.sm,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   list: {
     paddingHorizontal: 16,

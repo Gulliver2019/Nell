@@ -132,6 +132,44 @@ export function AppProvider({ children }) {
     dispatch({ type: 'SET_ENTRIES', payload: entries });
   }, []);
 
+  // Manual migrate: move all open/migrated tasks from past days to today
+  const migratePastEntries = useCallback(async () => {
+    const today = Storage.getDateKey();
+    const allEntries = await Storage.getAllEntries();
+    const toMigrate = allEntries.filter(
+      e => e.type === 'task'
+        && (e.state === 'open' || (e.state === 'migrated' && !e._migratedToToday))
+        && e.date && e.date < today
+        && !e.collection
+    );
+    if (toMigrate.length === 0) return 0;
+
+    let count = 0;
+    for (const entry of toMigrate) {
+      const alreadyCopied = allEntries.some(
+        e => e.migratedFrom === entry.id && e.date === today
+      );
+      if (alreadyCopied) {
+        await Storage.updateEntry(entry.id, { _migratedToToday: true, state: 'migrated' });
+        continue;
+      }
+      await Storage.updateEntry(entry.id, { _migratedToToday: true, state: 'migrated' });
+      await Storage.addEntry({
+        text: entry.text,
+        type: entry.type,
+        signifier: entry.signifier || null,
+        pomodoros: entry.pomodoros || 0,
+        date: today,
+        state: 'open',
+        migratedFrom: entry.id,
+      });
+      count++;
+    }
+    const entries = await Storage.getAllEntries();
+    dispatch({ type: 'SET_ENTRIES', payload: entries });
+    return count;
+  }, []);
+
   const scheduleEntry = useCallback(async (id, date) => {
     await Storage.scheduleEntry(id, date);
     const entries = await Storage.getAllEntries();
@@ -247,6 +285,7 @@ export function AppProvider({ children }) {
     deleteEntry,
     reorderEntries,
     migrateEntry,
+    migratePastEntries,
     scheduleEntry,
     addCollection,
     deleteCollection,
