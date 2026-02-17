@@ -75,25 +75,22 @@ export function AppProvider({ children }) {
     (async () => {
       const allEntries = await Storage.getAllEntries();
       for (const entry of toMigrate) {
-        // Skip if a copy already exists for today
         const alreadyCopied = allEntries.some(
           e => e.migratedFrom === entry.id && e.date === today
         );
-        if (alreadyCopied) {
-          await Storage.updateEntry(entry.id, { _migratedToToday: true, state: 'migrated' });
-          continue;
+        if (!alreadyCopied) {
+          await Storage.addEntry({
+            text: entry.text,
+            type: entry.type,
+            signifier: entry.signifier || null,
+            pomodoros: entry.pomodoros || 0,
+            date: today,
+            state: 'open',
+            migratedFrom: entry.id,
+          });
         }
-        // Mark original as migrated so it stays on its original day with ">"
-        await Storage.updateEntry(entry.id, { _migratedToToday: true, state: 'migrated' });
-        // Create fresh copy for today
-        await Storage.addEntry({
-          text: entry.text,
-          type: entry.type,
-          signifier: entry.signifier || null,
-          date: today,
-          state: 'open',
-          migratedFrom: entry.id,
-        });
+        // Remove original from its old day
+        await Storage.deleteEntry(entry.id);
       }
       const entries = await Storage.getAllEntries();
       dispatch({ type: 'SET_ENTRIES', payload: entries });
@@ -149,21 +146,20 @@ export function AppProvider({ children }) {
       const alreadyCopied = allEntries.some(
         e => e.migratedFrom === entry.id && e.date === today
       );
-      if (alreadyCopied) {
-        await Storage.updateEntry(entry.id, { _migratedToToday: true, state: 'migrated' });
-        continue;
+      if (!alreadyCopied) {
+        await Storage.addEntry({
+          text: entry.text,
+          type: entry.type,
+          signifier: entry.signifier || null,
+          pomodoros: entry.pomodoros || 0,
+          date: today,
+          state: 'open',
+          migratedFrom: entry.id,
+        });
+        count++;
       }
-      await Storage.updateEntry(entry.id, { _migratedToToday: true, state: 'migrated' });
-      await Storage.addEntry({
-        text: entry.text,
-        type: entry.type,
-        signifier: entry.signifier || null,
-        pomodoros: entry.pomodoros || 0,
-        date: today,
-        state: 'open',
-        migratedFrom: entry.id,
-      });
-      count++;
+      // Remove original from its old day
+      await Storage.deleteEntry(entry.id);
     }
     const entries = await Storage.getAllEntries();
     dispatch({ type: 'SET_ENTRIES', payload: entries });
