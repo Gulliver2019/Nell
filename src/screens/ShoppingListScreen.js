@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList,
-  Alert, Animated, Keyboard, ScrollView,
+  Alert, Animated, Keyboard, ScrollView, Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -125,6 +125,31 @@ export default function ShoppingListScreen() {
     return [...unchecked, ...checked];
   }, [items, filterCategory]);
 
+  // Share list via native share sheet
+  const handleShare = useCallback(async () => {
+    const unchecked = items.filter(i => !i.checked);
+    if (unchecked.length === 0) {
+      Alert.alert('Nothing to share', 'Add some items first!');
+      return;
+    }
+    const grouped = {};
+    unchecked.forEach(i => {
+      const cat = CATEGORY_MAP[i.category] || CATEGORY_MAP.produce;
+      if (!grouped[cat.label]) grouped[cat.label] = [];
+      const qty = (i.quantity || 1) > 1 ? ` x${i.quantity}` : '';
+      grouped[cat.label].push(`  • ${i.text}${qty}`);
+    });
+    const lines = ['🛒 Shopping List', ''];
+    Object.entries(grouped).forEach(([label, lineItems]) => {
+      lines.push(`${label}:`);
+      lineItems.forEach(l => lines.push(l));
+      lines.push('');
+    });
+    try {
+      await Share.share({ message: lines.join('\n') });
+    } catch (e) { /* cancelled */ }
+  }, [items]);
+
   const checkedCount = items.filter(i => i.checked).length;
   const totalCount = items.length;
 
@@ -205,7 +230,14 @@ export default function ShoppingListScreen() {
         />
         <View style={styles.headerRow}>
           <Text style={[styles.title, { color: colors.text }]}>Shopping List</Text>
-          {checkedCount > 0 && (
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={[styles.shareBtn, { backgroundColor: colors.accent + '18' }]}
+              onPress={handleShare}
+            >
+              <Text style={[styles.shareBtnText, { color: colors.accent }]}>Share 📤</Text>
+            </TouchableOpacity>
+            {checkedCount > 0 && (
             <TouchableOpacity
               style={[styles.clearBtn, { backgroundColor: colors.accentRed + '18' }]}
               onPress={clearChecked}
@@ -215,6 +247,7 @@ export default function ShoppingListScreen() {
               </Text>
             </TouchableOpacity>
           )}
+          </View>
         </View>
         <Text style={[styles.subtitle, { color: colors.textMuted }]}>
           {totalCount === 0 ? 'No items yet' : `${totalCount - checkedCount} remaining · ${checkedCount} done`}
@@ -291,7 +324,11 @@ export default function ShoppingListScreen() {
                 { backgroundColor: colors.bgInput },
                 isActive && { backgroundColor: colors.accent + '20', borderColor: colors.accent },
               ]}
-              onPress={() => { setFilterCategory(cat.key); Haptics.selectionAsync(); }}
+              onPress={() => {
+                setFilterCategory(cat.key);
+                if (cat.key !== 'all') setSelectedCategory(cat.key);
+                Haptics.selectionAsync();
+              }}
             >
               <Text style={[styles.filterLabel, { color: isActive ? colors.accent : colors.textMuted }]}>{cat.label}</Text>
               {count > 0 && (
@@ -337,6 +374,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16,
   },
   clearBtnText: { fontSize: SIZES.xs, fontWeight: '700' },
+  headerActions: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+  },
+  shareBtn: {
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16,
+  },
+  shareBtnText: { fontSize: SIZES.xs, fontWeight: '700' },
 
   // Quick-add
   addBar: {
@@ -373,13 +417,13 @@ const styles = StyleSheet.create({
   },
   filterChip: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 10, paddingVertical: 2, borderRadius: 10, borderWidth: 1, borderColor: 'transparent', height: 20, justifyContent: 'center',
+    paddingHorizontal: 10, paddingVertical: 2, borderRadius: 20, borderWidth: 1, borderColor: 'transparent', height: 40, justifyContent: 'center',
   },
   filterLabel: { fontSize: SIZES.xs, fontWeight: '600' },
   filterCount: { fontSize: 10, fontWeight: '700' },
 
   // List
-  list: { paddingHorizontal: 16, paddingBottom: 100 },
+  list: { paddingHorizontal: 16, paddingTop: 0, paddingBottom: 100 },
   itemRow: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     padding: 12, borderRadius: SIZES.radius, borderWidth: 1, marginBottom: 6,
@@ -407,7 +451,7 @@ const styles = StyleSheet.create({
   qtyValue: { fontSize: SIZES.sm, fontWeight: '700', minWidth: 16, textAlign: 'center' },
 
   // Empty
-  empty: { alignItems: 'center', paddingTop: 60 },
+  empty: { alignItems: 'center', paddingTop: 30 },
   emptyIcon: { fontSize: 48, marginBottom: 8 },
   emptyText: { fontSize: SIZES.md },
 });
