@@ -242,11 +242,7 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey }) {
                 >
                   {isMeeting ? `📅 ${entry.text}` : entry.text}
                 </Text>
-                {pomodoroText ? (
-                  <Text style={[styles.blockPomo, { color: colors.accentGold }]}>{pomodoroText}</Text>
-                ) : null}
               </View>
-              {!isMeeting && <Text style={[styles.blockPlay, { color: colors.accent }]}>🍅</Text>}
             </View>
           </TouchableOpacity>
         </View>
@@ -488,7 +484,7 @@ const styles = StyleSheet.create({
   tomatoFab: {
     position: 'absolute',
     bottom: 90,
-    right: 20,
+    left: 20,
     width: 48,
     height: 48,
     borderRadius: 24,
