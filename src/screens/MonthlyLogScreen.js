@@ -45,7 +45,7 @@ export default function MonthlyLogScreen() {
 
     for (let d = 1; d <= daysInMonth; d++) {
       const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const dayEntries = entries.filter(e => e.date === dateKey && !e.collection);
+      const dayEntries = entries.filter(e => e.date === dateKey && !e.collection && e.source === 'monthly');
       const tasks = dayEntries.filter(e => e.type === 'task');
       const completed = tasks.filter(t => t.state === 'complete').length;
 
@@ -74,7 +74,7 @@ export default function MonthlyLogScreen() {
       const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const dayOfWeek = new Date(year, month - 1, d).getDay();
       const dayEntries = entries
-        .filter(e => e.date === dateKey && !e.collection)
+        .filter(e => e.date === dateKey && !e.collection && e.source === 'monthly')
         .sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
 
       result.push({
@@ -89,7 +89,7 @@ export default function MonthlyLogScreen() {
   }, [currentMonth, entries]);
 
   const monthStats = useMemo(() => {
-    const allEntries = entries.filter(e => e.date && e.date.startsWith(currentMonth) && !e.collection);
+    const allEntries = entries.filter(e => e.date && e.date.startsWith(currentMonth) && !e.collection && e.source === 'monthly');
     const tasks = allEntries.filter(e => e.type === 'task');
     return {
       total: allEntries.length,
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', paddingVertical: 6,
     paddingHorizontal: 4, borderBottomWidth: StyleSheet.hairlineWidth, gap: 6,
   },
-  dayHeaderNum: { fontSize: SIZES.lg, fontWeight: '700', width: 28 },
+  dayHeaderNum: { fontSize: SIZES.lg, fontWeight: '700', minWidth: 32 },
   dayHeaderName: { fontSize: SIZES.sm, fontWeight: '600' },
   addDayBtn: {
     width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center',
