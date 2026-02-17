@@ -2,20 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, AppState, Modal, Animated,
 } from 'react-native';
-import * as Notifications from 'expo-notifications';
 import * as Haptics from 'expo-haptics';
 import { SIZES } from '../utils/theme';
-
-// Configure how notifications appear when app is in foreground
-try {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-    }),
-  });
-} catch (e) {}
 
 const WORK_DURATION = 25 * 60;
 const SHORT_BREAK = 5 * 60;
@@ -44,14 +32,7 @@ export default function PomodoroTimer({ colors, activeEntry, onPomodoroComplete,
   const appStateRef = useRef(AppState.currentState);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const { status } = await Notifications.getPermissionsAsync();
-        if (status !== 'granted') await Notifications.requestPermissionsAsync();
-      } catch (e) {}
-    })();
-  }, []);
+  useEffect(() => {}, []);
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (nextState) => {
@@ -91,22 +72,11 @@ export default function PomodoroTimer({ colors, activeEntry, onPomodoroComplete,
   };
 
   const scheduleNotification = useCallback(async (secs, title, body) => {
-    try {
-      if (notifIdRef.current) await Notifications.cancelScheduledNotificationAsync(notifIdRef.current);
-      notifIdRef.current = await Notifications.scheduleNotificationAsync({
-        content: { title, body, sound: true },
-        trigger: { type: 'timeInterval', seconds: Math.max(1, secs), repeats: false },
-      });
-    } catch (e) {}
+    // Notifications removed — can re-add with expo-notifications later
   }, []);
 
   const cancelNotification = useCallback(async () => {
-    try {
-      if (notifIdRef.current) {
-        await Notifications.cancelScheduledNotificationAsync(notifIdRef.current);
-        notifIdRef.current = null;
-      }
-    } catch (e) {}
+    if (notifIdRef.current) notifIdRef.current = null;
   }, []);
 
   const handlePhaseEnd = useCallback(() => {
