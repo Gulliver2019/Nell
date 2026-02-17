@@ -146,6 +146,70 @@ const SECTIONS = [
     ],
   },
   {
+    title: 'Projects',
+    icon: '📋',
+    items: [
+      {
+        q: 'How do Projects work?',
+        a: 'Projects have a kanban-style board with three columns: To Do, In Progress and Done. Use the arrow buttons to move between columns, and long-press to drag and reorder tasks.',
+      },
+      {
+        q: 'How do I create a project?',
+        a: 'Go to the Projects tab and tap "+ New Project". Give it a name, emoji and colour. Add tasks with the + button inside each project.',
+      },
+    ],
+  },
+  {
+    title: 'Time Blocking',
+    icon: '🧱',
+    items: [
+      {
+        q: 'What is time blocking?',
+        a: 'Time blocking assigns your tasks to specific time slots in your day. Switch to the time block view on the Daily Log to see a visual timeline from 5am to 10pm.',
+      },
+      {
+        q: 'How do I assign a task?',
+        a: 'Tap an unscheduled task chip at the top, then tap the time slot where you want to place it. Tasks auto-fill based on their pomodoro count (1 pomodoro = 30 minutes).',
+      },
+      {
+        q: 'How do I remove a time block?',
+        a: 'Long-press on a scheduled block to unassign it from the timeline.',
+      },
+    ],
+  },
+  {
+    title: 'Pomodoro Timer',
+    icon: '🍅',
+    items: [
+      {
+        q: 'What is the Pomodoro technique?',
+        a: 'Work in focused 25-minute sessions (called pomodoros), followed by short 5-minute breaks. After 4 sessions, take a longer 15-minute break. It helps maintain deep focus.',
+      },
+      {
+        q: 'How do I use the timer?',
+        a: 'On the time block view, tap the floating 🍅 button or tap any scheduled task to open the full-screen Pomodoro timer. Controls: play/pause, reset and skip to next phase.',
+      },
+      {
+        q: 'Will I get notified?',
+        a: 'Yes! When a session ends, you\'ll receive a notification and see a celebration screen with a motivational message.',
+      },
+    ],
+  },
+  {
+    title: 'Shopping List',
+    icon: '🛒',
+    items: [
+      {
+        q: 'How does the Shopping List work?',
+        a: 'Quick-add items with a category (Produce, Meat, Dairy, etc). Tap to check off, long-press to delete. Checked items sink to the bottom. Use "Clear Checked" to bulk remove purchased items.',
+      },
+      {
+        q: 'Can I filter by category?',
+        a: 'Yes — use the scrollable category chips at the top to filter. Each chip shows the count of remaining items in that category.',
+      },
+    ],
+  },
+  {
     title: 'Habit Tracker',
     icon: '💪',
     items: [
@@ -219,11 +283,14 @@ function AccordionItem({ item }) {
   );
 }
 
-export default function HelpScreen({ navigation }) {
+export default function HelpScreen({ navigation, embedded }) {
   const { colors } = useTheme();
+  const Wrapper = embedded ? View : SafeAreaView;
+  const wrapperProps = embedded ? { style: [styles.safe, { backgroundColor: colors.bg }] } : { style: [styles.safe, { backgroundColor: colors.bg }], edges: ['top'] };
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+    <Wrapper {...wrapperProps}>
       {/* Header */}
+      {!embedded && (
       <View style={styles.header}>
         <LinearGradient
           colors={[colors.accentGold + '18', 'transparent']}
@@ -237,6 +304,7 @@ export default function HelpScreen({ navigation }) {
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>Your guide to crushing it</Text>
         </View>
       </View>
+      )}
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -310,7 +378,7 @@ export default function HelpScreen({ navigation }) {
           <Text style={[styles.footerText, { color: colors.textMuted }]}>Built with love. Now go dig those goals.</Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </Wrapper>
   );
 }
 

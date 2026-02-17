@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet, ScrollView, TouchableOpacity, Text } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
@@ -7,6 +7,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppProvider } from './src/context/AppContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 
@@ -22,6 +23,8 @@ import HelpScreen from './src/screens/HelpScreen';
 import ThemePickerScreen from './src/screens/ThemePickerScreen';
 import ProjectsScreen from './src/screens/ProjectsScreen';
 import ShoppingListScreen from './src/screens/ShoppingListScreen';
+import PaywallScreen from './src/screens/PaywallScreen';
+import OnboardingScreen from './src/screens/OnboardingScreen';
 
 const Tab = createBottomTabNavigator();
 const MoreStack = createStackNavigator();
@@ -89,10 +92,31 @@ function ScrollableTabBar({ state, descriptors, navigation, colors }) {
   );
 }
 
+const ONBOARDING_KEY = 'crushedit_onboarding_done';
+const PAYWALL_KEY = 'crushedit_paywall_done';
+
 function AppContent() {
   const { colors, hasChosenTheme, loading } = useTheme();
+  const [paywallDone, setPaywallDone] = useState(null);
+  const [onboardingDone, setOnboardingDone] = useState(null);
 
-  if (loading) {
+  useEffect(() => {
+    (async () => {
+      try {
+        const [pw, ob] = await Promise.all([
+          AsyncStorage.getItem(PAYWALL_KEY),
+          AsyncStorage.getItem(ONBOARDING_KEY),
+        ]);
+        setPaywallDone(pw === 'true');
+        setOnboardingDone(ob === 'true');
+      } catch (e) {
+        setPaywallDone(false);
+        setOnboardingDone(false);
+      }
+    })();
+  }, []);
+
+  if (loading || paywallDone === null) {
     return (
       <View style={[styles.loading, { backgroundColor: colors.bg }]}>
         <ActivityIndicator size="large" color={colors.accent} />
@@ -102,6 +126,24 @@ function AppContent() {
 
   if (!hasChosenTheme) {
     return <ThemePickerScreen isFirstLaunch={true} />;
+  }
+
+  if (!paywallDone) {
+    return (
+      <PaywallScreen onComplete={async () => {
+        await AsyncStorage.setItem(PAYWALL_KEY, 'true');
+        setPaywallDone(true);
+      }} />
+    );
+  }
+
+  if (!onboardingDone) {
+    return (
+      <OnboardingScreen onComplete={async () => {
+        await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
+        setOnboardingDone(true);
+      }} />
+    );
   }
 
   return (
