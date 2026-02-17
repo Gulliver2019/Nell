@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
   list: {
     paddingHorizontal: 16,
     paddingTop: 8,
-    paddingBottom: 120,
+    paddingBottom: 200,
     flexGrow: 1,
   },
   empty: {
