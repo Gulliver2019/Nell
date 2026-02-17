@@ -293,7 +293,7 @@ export default function ShoppingListScreen() {
               ]}
               onPress={() => { setFilterCategory(cat.key); Haptics.selectionAsync(); }}
             >
-              <Text style={styles.filterIcon}>{cat.icon}</Text>
+              <Text style={[styles.filterLabel, { color: isActive ? colors.accent : colors.textMuted }]}>{cat.label}</Text>
               {count > 0 && (
                 <Text style={[styles.filterCount, { color: isActive ? colors.accent : colors.textMuted }]}>
                   {count}
@@ -369,13 +369,13 @@ const styles = StyleSheet.create({
 
   // Filter
   filterRow: {
-    flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 10, gap: 6,
+    flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 6, gap: 6,
   },
   filterChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 3,
-    paddingHorizontal: 8, paddingVertical: 5, borderRadius: 14, borderWidth: 1, borderColor: 'transparent',
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 14, borderWidth: 1, borderColor: 'transparent',
   },
-  filterIcon: { fontSize: 13 },
+  filterLabel: { fontSize: SIZES.xs, fontWeight: '600' },
   filterCount: { fontSize: 10, fontWeight: '700' },
 
   // List
