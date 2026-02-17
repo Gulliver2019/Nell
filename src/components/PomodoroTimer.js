@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, AppState, Platform,
+  View, Text, TouchableOpacity, StyleSheet, AppState, Modal, Animated,
 } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as Haptics from 'expo-haptics';
@@ -15,40 +15,44 @@ try {
       shouldSetBadge: false,
     }),
   });
-} catch (e) {
-  // Native module not available yet — will work after dev build with expo-notifications
-}
+} catch (e) {}
 
-const WORK_DURATION = 25 * 60; // 25 minutes
-const SHORT_BREAK = 5 * 60;   // 5 minutes
-const LONG_BREAK = 15 * 60;   // 15 minutes
+const WORK_DURATION = 25 * 60;
+const SHORT_BREAK = 5 * 60;
+const LONG_BREAK = 15 * 60;
 const SESSIONS_BEFORE_LONG = 4;
 
-export default function PomodoroTimer({ colors, activeEntry, onPomodoroComplete }) {
-  const [phase, setPhase] = useState('work'); // 'work' | 'shortBreak' | 'longBreak'
+const COMPLETION_MESSAGES = [
+  { emoji: '🎯', title: 'Crushed it!', sub: 'Another pomodoro in the bag.' },
+  { emoji: '🔥', title: 'On fire!', sub: 'You are building momentum.' },
+  { emoji: '💪', title: 'Strong work!', sub: 'Take a well-earned break.' },
+  { emoji: '⭐', title: 'Stellar focus!', sub: 'Your future self thanks you.' },
+  { emoji: '🏆', title: 'Champion!', sub: 'Consistency is your superpower.' },
+  { emoji: '🚀', title: 'Launched!', sub: 'That session was out of this world.' },
+];
+
+export default function PomodoroTimer({ colors, activeEntry, onPomodoroComplete, visible, onClose }) {
+  const [phase, setPhase] = useState('work');
   const [secondsLeft, setSecondsLeft] = useState(WORK_DURATION);
   const [isRunning, setIsRunning] = useState(false);
   const [sessionsCompleted, setSessionsCompleted] = useState(0);
+  const [showCompletion, setShowCompletion] = useState(false);
+  const [completionMsg, setCompletionMsg] = useState(COMPLETION_MESSAGES[0]);
   const intervalRef = useRef(null);
   const endTimeRef = useRef(null);
   const notifIdRef = useRef(null);
   const appStateRef = useRef(AppState.currentState);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  // Request notification permissions on mount
   useEffect(() => {
     (async () => {
       try {
         const { status } = await Notifications.getPermissionsAsync();
-        if (status !== 'granted') {
-          await Notifications.requestPermissionsAsync();
-        }
-      } catch (e) {
-        // Native module not available in current build — notifications will work after rebuild
-      }
+        if (status !== 'granted') await Notifications.requestPermissionsAsync();
+      } catch (e) {}
     })();
   }, []);
 
-  // Sync timer when app returns from background
   useEffect(() => {
     const sub = AppState.addEventListener('change', (nextState) => {
       if (appStateRef.current.match(/inactive|background/) && nextState === 'active') {
@@ -66,6 +70,20 @@ export default function PomodoroTimer({ colors, activeEntry, onPomodoroComplete 
     return () => sub.remove();
   }, [isRunning, phase]);
 
+  // Pulse animation for completion
+  useEffect(() => {
+    if (showCompletion) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, { toValue: 1.15, duration: 800, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+        ])
+      ).start();
+    } else {
+      pulseAnim.setValue(1);
+    }
+  }, [showCompletion]);
+
   const getDuration = (p) => {
     if (p === 'work') return WORK_DURATION;
     if (p === 'longBreak') return LONG_BREAK;
@@ -74,16 +92,12 @@ export default function PomodoroTimer({ colors, activeEntry, onPomodoroComplete 
 
   const scheduleNotification = useCallback(async (secs, title, body) => {
     try {
-      if (notifIdRef.current) {
-        await Notifications.cancelScheduledNotificationAsync(notifIdRef.current);
-      }
+      if (notifIdRef.current) await Notifications.cancelScheduledNotificationAsync(notifIdRef.current);
       notifIdRef.current = await Notifications.scheduleNotificationAsync({
         content: { title, body, sound: true },
         trigger: { type: 'timeInterval', seconds: Math.max(1, secs), repeats: false },
       });
-    } catch (e) {
-      // Native module not available — timer still works, just no notification
-    }
+    } catch (e) {}
   }, []);
 
   const cancelNotification = useCallback(async () => {
@@ -106,6 +120,9 @@ export default function PomodoroTimer({ colors, activeEntry, onPomodoroComplete 
       const newCount = sessionsCompleted + 1;
       setSessionsCompleted(newCount);
       onPomodoroComplete?.();
+      const msg = COMPLETION_MESSAGES[Math.floor(Math.random() * COMPLETION_MESSAGES.length)];
+      setCompletionMsg(msg);
+      setShowCompletion(true);
       if (newCount % SESSIONS_BEFORE_LONG === 0) {
         setPhase('longBreak');
         setSecondsLeft(LONG_BREAK);
@@ -119,28 +136,22 @@ export default function PomodoroTimer({ colors, activeEntry, onPomodoroComplete 
     }
   }, [phase, sessionsCompleted, onPomodoroComplete]);
 
-  // Tick
   useEffect(() => {
     if (!isRunning) return;
-
     intervalRef.current = setInterval(() => {
       setSecondsLeft(prev => {
-        if (prev <= 1) {
-          handlePhaseEnd();
-          return 0;
-        }
+        if (prev <= 1) { handlePhaseEnd(); return 0; }
         return prev - 1;
       });
     }, 1000);
-
     return () => clearInterval(intervalRef.current);
   }, [isRunning, handlePhaseEnd]);
 
   const start = async () => {
+    setShowCompletion(false);
     const secs = secondsLeft;
     endTimeRef.current = Date.now() + secs * 1000;
     setIsRunning(true);
-
     const title = phase === 'work' ? '🍅 Pomodoro Complete!' : '☕ Break Over!';
     const body = phase === 'work'
       ? `Great work! Time for a ${(sessionsCompleted + 1) % SESSIONS_BEFORE_LONG === 0 ? 'long' : 'short'} break.`
@@ -161,13 +172,24 @@ export default function PomodoroTimer({ colors, activeEntry, onPomodoroComplete 
     intervalRef.current = null;
     endTimeRef.current = null;
     setIsRunning(false);
+    setShowCompletion(false);
     setSecondsLeft(getDuration(phase));
     await cancelNotification();
   };
 
   const skip = () => {
     cancelNotification();
+    setShowCompletion(false);
     handlePhaseEnd();
+  };
+
+  const handleClose = () => {
+    if (!isRunning) {
+      setShowCompletion(false);
+      onClose?.();
+    } else {
+      onClose?.();
+    }
   };
 
   const minutes = Math.floor(secondsLeft / 60);
@@ -175,183 +197,235 @@ export default function PomodoroTimer({ colors, activeEntry, onPomodoroComplete 
   const totalDuration = getDuration(phase);
   const progress = 1 - secondsLeft / totalDuration;
 
-  const phaseLabel = phase === 'work' ? 'Focus' : phase === 'shortBreak' ? 'Short Break' : 'Long Break';
+  const phaseLabel = phase === 'work' ? 'FOCUS' : phase === 'shortBreak' ? 'SHORT BREAK' : 'LONG BREAK';
   const phaseColor = phase === 'work' ? colors.accentRed : colors.accentGreen;
 
-  // Circular progress ring
-  const RING_SIZE = 140;
-  const STROKE = 5;
-  const RADIUS = (RING_SIZE - STROKE) / 2;
-  const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-  const strokeDashoffset = CIRCUMFERENCE * (1 - progress);
+  const RING_SIZE = 220;
+  const STROKE = 6;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-      {/* Phase label & session dots */}
-      <View style={styles.phaseRow}>
-        <Text style={[styles.phaseLabel, { color: phaseColor }]}>{phaseLabel}</Text>
-        <View style={styles.sessionDots}>
-          {Array.from({ length: SESSIONS_BEFORE_LONG }).map((_, i) => (
-            <View
-              key={i}
-              style={[
-                styles.sessionDot,
-                {
-                  backgroundColor: i < (sessionsCompleted % SESSIONS_BEFORE_LONG)
-                    ? colors.accentRed
-                    : colors.border,
-                },
-              ]}
-            />
-          ))}
-        </View>
-      </View>
-
-      {/* Active entry name */}
-      {activeEntry && (
-        <Text style={[styles.entryName, { color: colors.text }]} numberOfLines={1}>
-          {activeEntry.text}
-        </Text>
-      )}
-
-      {/* Timer ring */}
-      <View style={[styles.ringWrapper, { width: RING_SIZE, height: RING_SIZE }]}>
-        <View style={[styles.ringBg, { width: RING_SIZE, height: RING_SIZE, borderRadius: RING_SIZE / 2, borderColor: colors.border }]} />
-        <View style={[styles.ringProgress, { width: RING_SIZE, height: RING_SIZE }]}>
-          {/* Using a simple overlay approach since react-native-svg might not be available */}
-          <View style={[styles.ringFill, {
-            width: RING_SIZE, height: RING_SIZE, borderRadius: RING_SIZE / 2,
-            borderColor: phaseColor, borderWidth: STROKE,
-            opacity: 0.2,
-          }]} />
-        </View>
-        <View style={styles.timerCenter}>
-          <Text style={[styles.timerText, { color: colors.text }]}>
-            {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
-          </Text>
-          <Text style={[styles.timerSessions, { color: colors.textMuted }]}>
-            #{sessionsCompleted + 1}
-          </Text>
-        </View>
-      </View>
-
-      {/* Controls */}
-      <View style={styles.controls}>
-        <TouchableOpacity
-          style={[styles.controlBtn, styles.secondaryBtn, { borderColor: colors.border }]}
-          onPress={reset}
-        >
-          <Text style={[styles.controlBtnText, { color: colors.textMuted }]}>↺</Text>
+    <Modal visible={visible} animationType="fade" transparent statusBarTranslucent>
+      <View style={[styles.overlay, { backgroundColor: colors.bg + 'F5' }]}>
+        {/* Close button */}
+        <TouchableOpacity style={styles.closeBtn} onPress={handleClose}>
+          <Text style={[styles.closeBtnText, { color: colors.textMuted }]}>✕</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.controlBtn, styles.primaryBtn, { backgroundColor: phaseColor }]}
-          onPress={isRunning ? pause : start}
-        >
-          <Text style={[styles.primaryBtnText, { color: '#fff' }]}>
-            {isRunning ? '⏸' : '▶'}
-          </Text>
-        </TouchableOpacity>
+        {/* Completion celebration */}
+        {showCompletion && (
+          <View style={styles.completionBanner}>
+            <Animated.Text style={[styles.completionEmoji, { transform: [{ scale: pulseAnim }] }]}>
+              {completionMsg.emoji}
+            </Animated.Text>
+            <Text style={[styles.completionTitle, { color: colors.accentGreen }]}>{completionMsg.title}</Text>
+            <Text style={[styles.completionSub, { color: colors.textSecondary }]}>{completionMsg.sub}</Text>
+            <TouchableOpacity
+              style={[styles.completionDismiss, { backgroundColor: colors.accentGreen + '20' }]}
+              onPress={() => setShowCompletion(false)}
+            >
+              <Text style={[styles.completionDismissText, { color: colors.accentGreen }]}>Continue</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
-        <TouchableOpacity
-          style={[styles.controlBtn, styles.secondaryBtn, { borderColor: colors.border }]}
-          onPress={skip}
-        >
-          <Text style={[styles.controlBtnText, { color: colors.textMuted }]}>⏭</Text>
-        </TouchableOpacity>
+        {/* Main timer */}
+        {!showCompletion && (
+          <View style={styles.timerBody}>
+            {/* Phase & dots */}
+            <Text style={[styles.phaseLabel, { color: phaseColor }]}>{phaseLabel}</Text>
+            <View style={styles.sessionDots}>
+              {Array.from({ length: SESSIONS_BEFORE_LONG }).map((_, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.sessionDot,
+                    { backgroundColor: i < (sessionsCompleted % SESSIONS_BEFORE_LONG) ? colors.accentRed : colors.border },
+                  ]}
+                />
+              ))}
+            </View>
+
+            {/* Active entry */}
+            {activeEntry && (
+              <Text style={[styles.entryName, { color: colors.text }]} numberOfLines={1}>
+                {activeEntry.text}
+              </Text>
+            )}
+
+            {/* Ring + time */}
+            <View style={[styles.ringWrapper, { width: RING_SIZE, height: RING_SIZE }]}>
+              <View style={[styles.ringBg, {
+                width: RING_SIZE, height: RING_SIZE, borderRadius: RING_SIZE / 2,
+                borderColor: colors.border, borderWidth: STROKE,
+              }]} />
+              <View style={[styles.ringFill, {
+                width: RING_SIZE, height: RING_SIZE, borderRadius: RING_SIZE / 2,
+                borderColor: phaseColor, borderWidth: STROKE, opacity: 0.25,
+              }]} />
+              <View style={styles.timerCenter}>
+                <Text style={[styles.timerText, { color: colors.text }]}>
+                  {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
+                </Text>
+                <Text style={[styles.timerSub, { color: colors.textMuted }]}>
+                  session #{sessionsCompleted + 1}
+                </Text>
+              </View>
+            </View>
+
+            {/* Controls */}
+            <View style={styles.controls}>
+              <TouchableOpacity style={[styles.secondaryBtn, { borderColor: colors.border }]} onPress={reset}>
+                <Text style={[styles.secondaryBtnText, { color: colors.textMuted }]}>↺</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.primaryBtn, { backgroundColor: phaseColor }]}
+                onPress={isRunning ? pause : start}
+              >
+                <Text style={styles.primaryBtnText}>{isRunning ? '⏸' : '▶'}</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={[styles.secondaryBtn, { borderColor: colors.border }]} onPress={skip}>
+                <Text style={[styles.secondaryBtnText, { color: colors.textMuted }]}>⏭</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </View>
-    </View>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    marginHorizontal: 16,
-    marginVertical: 10,
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 16,
+  overlay: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  phaseRow: {
-    flexDirection: 'row',
+  closeBtn: {
+    position: 'absolute',
+    top: 60,
+    right: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 4,
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  closeBtnText: {
+    fontSize: 24,
+    fontWeight: '300',
+  },
+
+  // Completion
+  completionBanner: {
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  completionEmoji: {
+    fontSize: 72,
+    marginBottom: 16,
+  },
+  completionTitle: {
+    fontSize: 32,
+    fontWeight: '800',
+    marginBottom: 8,
+  },
+  completionSub: {
+    fontSize: SIZES.lg,
+    fontWeight: '500',
+    textAlign: 'center',
+    marginBottom: 32,
+  },
+  completionDismiss: {
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 24,
+  },
+  completionDismissText: {
+    fontSize: SIZES.md,
+    fontWeight: '700',
+  },
+
+  // Timer body
+  timerBody: {
+    alignItems: 'center',
   },
   phaseLabel: {
     fontSize: SIZES.sm,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    fontWeight: '800',
+    letterSpacing: 3,
+    marginBottom: 12,
   },
   sessionDots: {
     flexDirection: 'row',
-    gap: 4,
+    gap: 6,
+    marginBottom: 20,
   },
   sessionDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   entryName: {
-    fontSize: SIZES.sm,
+    fontSize: SIZES.md,
     fontWeight: '500',
-    marginBottom: 8,
-    maxWidth: '80%',
+    marginBottom: 24,
+    maxWidth: '70%',
     textAlign: 'center',
   },
   ringWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 8,
+    marginBottom: 40,
   },
   ringBg: {
     position: 'absolute',
-    borderWidth: 3,
   },
-  ringProgress: {
+  ringFill: {
     position: 'absolute',
   },
-  ringFill: {},
   timerCenter: {
     alignItems: 'center',
   },
   timerText: {
-    fontSize: 36,
+    fontSize: 56,
     fontWeight: '200',
     fontVariant: ['tabular-nums'],
   },
-  timerSessions: {
+  timerSub: {
     fontSize: SIZES.xs,
     fontWeight: '600',
-    marginTop: 2,
+    marginTop: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   controls: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
-    marginTop: 8,
+    gap: 24,
   },
-  controlBtn: {
+  secondaryBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  secondaryBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1,
+  secondaryBtnText: {
+    fontSize: 20,
   },
   primaryBtn: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-  },
-  controlBtnText: {
-    fontSize: 18,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   primaryBtnText: {
-    fontSize: 20,
+    fontSize: 24,
+    color: '#fff',
   },
 });

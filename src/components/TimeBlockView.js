@@ -211,26 +211,6 @@ export default function TimeBlockView({ entries, onUpdate, colors }) {
 
   return (
     <View style={styles.container}>
-      {/* Pomodoro Timer toggle */}
-      <TouchableOpacity
-        style={[styles.timerToggle, { backgroundColor: showTimer ? colors.accentRed + '20' : colors.bgCard, borderColor: colors.border }]}
-        onPress={() => setShowTimer(!showTimer)}
-      >
-        <Text style={[styles.timerToggleText, { color: showTimer ? colors.accentRed : colors.textMuted }]}>
-          🍅 {showTimer ? 'Hide Timer' : 'Pomodoro Timer'}
-        </Text>
-      </TouchableOpacity>
-
-      {/* Pomodoro Timer */}
-      {showTimer && (
-        <PomodoroTimer
-          colors={colors}
-          activeEntry={timerEntry}
-          onPomodoroComplete={() => {
-            // Optional: could auto-increment pomodoro count on the active entry
-          }}
-        />
-      )}
       {/* Unassigned entries — tap to select, then tap a slot */}
       {unassigned.length > 0 && (
         <View style={[styles.unassignedSection, { borderBottomColor: colors.border }]}>
@@ -321,6 +301,24 @@ export default function TimeBlockView({ entries, onUpdate, colors }) {
           </View>
         </View>
       </Modal>
+
+      {/* Floating tomato button */}
+      <TouchableOpacity
+        style={[styles.tomatoFab, { backgroundColor: colors.accentRed }]}
+        onPress={() => setShowTimer(true)}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.tomatoFabText}>🍅</Text>
+      </TouchableOpacity>
+
+      {/* Full-screen Pomodoro Timer */}
+      <PomodoroTimer
+        visible={showTimer}
+        onClose={() => setShowTimer(false)}
+        colors={colors}
+        activeEntry={timerEntry}
+        onPomodoroComplete={() => {}}
+      />
     </View>
   );
 }
@@ -329,19 +327,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  timerToggle: {
-    flexDirection: 'row',
+  tomatoFab: {
+    position: 'absolute',
+    bottom: 90,
+    right: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 16,
-    marginTop: 8,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 6,
+    zIndex: 10,
   },
-  timerToggleText: {
-    fontSize: SIZES.sm,
-    fontWeight: '600',
+  tomatoFabText: {
+    fontSize: 24,
   },
   unassignedSection: {
     paddingHorizontal: 16,
