@@ -257,11 +257,14 @@ export default function DailyLogScreen() {
           onUpdate={updateEntry}
           colors={colors}
           dateKey={selectedDate}
+          onAddPress={() => { setEditingEntry(null); setFlyoutVisible(true); }}
         />
       )}
 
-      {/* FAB + Flyout */}
-      <FAB onPress={() => { setEditingEntry(null); setFlyoutVisible(true); }} />
+      {/* FAB + Flyout (only show standalone FAB in list mode) */}
+      {viewMode === 'list' && (
+        <FAB onPress={() => { setEditingEntry(null); setFlyoutVisible(true); }} />
+      )}
       <EntryFormFlyout
         visible={flyoutVisible}
         onClose={() => { setFlyoutVisible(false); setEditingEntry(null); }}
