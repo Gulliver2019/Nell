@@ -1,23 +1,28 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet, ScrollView,
+  View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SIZES, getTaskStates } from '../utils/theme';
+import { SIZES, getBulletTypes, getTaskStates, getSignifiers } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
-import { getMonthKey, getMonthName, getDateKey, formatDateShort } from '../utils/storage';
+import { getMonthKey, getMonthName, getDateKey } from '../utils/storage';
 import FAB from '../components/FAB';
 import EntryFormFlyout from '../components/EntryFormFlyout';
+
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function MonthlyLogScreen() {
   const { colors } = useTheme();
   const TASK_STATES = getTaskStates(colors);
-  const { entries, setSelectedDate, addEntry, updateEntry } = useApp();
+  const BULLET_TYPES = getBulletTypes(colors);
+  const SIGNIFIERS = getSignifiers(colors);
+  const { entries, addEntry, updateEntry } = useApp();
   const [currentMonth, setCurrentMonth] = useState(getMonthKey());
   const [flyoutVisible, setFlyoutVisible] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
+  const [addingToDay, setAddingToDay] = useState(null); // dateKey for FAB per-day add
 
   const goMonth = (offset) => {
     const [y, m] = currentMonth.split('-').map(Number);
@@ -33,22 +38,20 @@ export default function MonthlyLogScreen() {
     const today = getDateKey();
 
     const days = [];
-    // Pad start
     for (let i = 0; i < firstDay; i++) days.push(null);
-    
+
     for (let d = 1; d <= daysInMonth; d++) {
       const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const dayEntries = entries.filter(e => e.date === dateKey && !e.collection);
       const tasks = dayEntries.filter(e => e.type === 'task');
       const completed = tasks.filter(t => t.state === 'complete').length;
-      const total = tasks.length;
 
       days.push({
         day: d,
         dateKey,
         isToday: dateKey === today,
         entryCount: dayEntries.length,
-        taskCount: total,
+        taskCount: tasks.length,
         completedCount: completed,
         hasEvents: dayEntries.some(e => e.type === 'event'),
         hasPriority: dayEntries.some(e => e.signifier === 'priority'),
@@ -57,22 +60,63 @@ export default function MonthlyLogScreen() {
     return days;
   }, [currentMonth, entries]);
 
-  // Month tasks overview
-  const monthTasks = useMemo(() => {
-    return entries
-      .filter(e => e.date && e.date.startsWith(currentMonth) && e.type === 'task' && !e.collection)
-      .sort((a, b) => a.date.localeCompare(b.date));
-  }, [entries, currentMonth]);
+  // Day-by-day list: all days of month with their entries
+  const daysList = useMemo(() => {
+    const [year, month] = currentMonth.split('-').map(Number);
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const today = getDateKey();
+    const result = [];
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const dayOfWeek = new Date(year, month - 1, d).getDay();
+      const dayEntries = entries
+        .filter(e => e.date === dateKey && !e.collection)
+        .sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
+
+      result.push({
+        day: d,
+        dateKey,
+        dayName: DAY_NAMES[dayOfWeek],
+        isToday: dateKey === today,
+        entries: dayEntries,
+      });
+    }
+    return result;
+  }, [currentMonth, entries]);
 
   const monthStats = useMemo(() => {
-    const tasks = monthTasks;
+    const allEntries = entries.filter(e => e.date && e.date.startsWith(currentMonth) && !e.collection);
+    const tasks = allEntries.filter(e => e.type === 'task');
     return {
-      total: tasks.length,
+      total: allEntries.length,
       done: tasks.filter(t => t.state === 'complete').length,
       open: tasks.filter(t => t.state === 'open').length,
       migrated: tasks.filter(t => t.state === 'migrated').length,
     };
-  }, [monthTasks]);
+  }, [entries, currentMonth]);
+
+  // Check if an entry already exists on the daily (not a monthly source)
+  const isOnDaily = useCallback((entry) => {
+    return !entry.source || entry.source === 'daily';
+  }, []);
+
+  const handleAddToDaily = useCallback(async (entry) => {
+    const { id, source, createdAt, ...rest } = entry;
+    await addEntry({ ...rest, source: 'daily' });
+    // Mark original monthly entry as added
+    await updateEntry(id, { _addedToDaily: true });
+    Alert.alert('Added', `"${entry.text}" added to daily for ${entry.date}`);
+  }, [addEntry, updateEntry]);
+
+  const getBullet = (entry) => {
+    if (entry.type === 'task') {
+      const st = TASK_STATES[entry.state] || TASK_STATES.open;
+      return { symbol: st.symbol, color: st.color };
+    }
+    const bt = BULLET_TYPES[entry.type] || BULLET_TYPES.task;
+    return { symbol: bt.symbol, color: bt.color };
+  };
 
   const weekDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
@@ -98,7 +142,7 @@ export default function MonthlyLogScreen() {
           {/* Stats */}
           <View style={[styles.statsRow, { backgroundColor: colors.bgCard }]}>
             {[
-              { label: 'Tasks', value: monthStats.total, color: colors.text },
+              { label: 'Items', value: monthStats.total, color: colors.text },
               { label: 'Done', value: monthStats.done, color: colors.accentGreen },
               { label: 'Open', value: monthStats.open, color: colors.accentGold },
               { label: 'Moved', value: monthStats.migrated, color: colors.accentOrange },
@@ -113,7 +157,6 @@ export default function MonthlyLogScreen() {
 
         {/* Calendar Grid */}
         <View style={styles.calendar}>
-          {/* Weekday headers */}
           <View style={styles.weekRow}>
             {weekDays.map((d, i) => (
               <View key={i} style={styles.weekCell}>
@@ -122,7 +165,6 @@ export default function MonthlyLogScreen() {
             ))}
           </View>
 
-          {/* Days grid */}
           <View style={styles.daysGrid}>
             {calendarData.map((day, i) => (
               <TouchableOpacity
@@ -132,7 +174,7 @@ export default function MonthlyLogScreen() {
                   day?.isToday && [styles.dayCellToday, { backgroundColor: colors.accent + '20' }],
                 ]}
                 disabled={!day}
-                onPress={() => day && setSelectedDate(day.dateKey)}
+                onPress={() => {}}
               >
                 {day && (
                   <>
@@ -144,17 +186,12 @@ export default function MonthlyLogScreen() {
                     ]}>
                       {day.day}
                     </Text>
-                    {/* Activity indicators */}
                     <View style={styles.dayDots}>
                       {day.taskCount > 0 && (
-                        <View style={[
-                          styles.dot,
-                          {
-                            backgroundColor: day.completedCount === day.taskCount
-                              ? colors.accentGreen
-                              : colors.accent,
-                          },
-                        ]} />
+                        <View style={[styles.dot, {
+                          backgroundColor: day.completedCount === day.taskCount
+                            ? colors.accentGreen : colors.accent,
+                        }]} />
                       )}
                       {day.hasEvents && <View style={[styles.dot, { backgroundColor: colors.accentSecondary }]} />}
                       {day.hasPriority && <View style={[styles.dot, { backgroundColor: colors.accentRed }]} />}
@@ -166,59 +203,107 @@ export default function MonthlyLogScreen() {
           </View>
         </View>
 
-        {/* Task List */}
-        <View style={styles.taskList}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Task Overview</Text>
-          {monthTasks.length === 0 ? (
-            <Text style={[styles.emptyText, { color: colors.textMuted }]}>No tasks this month</Text>
-          ) : (
-            monthTasks.map(task => (
-              <TouchableOpacity
-                key={task.id}
-                style={[styles.taskRow, { borderBottomColor: colors.border }]}
-                onPress={() => {
-                  setEditingEntry(task);
-                  setFlyoutVisible(true);
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.taskDate, { color: colors.textMuted }]}>
-                  {formatDateShort(task.date)}
+        {/* Day-by-day list */}
+        <View style={styles.dayList}>
+          {daysList.map(day => (
+            <View key={day.dateKey} style={[styles.daySection, day.isToday && { backgroundColor: colors.accent + '08' }]}>
+              {/* Day header */}
+              <View style={[styles.dayHeader, { borderBottomColor: colors.border }]}>
+                <Text style={[
+                  styles.dayHeaderNum,
+                  { color: day.isToday ? colors.accent : colors.text },
+                ]}>
+                  {day.day}
                 </Text>
-                <Text style={[styles.taskBullet, { color: TASK_STATES[task.state].color }]}>
-                  {TASK_STATES[task.state].symbol}
+                <Text style={[
+                  styles.dayHeaderName,
+                  { color: day.isToday ? colors.accent : colors.textMuted },
+                ]}>
+                  {day.dayName}
                 </Text>
-                <Text
-                  style={[
-                    styles.taskText,
-                    { color: colors.text },
-                    task.state === 'complete' && { color: colors.textMuted, textDecorationLine: 'line-through' },
-                  ]}
-                  numberOfLines={1}
+                <View style={{ flex: 1 }} />
+                <TouchableOpacity
+                  style={[styles.addDayBtn, { backgroundColor: colors.accent + '15' }]}
+                  onPress={() => { setAddingToDay(day.dateKey); setEditingEntry(null); setFlyoutVisible(true); }}
                 >
-                  {task.text}
-                </Text>
-                <Text style={[styles.editHint, { color: colors.textMuted }]}>✎</Text>
-              </TouchableOpacity>
-            ))
-          )}
+                  <Text style={[styles.addDayBtnText, { color: colors.accent }]}>+</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Entries for this day */}
+              {day.entries.length === 0 ? (
+                <View style={styles.emptyDay}>
+                  <Text style={[styles.emptyDayText, { color: colors.textMuted }]}>—</Text>
+                </View>
+              ) : (
+                day.entries.map(entry => {
+                  const bullet = getBullet(entry);
+                  const sig = entry.signifier ? SIGNIFIERS[entry.signifier] : null;
+                  const onDaily = isOnDaily(entry) || entry._addedToDaily;
+
+                  return (
+                    <View key={entry.id} style={[styles.entryRow, { borderBottomColor: colors.border }]}>
+                      {sig && (
+                        <Text style={[styles.sigSymbol, { color: sig.color }]}>{sig.symbol}</Text>
+                      )}
+                      <Text style={[styles.entryBullet, { color: bullet.color }]}>{bullet.symbol}</Text>
+                      <TouchableOpacity
+                        style={{ flex: 1 }}
+                        onPress={() => { setEditingEntry(entry); setAddingToDay(null); setFlyoutVisible(true); }}
+                        activeOpacity={0.7}
+                      >
+                        <Text
+                          style={[
+                            styles.entryText,
+                            { color: colors.text },
+                            entry.state === 'complete' && { color: colors.textMuted, textDecorationLine: 'line-through' },
+                          ]}
+                          numberOfLines={2}
+                        >
+                          {entry.text}
+                        </Text>
+                      </TouchableOpacity>
+
+                      {/* Add to Daily button — only for monthly-source entries not yet added */}
+                      {entry.source === 'monthly' && !entry._addedToDaily && (
+                        <TouchableOpacity
+                          style={[styles.addToDailyBtn, { backgroundColor: colors.accentGreen + '18' }]}
+                          onPress={() => handleAddToDaily(entry)}
+                        >
+                          <Text style={[styles.addToDailyText, { color: colors.accentGreen }]}>→ Daily</Text>
+                        </TouchableOpacity>
+                      )}
+                      {entry._addedToDaily && (
+                        <Text style={[styles.addedBadge, { color: colors.textMuted }]}>✓ added</Text>
+                      )}
+                    </View>
+                  );
+                })
+              )}
+            </View>
+          ))}
         </View>
+
+        <View style={{ height: 100 }} />
       </ScrollView>
 
-      <FAB onPress={() => { setEditingEntry(null); setFlyoutVisible(true); }} />
+      <FAB onPress={() => { setEditingEntry(null); setAddingToDay(null); setFlyoutVisible(true); }} />
       <EntryFormFlyout
         visible={flyoutVisible}
-        onClose={() => { setFlyoutVisible(false); setEditingEntry(null); }}
+        onClose={() => { setFlyoutVisible(false); setEditingEntry(null); setAddingToDay(null); }}
         onSubmit={async (data) => {
           if (data.id) {
             const { id, ...updates } = data;
             await updateEntry(id, updates);
           } else {
-            await addEntry({ ...data });
+            // If adding to a specific day, set date and source
+            const date = addingToDay || data.date;
+            await addEntry({ ...data, date, source: addingToDay ? 'monthly' : (data.source || 'monthly') });
           }
+          setAddingToDay(null);
         }}
         entry={editingEntry}
-        visibleFields={['text', 'type', 'signifier', 'date']}
+        visibleFields={addingToDay ? ['text', 'type', 'signifier'] : ['text', 'type', 'signifier', 'date']}
       />
     </SafeAreaView>
   );
@@ -251,24 +336,39 @@ const styles = StyleSheet.create({
     width: '14.28%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center',
     padding: 2,
   },
-  dayCellToday: {
-    borderRadius: SIZES.radius,
-  },
+  dayCellToday: { borderRadius: SIZES.radius },
   dayNum: { fontSize: SIZES.md, fontWeight: '500' },
   dayDots: { flexDirection: 'row', gap: 2, marginTop: 2, height: 6 },
   dot: { width: 4, height: 4, borderRadius: 2 },
-  taskList: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40 },
-  sectionTitle: {
-    fontSize: SIZES.lg, fontWeight: '700', marginBottom: 12,
+
+  // Day-by-day list
+  dayList: { paddingHorizontal: 16, paddingTop: 16 },
+  daySection: { marginBottom: 4, borderRadius: SIZES.radius, overflow: 'hidden' },
+  dayHeader: {
+    flexDirection: 'row', alignItems: 'center', paddingVertical: 6,
+    paddingHorizontal: 4, borderBottomWidth: StyleSheet.hairlineWidth, gap: 6,
   },
-  emptyText: { fontSize: SIZES.md },
-  taskRow: {
-    flexDirection: 'row', alignItems: 'center', paddingVertical: 8,
+  dayHeaderNum: { fontSize: SIZES.lg, fontWeight: '700', width: 28 },
+  dayHeaderName: { fontSize: SIZES.sm, fontWeight: '600' },
+  addDayBtn: {
+    width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center',
+  },
+  addDayBtnText: { fontSize: 18, fontWeight: '600', lineHeight: 20 },
+  emptyDay: { paddingVertical: 4, paddingLeft: 38 },
+  emptyDayText: { fontSize: SIZES.sm },
+
+  entryRow: {
+    flexDirection: 'row', alignItems: 'center', paddingVertical: 6,
+    paddingLeft: 8, paddingRight: 4, gap: 6,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    gap: 8,
   },
-  taskDate: { fontSize: SIZES.xs, width: 48, fontWeight: '500' },
-  taskBullet: { fontSize: SIZES.base, fontWeight: '700', width: 20, textAlign: 'center' },
-  taskText: { flex: 1, fontSize: SIZES.md },
-  editHint: { fontSize: SIZES.sm, marginLeft: 8, fontWeight: '600' },
+  sigSymbol: { fontSize: SIZES.sm, fontWeight: '700', width: 14, textAlign: 'center' },
+  entryBullet: { fontSize: SIZES.base, fontWeight: '700', width: 18, textAlign: 'center' },
+  entryText: { fontSize: SIZES.md },
+
+  addToDailyBtn: {
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10,
+  },
+  addToDailyText: { fontSize: SIZES.xs, fontWeight: '700' },
+  addedBadge: { fontSize: SIZES.xs, fontWeight: '500', marginLeft: 4 },
 });
