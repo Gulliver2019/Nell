@@ -5,6 +5,7 @@ import {
 import { SIZES } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import * as Haptics from 'expo-haptics';
+import PomodoroTimer from './PomodoroTimer';
 
 const START_HOUR = 5;
 const END_HOUR = 22;
@@ -33,6 +34,8 @@ export default function TimeBlockView({ entries, onUpdate, colors }) {
   const [selectedSlot, setSelectedSlot] = useState(null);
   // Tap-to-select: user taps a chip, it becomes "selected", then taps a slot to place it
   const [selectedEntry, setSelectedEntry] = useState(null);
+  const [showTimer, setShowTimer] = useState(false);
+  const [timerEntry, setTimerEntry] = useState(null);
 
   // Build a map: slot → entry (accounting for multi-slot pomodoros)
   const slotMap = useMemo(() => {
@@ -151,21 +154,30 @@ export default function TimeBlockView({ entries, onUpdate, colors }) {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               onUpdate?.(entry.id, { timeBlock: null });
             }}
+            onPress={() => {
+              setTimerEntry(entry);
+              setShowTimer(true);
+            }}
             activeOpacity={0.7}
           >
-            <Text
-              style={[
-                styles.blockText,
-                { color: colors.text },
-                isComplete && { textDecorationLine: 'line-through', color: colors.textSecondary },
-              ]}
-              numberOfLines={2}
-            >
-              {entry.text}
-            </Text>
-            {pomodoroText ? (
-              <Text style={[styles.blockPomo, { color: colors.accentGold }]}>{pomodoroText}</Text>
-            ) : null}
+            <View style={styles.blockContent}>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={[
+                    styles.blockText,
+                    { color: colors.text },
+                    isComplete && { textDecorationLine: 'line-through', color: colors.textSecondary },
+                  ]}
+                  numberOfLines={2}
+                >
+                  {entry.text}
+                </Text>
+                {pomodoroText ? (
+                  <Text style={[styles.blockPomo, { color: colors.accentGold }]}>{pomodoroText}</Text>
+                ) : null}
+              </View>
+              <Text style={[styles.blockPlay, { color: colors.accent }]}>🍅</Text>
+            </View>
           </TouchableOpacity>
         </View>
       );
@@ -199,6 +211,26 @@ export default function TimeBlockView({ entries, onUpdate, colors }) {
 
   return (
     <View style={styles.container}>
+      {/* Pomodoro Timer toggle */}
+      <TouchableOpacity
+        style={[styles.timerToggle, { backgroundColor: showTimer ? colors.accentRed + '20' : colors.bgCard, borderColor: colors.border }]}
+        onPress={() => setShowTimer(!showTimer)}
+      >
+        <Text style={[styles.timerToggleText, { color: showTimer ? colors.accentRed : colors.textMuted }]}>
+          🍅 {showTimer ? 'Hide Timer' : 'Pomodoro Timer'}
+        </Text>
+      </TouchableOpacity>
+
+      {/* Pomodoro Timer */}
+      {showTimer && (
+        <PomodoroTimer
+          colors={colors}
+          activeEntry={timerEntry}
+          onPomodoroComplete={() => {
+            // Optional: could auto-increment pomodoro count on the active entry
+          }}
+        />
+      )}
       {/* Unassigned entries — tap to select, then tap a slot */}
       {unassigned.length > 0 && (
         <View style={[styles.unassignedSection, { borderBottomColor: colors.border }]}>
@@ -296,6 +328,20 @@ export default function TimeBlockView({ entries, onUpdate, colors }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  timerToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 16,
+    marginTop: 8,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  timerToggleText: {
+    fontSize: SIZES.sm,
+    fontWeight: '600',
   },
   unassignedSection: {
     paddingHorizontal: 16,
@@ -403,6 +449,14 @@ const styles = StyleSheet.create({
   blockPomo: {
     fontSize: SIZES.xs,
     marginTop: 2,
+  },
+  blockContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  blockPlay: {
+    fontSize: 16,
   },
   // Modal
   modalOverlay: {
