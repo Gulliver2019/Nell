@@ -1,17 +1,15 @@
 import React, { useMemo, useState, useRef, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, FlatList,
-  PanResponder, Animated, Dimensions,
 } from 'react-native';
 import { SIZES } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import * as Haptics from 'expo-haptics';
 
 const START_HOUR = 5;
-const END_HOUR = 22; // 10pm
+const END_HOUR = 22;
 const SLOT_HEIGHT = 52;
 
-// Generate time slots from 5:00 to 21:30 (last slot starts at 21:30)
 const generateSlots = () => {
   const slots = [];
   for (let h = START_HOUR; h < END_HOUR; h++) {
@@ -30,72 +28,11 @@ const formatSlotLabel = (slot) => {
   return `${h12}:${String(m).padStart(2, '0')}${ampm}`;
 };
 
-// Draggable chip component for unassigned entries
-function DraggableChip({ entry, colors, onDragStart, onDragMove, onDragEnd }) {
-  const pan = useRef(new Animated.ValueXY()).current;
-  const isDragging = useRef(false);
-  const startPos = useRef({ x: 0, y: 0 });
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 5 || Math.abs(g.dx) > 5,
-      onPanResponderGrant: (evt) => {
-        isDragging.current = true;
-        startPos.current = { x: evt.nativeEvent.pageX, y: evt.nativeEvent.pageY };
-        pan.setOffset({ x: 0, y: 0 });
-        pan.setValue({ x: 0, y: 0 });
-        onDragStart(entry, evt.nativeEvent.pageX, evt.nativeEvent.pageY);
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      },
-      onPanResponderMove: (evt, gestureState) => {
-        pan.setValue({ x: gestureState.dx, y: gestureState.dy });
-        onDragMove(evt.nativeEvent.pageY);
-      },
-      onPanResponderRelease: (evt) => {
-        isDragging.current = false;
-        Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
-        onDragEnd(evt.nativeEvent.pageY);
-      },
-      onPanResponderTerminate: () => {
-        isDragging.current = false;
-        Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
-        onDragEnd(-1); // cancelled
-      },
-    })
-  ).current;
-
-  const slotsNeeded = Math.max(1, entry.pomodoros || 1);
-  const durationText = slotsNeeded === 1 ? '30m' : `${slotsNeeded * 30}m`;
-
-  return (
-    <Animated.View
-      {...panResponder.panHandlers}
-      style={[
-        styles.unassignedChip,
-        { backgroundColor: colors.bgElevated, borderColor: colors.border },
-        { transform: pan.getTranslateTransform() },
-      ]}
-    >
-      <Text style={[styles.unassignedText, { color: colors.text }]} numberOfLines={1}>
-        {entry.text}
-      </Text>
-      {entry.pomodoros > 0 && (
-        <Text style={[styles.unassignedPomo, { color: colors.accentGold }]}>[{entry.pomodoros}]</Text>
-      )}
-      <Text style={[styles.durationBadge, { color: colors.textMuted }]}>{durationText}</Text>
-    </Animated.View>
-  );
-}
-
 export default function TimeBlockView({ entries, onUpdate, colors }) {
   const [assignModalVisible, setAssignModalVisible] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
-  const [dragEntry, setDragEntry] = useState(null);
-  const [highlightSlots, setHighlightSlots] = useState([]);
-  const timelineRef = useRef(null);
-  const timelineY = useRef(0);
-  const scrollOffset = useRef(0);
+  // Tap-to-select: user taps a chip, it becomes "selected", then taps a slot to place it
+  const [selectedEntry, setSelectedEntry] = useState(null);
 
   // Build a map: slot → entry (accounting for multi-slot pomodoros)
   const slotMap = useMemo(() => {
@@ -124,16 +61,6 @@ export default function TimeBlockView({ entries, onUpdate, colors }) {
     [entries]
   );
 
-  // Calculate which slot a Y position maps to
-  const getSlotFromY = useCallback((pageY) => {
-    const relY = pageY - timelineY.current + scrollOffset.current;
-    const slotIndex = Math.floor(relY / SLOT_HEIGHT);
-    if (slotIndex >= 0 && slotIndex < ALL_SLOTS.length) {
-      return { slot: ALL_SLOTS[slotIndex], index: slotIndex };
-    }
-    return null;
-  }, []);
-
   // Check if a range of slots is available
   const canAssignAt = useCallback((startIndex, slotsNeeded) => {
     for (let i = 0; i < slotsNeeded && (startIndex + i) < ALL_SLOTS.length; i++) {
@@ -142,47 +69,41 @@ export default function TimeBlockView({ entries, onUpdate, colors }) {
     return startIndex + slotsNeeded <= ALL_SLOTS.length;
   }, [slotMap]);
 
-  const handleDragStart = useCallback((entry) => {
-    setDragEntry(entry);
-  }, []);
-
-  const handleDragMove = useCallback((pageY) => {
-    if (!dragEntry) return;
-    const target = getSlotFromY(pageY);
-    if (!target) { setHighlightSlots([]); return; }
-    const slotsNeeded = Math.max(1, dragEntry.pomodoros || 1);
-    if (canAssignAt(target.index, slotsNeeded)) {
-      const slots = [];
-      for (let i = 0; i < slotsNeeded; i++) {
-        slots.push(ALL_SLOTS[target.index + i]);
+  // Compute which slots would be highlighted for the selected entry
+  const highlightSlots = useMemo(() => {
+    if (!selectedEntry) return {};
+    const slotsNeeded = Math.max(1, selectedEntry.pomodoros || 1);
+    const highlights = {};
+    ALL_SLOTS.forEach((slot, idx) => {
+      if (canAssignAt(idx, slotsNeeded)) {
+        highlights[slot] = true;
       }
-      setHighlightSlots(slots);
+    });
+    return highlights;
+  }, [selectedEntry, canAssignAt]);
+
+  const handleChipPress = (entry) => {
+    Haptics.selectionAsync();
+    if (selectedEntry?.id === entry.id) {
+      setSelectedEntry(null); // deselect
     } else {
-      setHighlightSlots([]);
+      setSelectedEntry(entry);
     }
-  }, [dragEntry, getSlotFromY, canAssignAt]);
+  };
 
-  const handleDragEnd = useCallback((pageY) => {
-    if (!dragEntry || pageY < 0) {
-      setDragEntry(null);
-      setHighlightSlots([]);
-      return;
-    }
-    const target = getSlotFromY(pageY);
-    if (target) {
-      const slotsNeeded = Math.max(1, dragEntry.pomodoros || 1);
-      if (canAssignAt(target.index, slotsNeeded)) {
-        onUpdate?.(dragEntry.id, { timeBlock: target.slot });
+  const handleSlotPress = (slot, slotIndex) => {
+    if (slotMap[slot]) return;
+
+    if (selectedEntry) {
+      // Place the selected entry at this slot
+      const slotsNeeded = Math.max(1, selectedEntry.pomodoros || 1);
+      if (canAssignAt(slotIndex, slotsNeeded)) {
+        onUpdate?.(selectedEntry.id, { timeBlock: slot });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setSelectedEntry(null);
       }
-    }
-    setDragEntry(null);
-    setHighlightSlots([]);
-  }, [dragEntry, getSlotFromY, canAssignAt, onUpdate]);
-
-  const handleSlotPress = (slot) => {
-    if (slotMap[slot]) return; // assigned slots use long-press to unassign
-    if (unassigned.length > 0) {
+    } else if (unassigned.length > 0) {
+      // Fallback: show modal picker
       Haptics.selectionAsync();
       setSelectedSlot(slot);
       setAssignModalVisible(true);
@@ -201,7 +122,7 @@ export default function TimeBlockView({ entries, onUpdate, colors }) {
   const renderSlot = (slot, index) => {
     const block = slotMap[slot];
     const isHour = slot.endsWith(':00');
-    const isHighlighted = highlightSlots.includes(slot);
+    const isHighlighted = !!highlightSlots[slot];
 
     if (block && !block.isStart) {
       return null;
@@ -250,7 +171,7 @@ export default function TimeBlockView({ entries, onUpdate, colors }) {
       );
     }
 
-    // Empty slot (with possible drag highlight)
+    // Empty slot (with possible highlight when entry is selected)
     return (
       <View key={slot} style={styles.slotRow}>
         <Text style={[styles.timeLabel, { color: colors.textMuted }, isHour && styles.timeLabelHour]}>
@@ -260,18 +181,16 @@ export default function TimeBlockView({ entries, onUpdate, colors }) {
           style={[
             styles.slotEmpty,
             { borderBottomColor: colors.border },
-            isHighlighted && { backgroundColor: colors.accent + '25' },
+            isHighlighted && { backgroundColor: colors.accent + '15' },
           ]}
-          onPress={() => handleSlotPress(slot)}
+          onPress={() => handleSlotPress(slot, index)}
           activeOpacity={0.5}
         >
           {isHour && (
             <View style={[styles.hourLine, { backgroundColor: colors.border }]} />
           )}
-          {isHighlighted && highlightSlots[0] === slot && dragEntry && (
-            <Text style={[styles.dropHint, { color: colors.accent }]} numberOfLines={1}>
-              {dragEntry.text}
-            </Text>
+          {isHighlighted && selectedEntry && (
+            <Text style={[styles.dropHint, { color: colors.accent }]}>tap to place</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -280,45 +199,52 @@ export default function TimeBlockView({ entries, onUpdate, colors }) {
 
   return (
     <View style={styles.container}>
-      {/* Unassigned entries — draggable */}
+      {/* Unassigned entries — tap to select, then tap a slot */}
       {unassigned.length > 0 && (
         <View style={[styles.unassignedSection, { borderBottomColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-            DRAG TO SCHEDULE ({unassigned.length})
+            {selectedEntry ? 'TAP A TIME SLOT BELOW' : `UNSCHEDULED (${unassigned.length})`}
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.unassignedList}>
-            {unassigned.map(entry => (
-              <DraggableChip
-                key={entry.id}
-                entry={entry}
-                colors={colors}
-                onDragStart={handleDragStart}
-                onDragMove={handleDragMove}
-                onDragEnd={handleDragEnd}
-              />
-            ))}
+            {unassigned.map(entry => {
+              const isSelected = selectedEntry?.id === entry.id;
+              const slotsNeeded = Math.max(1, entry.pomodoros || 1);
+              const durationText = slotsNeeded === 1 ? '30m' : `${slotsNeeded * 30}m`;
+              return (
+                <TouchableOpacity
+                  key={entry.id}
+                  style={[
+                    styles.unassignedChip,
+                    { backgroundColor: colors.bgElevated, borderColor: colors.border },
+                    isSelected && { borderColor: colors.accent, backgroundColor: colors.accent + '20' },
+                  ]}
+                  onPress={() => handleChipPress(entry)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.unassignedText, { color: isSelected ? colors.accent : colors.text }]} numberOfLines={1}>
+                    {entry.text}
+                  </Text>
+                  {entry.pomodoros > 0 && (
+                    <Text style={[styles.unassignedPomo, { color: colors.accentGold }]}>[{entry.pomodoros}]</Text>
+                  )}
+                  <Text style={[styles.durationBadge, { color: colors.textMuted }]}>{durationText}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </ScrollView>
         </View>
       )}
 
       {/* Timeline */}
       <ScrollView
-        ref={timelineRef}
         style={styles.timeline}
         showsVerticalScrollIndicator={false}
-        onScroll={(e) => { scrollOffset.current = e.nativeEvent.contentOffset.y; }}
-        scrollEventThrottle={16}
-        onLayout={() => {
-          timelineRef.current?.measureInWindow((x, y) => {
-            timelineY.current = y;
-          });
-        }}
       >
         {ALL_SLOTS.map((slot, index) => renderSlot(slot, index))}
-        <View style={{ height: 20 }} />
+        <View style={{ height: 120 }} />
       </ScrollView>
 
-      {/* Assign entry modal (tap fallback) */}
+      {/* Assign entry modal (tap fallback when no chip selected) */}
       <Modal visible={assignModalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContainer, { backgroundColor: colors.bgCard }]}>

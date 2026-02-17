@@ -85,7 +85,7 @@ export default function EntryFormFlyout({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const data = { text: text.trim(), type, signifier, ...extraData };
     if (show('pomodoros')) data.pomodoros = pomodoros;
-    if (show('timeBlock') && timeBlock) data.timeBlock = timeBlock;
+    if (show('timeBlock')) data.timeBlock = timeBlock || null;
     if (show('date') && date) {
       const y = date.getFullYear();
       const m = String(date.getMonth() + 1).padStart(2, '0');
