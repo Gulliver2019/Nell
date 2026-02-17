@@ -18,11 +18,11 @@ export default function FutureLogScreen() {
   const [flyoutVisible, setFlyoutVisible] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(null);
 
-  // Generate next 6 months
+  // Generate rolling 12 months
   const months = useMemo(() => {
     const result = [];
     const now = new Date();
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 12; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
       result.push(getMonthKey(d));
     }
