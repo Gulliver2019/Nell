@@ -107,6 +107,14 @@ export function AppProvider({ children }) {
 
   const updateEntry = useCallback(async (id, updates) => {
     await Storage.updateEntry(id, updates);
+    // Sync completion back to collection source
+    if (updates.state === 'complete') {
+      const allEntries = await Storage.getAllEntries();
+      const entry = allEntries.find(e => e.id === id);
+      if (entry?.scheduledFrom) {
+        await Storage.updateEntry(entry.scheduledFrom, { state: 'complete' });
+      }
+    }
     const entries = await Storage.getAllEntries();
     dispatch({ type: 'SET_ENTRIES', payload: entries });
   }, []);

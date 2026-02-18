@@ -1,16 +1,20 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet, Alert, Modal,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { SIZES, SHADOWS } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
+import { getDateKey } from '../utils/storage';
 import EntryItem from '../components/EntryItem';
 import FAB from '../components/FAB';
 import EntryFormFlyout from '../components/EntryFormFlyout';
+import * as Haptics from 'expo-haptics';
 
 const ICONS = ['📋', '🎯', '📚', '💡', '🏃', '🎨', '🛒', '✈️', '💰', '🎵', '🍽️', '🧘', '💼', '🌱', '❤️', '⭐'];
 const ACCENT_COLORS = ['#6C5CE7', '#00CEC9', '#FD79A8', '#FDCB6E', '#00B894', '#E17055', '#FF6B6B', '#74B9FF'];
@@ -20,6 +24,7 @@ export default function CollectionsScreen() {
   const {
     collections, entries, addCollection, deleteCollection,
     addEntry, updateEntry, deleteEntry, migrateEntry, reorderEntries,
+    scheduleEntry,
   } = useApp();
 
   const [selectedCollection, setSelectedCollection] = useState(null);
@@ -29,6 +34,8 @@ export default function CollectionsScreen() {
   const [newColor, setNewColor] = useState(ACCENT_COLORS[0]);
   const [flyoutVisible, setFlyoutVisible] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
+  const [scheduleEntryId, setScheduleEntryId] = useState(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const collectionEntries = useMemo(() => {
     if (!selectedCollection) return [];
@@ -75,6 +82,27 @@ export default function CollectionsScreen() {
     setFlyoutVisible(true);
   };
 
+  const handleSchedule = useCallback((id) => {
+    setScheduleEntryId(id);
+    setShowDatePicker(true);
+  }, []);
+
+  const handleDatePicked = useCallback(async (event, selectedDateVal) => {
+    if (Platform.OS === 'android') setShowDatePicker(false);
+    if (event.type === 'dismissed' || !selectedDateVal) {
+      setShowDatePicker(false);
+      setScheduleEntryId(null);
+      return;
+    }
+    const targetDate = getDateKey(selectedDateVal);
+    if (scheduleEntryId) {
+      await scheduleEntry(scheduleEntryId, targetDate);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+    setShowDatePicker(false);
+    setScheduleEntryId(null);
+  }, [scheduleEntryId, scheduleEntry]);
+
   const handleDragEnd = useCallback(({ data }) => {
     reorderEntries(data.map(e => e.id));
   }, [reorderEntries]);
@@ -86,12 +114,13 @@ export default function CollectionsScreen() {
         onUpdate={updateEntry}
         onDelete={deleteEntry}
         onMigrate={() => migrateEntry(item.id)}
+        onSchedule={handleSchedule}
         onEdit={handleEditEntry}
         drag={drag}
         isActive={isActive}
       />
     </ScaleDecorator>
-  ), [updateEntry, deleteEntry, migrateEntry]);
+  ), [updateEntry, deleteEntry, migrateEntry, handleSchedule]);
 
   // Collection detail view
   if (selectedCollection) {
@@ -134,6 +163,37 @@ export default function CollectionsScreen() {
           visibleFields={['text', 'type', 'signifier', 'pomodoros']}
           extraData={{ collection: selectedCollection.id }}
         />
+
+        {/* Date Picker for move to daily */}
+        {showDatePicker && Platform.OS === 'ios' && (
+          <Modal transparent animationType="slide">
+            <View style={styles.datePickerOverlay}>
+              <View style={[styles.datePickerContainer, { backgroundColor: colors.bgCard }]}>
+                <View style={styles.datePickerHeader}>
+                  <Text style={[styles.datePickerTitle, { color: colors.text }]}>Move to daily</Text>
+                  <TouchableOpacity onPress={() => { setShowDatePicker(false); setScheduleEntryId(null); }}>
+                    <Text style={[styles.datePickerCancel, { color: colors.accentRed }]}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+                <DateTimePicker
+                  value={new Date()}
+                  mode="date"
+                  display="inline"
+                  themeVariant="dark"
+                  accentColor={colors.accent}
+                  onChange={handleDatePicked}
+                />
+              </View>
+            </View>
+          </Modal>
+        )}
+        {showDatePicker && Platform.OS === 'android' && (
+          <DateTimePicker
+            value={new Date()}
+            mode="date"
+            onChange={handleDatePicked}
+          />
+        )}
       </SafeAreaView>
     );
   }
@@ -326,4 +386,16 @@ const styles = StyleSheet.create({
   createBtn: { flex: 1, borderRadius: SIZES.radius, overflow: 'hidden' },
   createGradient: { padding: 14, alignItems: 'center' },
   createText: { fontSize: SIZES.base, fontWeight: '700' },
+  // Date picker
+  datePickerOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end',
+  },
+  datePickerContainer: {
+    borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 40,
+  },
+  datePickerHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12,
+  },
+  datePickerTitle: { fontSize: SIZES.lg, fontWeight: '700' },
+  datePickerCancel: { fontSize: SIZES.md, fontWeight: '600' },
 });

@@ -153,8 +153,9 @@ export const scheduleEntry = async (id, futureDate) => {
   const idx = entries.findIndex(e => e.id === id);
   if (idx !== -1) {
     entries[idx] = { ...entries[idx], state: 'scheduled', updatedAt: new Date().toISOString() };
+    const { collection, ...rest } = entries[idx];
     const newEntry = {
-      ...entries[idx],
+      ...rest,
       id: generateId(),
       date: futureDate,
       state: 'open',
