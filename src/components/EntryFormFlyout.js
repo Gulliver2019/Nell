@@ -43,6 +43,7 @@ export default function EntryFormFlyout({
   const [type, setType] = useState('task');
   const [signifier, setSignifier] = useState(null);
   const [pomodoros, setPomodoros] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [timeBlock, setTimeBlock] = useState(null);
   const [date, setDate] = useState(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -60,6 +61,7 @@ export default function EntryFormFlyout({
         setType(entry.type || 'task');
         setSignifier(entry.signifier || null);
         setPomodoros(entry.pomodoros || 0);
+        setIsAdmin(!!entry.isAdmin);
         setTimeBlock(entry.timeBlock || null);
         setDate(entry.date ? new Date(entry.date + 'T00:00:00') : null);
       } else {
@@ -67,6 +69,7 @@ export default function EntryFormFlyout({
         setType('task');
         setSignifier(null);
         setPomodoros(0);
+        setIsAdmin(false);
         setTimeBlock(null);
         setDate(null);
       }
@@ -84,7 +87,8 @@ export default function EntryFormFlyout({
     if (!text.trim()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const data = { text: text.trim(), type, signifier, ...extraData };
-    if (show('pomodoros')) data.pomodoros = pomodoros;
+    if (show('pomodoros')) data.pomodoros = isAdmin ? 0 : pomodoros;
+    if (show('admin')) data.isAdmin = isAdmin;
     if (show('timeBlock')) data.timeBlock = timeBlock || null;
     if (show('date') && date) {
       const y = date.getFullYear();
@@ -198,8 +202,27 @@ export default function EntryFormFlyout({
               </View>
             )}
 
+            {/* Admin toggle */}
+            {show('admin') && (
+              <View style={styles.fieldRow}>
+                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Admin task</Text>
+                <TouchableOpacity
+                  style={[
+                    styles.adminToggle,
+                    { backgroundColor: colors.bgInput, borderColor: colors.border },
+                    isAdmin && { backgroundColor: colors.accentOrange + '20', borderColor: colors.accentOrange },
+                  ]}
+                  onPress={() => { setIsAdmin(!isAdmin); Haptics.selectionAsync(); }}
+                >
+                  <Text style={[styles.adminToggleText, { color: isAdmin ? colors.accentOrange : colors.textMuted }]}>
+                    {isAdmin ? '[A] Admin — groups with others' : 'Off'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
             {/* Pomodoros stepper */}
-            {show('pomodoros') && (
+            {show('pomodoros') && !isAdmin && (
               <View style={styles.fieldRow}>
                 <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Pomodoros</Text>
                 <View style={styles.stepperRow}>
@@ -412,6 +435,16 @@ const styles = StyleSheet.create({
   pomoDuration: {
     fontSize: SIZES.xs,
     marginLeft: 4,
+  },
+  adminToggle: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: SIZES.radius,
+    borderWidth: 1,
+  },
+  adminToggleText: {
+    fontSize: SIZES.sm,
+    fontWeight: '600',
   },
   pickerBtn: {
     flexDirection: 'row',
