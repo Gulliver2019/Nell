@@ -227,11 +227,7 @@ export default function DailyLogScreen() {
 
       {/* Intention panel */}
       {intention ? (
-        <TouchableOpacity
-          style={[styles.intentionDisplay, { borderColor: colors.accent + '30' }]}
-          onPress={() => { setIntentionExpanded(!intentionExpanded); setIntentionDraft(intention); }}
-          activeOpacity={0.8}
-        >
+        <View style={[styles.intentionDisplay, { borderColor: colors.accent + '30' }]}>
           <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: glowOpacity }]}>
             <LinearGradient
               colors={[colors.accent + '12', colors.accentSecondary + '08', 'transparent']}
@@ -239,7 +235,17 @@ export default function DailyLogScreen() {
               style={StyleSheet.absoluteFillObject}
             />
           </Animated.View>
-          <Text style={[styles.intentionLabel, { color: colors.accent }]}>✦ TODAY'S INTENTION</Text>
+          <View style={styles.intentionHeader}>
+            <Text style={[styles.intentionLabel, { color: colors.accent }]}>TODAY'S INTENTION</Text>
+            <View style={styles.intentionHeaderActions}>
+              <TouchableOpacity onPress={() => { setIntentionExpanded(!intentionExpanded); setIntentionDraft(intention); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="pencil-outline" size={16} color={colors.textMuted} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={clearIntention} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="trash-outline" size={16} color={colors.accentRed} />
+              </TouchableOpacity>
+            </View>
+          </View>
           <Text style={[styles.intentionText, { color: colors.text }]}>{intention}</Text>
           {intentionExpanded && (
             <View style={styles.intentionEditArea}>
@@ -255,8 +261,8 @@ export default function DailyLogScreen() {
                 autoFocus
               />
               <View style={styles.intentionActions}>
-                <TouchableOpacity style={[styles.intentionBtn, { backgroundColor: colors.accentRed + '15' }]} onPress={clearIntention}>
-                  <Text style={[styles.intentionBtnText, { color: colors.accentRed }]}>Clear</Text>
+                <TouchableOpacity style={[styles.intentionBtn, { backgroundColor: colors.textMuted + '15' }]} onPress={() => setIntentionExpanded(false)}>
+                  <Text style={[styles.intentionBtnText, { color: colors.textMuted }]}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.intentionBtn, { backgroundColor: colors.accent }, !intentionDraft.trim() && { opacity: 0.4 }]}
@@ -268,7 +274,7 @@ export default function DailyLogScreen() {
               </View>
             </View>
           )}
-        </TouchableOpacity>
+        </View>
       ) : (
         <View style={styles.intentionPromptWrap}>
           <TouchableOpacity
@@ -284,7 +290,6 @@ export default function DailyLogScreen() {
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
               style={StyleSheet.absoluteFillObject}
             />
-            <Text style={[styles.intentionPromptIcon]}>🎯</Text>
             <Text style={[styles.intentionPromptText, { color: colors.textSecondary }]}>Set your intention for today</Text>
             <Ionicons name={intentionExpanded ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textMuted} />
           </TouchableOpacity>
@@ -306,7 +311,7 @@ export default function DailyLogScreen() {
                 onPress={saveIntention}
                 disabled={!intentionDraft.trim()}
               >
-                <Text style={[styles.intentionSaveBtnText, { color: colors.textInverse }]}>Set Intention ✦</Text>
+                <Text style={[styles.intentionSaveBtnText, { color: colors.textInverse }]}>Set Intention</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -619,7 +624,16 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 1.5,
     textTransform: 'uppercase',
+  },
+  intentionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 6,
+  },
+  intentionHeaderActions: {
+    flexDirection: 'row',
+    gap: 14,
   },
   intentionText: {
     fontSize: SIZES.lg,
@@ -665,9 +679,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     overflow: 'hidden',
-  },
-  intentionPromptIcon: {
-    fontSize: 16,
   },
   intentionPromptText: {
     flex: 1,
