@@ -1,10 +1,11 @@
-import React, { useMemo, useState, useCallback, useRef } from 'react';
+import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, StatusBar, Alert, Modal,
-  Platform,
+  Platform, TextInput, Animated, LayoutAnimation, UIManager,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +18,10 @@ import FAB from '../components/FAB';
 import EntryFormFlyout from '../components/EntryFormFlyout';
 import TimeBlockView from '../components/TimeBlockView';
 import * as Haptics from 'expo-haptics';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export default function DailyLogScreen() {
   const { colors } = useTheme();
@@ -34,6 +39,59 @@ export default function DailyLogScreen() {
   const [editingEntry, setEditingEntry] = useState(null);
   const listRef = useRef(null);
   const shouldScrollRef = useRef(false);
+
+  // Daily intention
+  const [intention, setIntention] = useState('');
+  const [intentionDraft, setIntentionDraft] = useState('');
+  const [intentionExpanded, setIntentionExpanded] = useState(false);
+  const intentionKey = `crushedit_intention_${selectedDate}`;
+  const glowAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const saved = await AsyncStorage.getItem(intentionKey);
+        setIntention(saved || '');
+        setIntentionDraft(saved || '');
+      } catch (e) { setIntention(''); setIntentionDraft(''); }
+    })();
+  }, [intentionKey]);
+
+  useEffect(() => {
+    if (intention) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(glowAnim, { toValue: 1, duration: 2500, useNativeDriver: false }),
+          Animated.timing(glowAnim, { toValue: 0, duration: 2500, useNativeDriver: false }),
+        ])
+      ).start();
+    } else {
+      glowAnim.setValue(0);
+    }
+  }, [intention]);
+
+  const saveIntention = useCallback(async () => {
+    const trimmed = intentionDraft.trim();
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setIntention(trimmed);
+    setIntentionExpanded(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    try { await AsyncStorage.setItem(intentionKey, trimmed); } catch (e) {}
+  }, [intentionDraft, intentionKey]);
+
+  const clearIntention = useCallback(async () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setIntention('');
+    setIntentionDraft('');
+    setIntentionExpanded(false);
+    Haptics.selectionAsync();
+    try { await AsyncStorage.removeItem(intentionKey); } catch (e) {}
+  }, [intentionKey]);
+
+  const glowOpacity = glowAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.4, 0.9],
+  });
 
   // Navigate dates
   const goDay = (offset) => {
@@ -165,8 +223,98 @@ export default function DailyLogScreen() {
             <Text style={[styles.navArrow, { color: colors.accent }]}>›</Text>
           </TouchableOpacity>
         </View>
+      </View>
 
-        {/* Stats bar */}
+      {/* Intention panel */}
+      {intention ? (
+        <TouchableOpacity
+          style={[styles.intentionDisplay, { borderColor: colors.accent + '30' }]}
+          onPress={() => { setIntentionExpanded(!intentionExpanded); setIntentionDraft(intention); }}
+          activeOpacity={0.8}
+        >
+          <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: glowOpacity }]}>
+            <LinearGradient
+              colors={[colors.accent + '12', colors.accentSecondary + '08', 'transparent']}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFillObject}
+            />
+          </Animated.View>
+          <Text style={[styles.intentionLabel, { color: colors.accent }]}>✦ TODAY'S INTENTION</Text>
+          <Text style={[styles.intentionText, { color: colors.text }]}>{intention}</Text>
+          {intentionExpanded && (
+            <View style={styles.intentionEditArea}>
+              <TextInput
+                style={[styles.intentionInput, { color: colors.text, backgroundColor: colors.bgInput, borderColor: colors.border }]}
+                value={intentionDraft}
+                onChangeText={setIntentionDraft}
+                placeholder="What's your focus today?"
+                placeholderTextColor={colors.textMuted}
+                selectionColor={colors.accent}
+                multiline
+                maxLength={200}
+                autoFocus
+              />
+              <View style={styles.intentionActions}>
+                <TouchableOpacity style={[styles.intentionBtn, { backgroundColor: colors.accentRed + '15' }]} onPress={clearIntention}>
+                  <Text style={[styles.intentionBtnText, { color: colors.accentRed }]}>Clear</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.intentionBtn, { backgroundColor: colors.accent }, !intentionDraft.trim() && { opacity: 0.4 }]}
+                  onPress={saveIntention}
+                  disabled={!intentionDraft.trim()}
+                >
+                  <Text style={[styles.intentionBtnText, { color: colors.textInverse }]}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </TouchableOpacity>
+      ) : (
+        <View style={styles.intentionPromptWrap}>
+          <TouchableOpacity
+            style={[styles.intentionPrompt, { backgroundColor: colors.bgCard, borderColor: colors.accent + '25' }]}
+            onPress={() => {
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              setIntentionExpanded(!intentionExpanded);
+            }}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={[colors.accent + '08', 'transparent']}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFillObject}
+            />
+            <Text style={[styles.intentionPromptIcon]}>🎯</Text>
+            <Text style={[styles.intentionPromptText, { color: colors.textSecondary }]}>Set your intention for today</Text>
+            <Ionicons name={intentionExpanded ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textMuted} />
+          </TouchableOpacity>
+          {intentionExpanded && (
+            <View style={[styles.intentionInputWrap, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+              <TextInput
+                style={[styles.intentionInput, { color: colors.text, backgroundColor: colors.bgInput, borderColor: colors.border }]}
+                value={intentionDraft}
+                onChangeText={setIntentionDraft}
+                placeholder="What's your focus today?"
+                placeholderTextColor={colors.textMuted}
+                selectionColor={colors.accent}
+                multiline
+                maxLength={200}
+                autoFocus
+              />
+              <TouchableOpacity
+                style={[styles.intentionSaveBtn, { backgroundColor: colors.accent }, !intentionDraft.trim() && { opacity: 0.4 }]}
+                onPress={saveIntention}
+                disabled={!intentionDraft.trim()}
+              >
+                <Text style={[styles.intentionSaveBtnText, { color: colors.textInverse }]}>Set Intention ✦</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      )}
+
+      {/* Stats bar */}
+      <View style={styles.statsBar}>
         {stats.total > 0 && (
           <View style={styles.statsRow}>
             <View style={[styles.progressBar, { backgroundColor: colors.border }]}>
@@ -353,6 +501,10 @@ const styles = StyleSheet.create({
     fontSize: SIZES.sm,
     marginTop: 2,
   },
+  statsBar: {
+    paddingHorizontal: 16,
+    paddingBottom: 4,
+  },
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -451,5 +603,91 @@ const styles = StyleSheet.create({
   datePickerCancel: {
     fontSize: SIZES.md,
     fontWeight: '600',
+  },
+
+  // Intention panel
+  intentionDisplay: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    overflow: 'hidden',
+  },
+  intentionLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  intentionText: {
+    fontSize: SIZES.lg,
+    fontWeight: '600',
+    lineHeight: 24,
+  },
+  intentionEditArea: {
+    marginTop: 12,
+  },
+  intentionInput: {
+    fontSize: SIZES.base,
+    borderRadius: SIZES.radius,
+    borderWidth: 1,
+    padding: 14,
+    minHeight: 48,
+    maxHeight: 100,
+  },
+  intentionActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+    marginTop: 10,
+  },
+  intentionBtn: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  intentionBtnText: {
+    fontSize: SIZES.sm,
+    fontWeight: '700',
+  },
+  intentionPromptWrap: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+  },
+  intentionPrompt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  intentionPromptIcon: {
+    fontSize: 16,
+  },
+  intentionPromptText: {
+    flex: 1,
+    fontSize: SIZES.sm,
+    fontWeight: '600',
+  },
+  intentionInputWrap: {
+    marginTop: 8,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  intentionSaveBtn: {
+    marginTop: 10,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  intentionSaveBtnText: {
+    fontSize: SIZES.base,
+    fontWeight: '700',
   },
 });
