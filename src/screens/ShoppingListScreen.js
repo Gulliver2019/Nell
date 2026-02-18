@@ -363,7 +363,7 @@ export default function ShoppingListScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   header: {
-    paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12, position: 'relative',
+    paddingHorizontal: 20, paddingTop: 4, paddingBottom: 4, position: 'relative',
   },
   headerRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
 
   // Filter
   filterRow: {
-    flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 6, gap: 6,
+    flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 2, gap: 6,
   },
   filterChip: {
     flexDirection: 'row', alignItems: 'center', gap: 4,

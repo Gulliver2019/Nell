@@ -212,7 +212,7 @@ export default function HabitTrackerScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  headerBar: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, position: 'relative' },
+  headerBar: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 6, position: 'relative' },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { fontSize: SIZES.xxl, fontWeight: '700' },
   subtitle: { fontSize: SIZES.md, marginTop: 2 },
