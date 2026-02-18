@@ -9,7 +9,7 @@ import * as Haptics from 'expo-haptics';
 
 const SWIPE_THRESHOLD = 80;
 
-export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSchedule, onEdit, onPress, drag, isActive }) {
+export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSchedule, onEdit, onPress, drag, isActive, isNextUp }) {
   const { colors } = useTheme();
   const BULLET_TYPES = getBulletTypes(colors);
   const TASK_STATES = getTaskStates(colors);
@@ -128,6 +128,7 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
       style={[
         styles.entry,
         { backgroundColor: colors.bg },
+        isNextUp && { backgroundColor: colors.accentGreen + '12', borderLeftWidth: 3, borderLeftColor: colors.accentGreen, borderRadius: 6 },
         isInactive && styles.entryInactive,
         isActive && { backgroundColor: colors.bgElevated, opacity: 0.9 },
       ]}
@@ -199,6 +200,9 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
             )}
             {entry.timeBlock && (
               <Text style={[styles.timeBlockIcon, { color: colors.accentOrange }]}>🧱</Text>
+            )}
+            {isNextUp && (
+              <Text style={[styles.nextUpBadge, { color: colors.accentGreen }]}>NEXT</Text>
             )}
             {onEdit && (
               <TouchableOpacity
@@ -320,6 +324,12 @@ const styles = StyleSheet.create({
   timeBlockIcon: {
     fontSize: SIZES.xs,
     marginLeft: 4,
+  },
+  nextUpBadge: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 1,
+    marginLeft: 6,
   },
   editBtn: {
     marginLeft: 6,

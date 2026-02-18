@@ -118,6 +118,27 @@ export default function DailyLogScreen() {
     };
   }, [dayEntries]);
 
+  // Find the "next up" entry: the first time-blocked entry whose slot is current or upcoming and not complete
+  const nextUpId = useMemo(() => {
+    if (!isToday) return null;
+    const now = new Date();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    const timeBlocked = dayEntries
+      .filter(e => e.timeBlock && e.state !== 'complete' && e.state !== 'cancelled')
+      .sort((a, b) => {
+        const [ah, am] = a.timeBlock.split(':').map(Number);
+        const [bh, bm] = b.timeBlock.split(':').map(Number);
+        return (ah * 60 + am) - (bh * 60 + bm);
+      });
+    // Find first entry whose time block is current or in the future
+    for (const e of timeBlocked) {
+      const [h, m] = e.timeBlock.split(':').map(Number);
+      const slotEnd = h * 60 + m + Math.max(1, e.pomodoros || 1) * 30;
+      if (slotEnd > nowMinutes) return e.id;
+    }
+    return null;
+  }, [dayEntries, isToday]);
+
   // Count open tasks on past days that can be migrated to today
   const migrateableCount = useMemo(() => {
     if (isToday) return 0;
@@ -188,9 +209,10 @@ export default function DailyLogScreen() {
         onEdit={handleEdit}
         drag={drag}
         isActive={isActive}
+        isNextUp={item.id === nextUpId}
       />
     </ScaleDecorator>
-  ), [updateEntry, deleteEntry, handleMigrate, handleSchedule, handleEdit]);
+  ), [updateEntry, deleteEntry, handleMigrate, handleSchedule, handleEdit, nextUpId]);
 
   const handleDragEnd = useCallback(({ data }) => {
     reorderEntries(data.map(e => e.id));
