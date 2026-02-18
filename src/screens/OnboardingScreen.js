@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions,
-  ScrollView,
+  ScrollView, Linking, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,6 +11,9 @@ import * as Haptics from 'expo-haptics';
 import HelpScreen from './HelpScreen';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const AMAZON_URL = 'https://www.amazon.co.uk/Bullet-Journal-Method-Present-Design/dp/0008261377';
+const BOOK_IMAGE = 'https://m.media-amazon.com/images/I/71pYMiGbZBL._SL1500_.jpg';
 
 const SLIDES = [
   {
@@ -48,6 +51,13 @@ const SLIDES = [
     title: 'Time Blocking & Pomodoro',
     subtitle: 'Deep focus tools',
     body: 'Assign tasks to time slots on your daily timeline. Use the built-in Pomodoro timer (25min focus sessions) to stay in the zone.',
+  },
+  {
+    key: 'book',
+    emoji: '📖',
+    title: 'The Bullet Journal Method',
+    subtitle: 'By Ryder Carroll',
+    body: 'This app is inspired by the Bullet Journal method. To get the most out of it, we highly recommend reading the original book by Ryder Carroll — the creator of the system.',
   },
   {
     emoji: '💪',
@@ -108,10 +118,34 @@ export default function OnboardingScreen({ onComplete }) {
 
       {/* Slide content */}
       <Animated.View style={[styles.slideContent, { opacity: fadeAnim }]}>
-        <Text style={styles.slideEmoji}>{slide.emoji}</Text>
-        <Text style={[styles.slideTitle, { color: colors.text }]}>{slide.title}</Text>
-        <Text style={[styles.slideSubtitle, { color: colors.accent }]}>{slide.subtitle}</Text>
-        <Text style={[styles.slideBody, { color: colors.textSecondary }]}>{slide.body}</Text>
+        {slide.key === 'book' ? (
+          <>
+            <View style={styles.bookCover}>
+              <Image
+                source={{ uri: BOOK_IMAGE }}
+                style={styles.bookImage}
+                resizeMode="contain"
+              />
+            </View>
+            <Text style={[styles.slideTitle, { color: colors.text }]}>{slide.title}</Text>
+            <Text style={[styles.slideSubtitle, { color: colors.accent }]}>{slide.subtitle}</Text>
+            <Text style={[styles.slideBody, { color: colors.textSecondary }]}>{slide.body}</Text>
+            <TouchableOpacity
+              style={[styles.amazonBtn, { backgroundColor: '#FF9900' }]}
+              onPress={() => Linking.openURL(AMAZON_URL)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.amazonBtnText}>View on Amazon</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <Text style={styles.slideEmoji}>{slide.emoji}</Text>
+            <Text style={[styles.slideTitle, { color: colors.text }]}>{slide.title}</Text>
+            <Text style={[styles.slideSubtitle, { color: colors.accent }]}>{slide.subtitle}</Text>
+            <Text style={[styles.slideBody, { color: colors.textSecondary }]}>{slide.body}</Text>
+          </>
+        )}
       </Animated.View>
 
       {/* Dots */}
@@ -222,4 +256,34 @@ const styles = StyleSheet.create({
   },
   helpClose: { padding: 8 },
   helpCloseText: { fontSize: SIZES.base, fontWeight: '700' },
+
+  // Book slide
+  bookCover: {
+    width: 160,
+    height: 220,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
+    backgroundColor: '#333',
+  },
+  bookImage: {
+    width: '100%',
+    height: '100%',
+  },
+  amazonBtn: {
+    marginTop: 20,
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  amazonBtnText: {
+    color: '#111',
+    fontSize: SIZES.base,
+    fontWeight: '700',
+  },
 });
