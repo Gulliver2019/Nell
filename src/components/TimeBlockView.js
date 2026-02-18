@@ -493,7 +493,7 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.fabCircle, { backgroundColor: colors.accentSecondary }]}
-          onPress={() => { setMeetingSlotTarget(null); setShowMeetingModal(true); }}
+          onPress={() => { setShowMeetingModal(true); }}
           activeOpacity={0.8}
         >
           <Text style={styles.fabEmoji}>📅</Text>
