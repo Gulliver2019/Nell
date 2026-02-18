@@ -43,8 +43,9 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
   const [meetings, setMeetings] = useState([]);
   const [showMeetingModal, setShowMeetingModal] = useState(false);
   const [meetingText, setMeetingText] = useState('');
-  const [meetingSlots, setMeetingSlots] = useState(1); // each slot = 30min
-  const [meetingSlotTarget, setMeetingSlotTarget] = useState(null);
+  const [meetingDuration, setMeetingDuration] = useState(30); // minutes, 5-min steps
+  const [meetingHour, setMeetingHour] = useState(9);
+  const [meetingMinute, setMeetingMinute] = useState(0);
 
   const meetingSlideAnim = useRef(new Animated.Value(-SCREEN_HEIGHT)).current;
   const meetingInputRef = useRef(null);
@@ -68,22 +69,33 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
 
   const addMeeting = useCallback(() => {
     const trimmed = meetingText.trim();
-    if (!trimmed || !meetingSlotTarget) return;
+    if (!trimmed) return;
+    const startMinFromDay = (meetingHour - START_HOUR) * 60 + meetingMinute;
+    const endMinFromDay = startMinFromDay + meetingDuration;
+    const startSlotIdx = Math.floor(startMinFromDay / 30);
+    const endSlotIdx = Math.ceil(endMinFromDay / 30);
+    const slotsNeeded = Math.max(1, endSlotIdx - startSlotIdx);
+    const timeBlock = ALL_SLOTS[startSlotIdx];
+    if (!timeBlock) return;
+    const meetingTime = `${String(meetingHour).padStart(2, '0')}:${String(meetingMinute).padStart(2, '0')}`;
     const meeting = {
       id: 'mtg_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       text: trimmed,
-      timeBlock: meetingSlotTarget,
-      slots: meetingSlots,
+      timeBlock,
+      slots: slotsNeeded,
+      meetingTime,
+      durationMin: meetingDuration,
       isMeeting: true,
     };
     persistMeetings([...meetings, meeting]);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setMeetingText('');
-    setMeetingSlots(1);
-    setMeetingSlotTarget(null);
+    setMeetingDuration(30);
+    setMeetingHour(9);
+    setMeetingMinute(0);
     setShowMeetingModal(false);
     Keyboard.dismiss();
-  }, [meetingText, meetingSlotTarget, meetingSlots, meetings, persistMeetings]);
+  }, [meetingText, meetingHour, meetingMinute, meetingDuration, meetings, persistMeetings]);
 
   const deleteMeeting = useCallback((id) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -184,9 +196,11 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
         setSelectedEntry(null);
       }
     } else {
-      // Open meeting modal pre-filled with this slot
+      // Open meeting modal pre-filled with this slot's time
       Haptics.selectionAsync();
-      setMeetingSlotTarget(slot);
+      const [h, m] = slot.split(':').map(Number);
+      setMeetingHour(h);
+      setMeetingMinute(m);
       setShowMeetingModal(true);
     }
   };
@@ -254,7 +268,7 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
                   ]}
                   numberOfLines={2}
                 >
-                  {isMeeting ? `📅 ${entry.text}` : entry.text}
+                  {isMeeting ? `📅 ${entry.meetingTime ? formatSlotLabel(entry.meetingTime) : formatSlotLabel(entry.timeBlock)} ${entry.text}` : entry.text}
                 </Text>
               </View>
             </View>
@@ -410,8 +424,8 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
       </View>
 
       {/* Meeting flyout (slides from top like EntryFormFlyout) */}
-      <Modal visible={showMeetingModal} transparent animationType="none" onRequestClose={() => { setShowMeetingModal(false); setMeetingSlotTarget(null); setMeetingText(''); }}>
-        <TouchableOpacity style={styles.flyoutBackdrop} activeOpacity={1} onPress={() => { setShowMeetingModal(false); setMeetingSlotTarget(null); setMeetingText(''); }}>
+      <Modal visible={showMeetingModal} transparent animationType="none" onRequestClose={() => { setShowMeetingModal(false); setMeetingText(''); }}>
+        <TouchableOpacity style={styles.flyoutBackdrop} activeOpacity={1} onPress={() => { setShowMeetingModal(false); setMeetingText(''); }}>
           <View />
         </TouchableOpacity>
         <Animated.View style={[styles.flyout, { backgroundColor: colors.bgCard, borderColor: colors.border, transform: [{ translateY: meetingSlideAnim }] }]}>
@@ -419,7 +433,7 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
             <ScrollView keyboardShouldPersistTaps="handled" bounces={false} showsVerticalScrollIndicator={false}>
               <View style={styles.flyoutHeader}>
                 <Text style={[styles.flyoutTitle, { color: colors.text }]}>Add Meeting</Text>
-                <TouchableOpacity onPress={() => { setShowMeetingModal(false); setMeetingSlotTarget(null); setMeetingText(''); }} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                <TouchableOpacity onPress={() => { setShowMeetingModal(false); setMeetingText(''); }} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                   <Text style={[styles.flyoutClose, { color: colors.textMuted }]}>✕</Text>
                 </TouchableOpacity>
               </View>
@@ -434,57 +448,70 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
                 selectionColor={colors.accent}
               />
 
-              {/* Duration stepper */}
+              {/* Time spinners */}
+              <Text style={[styles.meetingPickLabel, { color: colors.textSecondary }]}>Time</Text>
+              <View style={styles.spinnerRow}>
+                <TouchableOpacity
+                  style={[styles.spinnerBtn, { backgroundColor: colors.bgInput }]}
+                  onPress={() => setMeetingHour(h => Math.max(START_HOUR, h - 1))}
+                >
+                  <Text style={[styles.spinnerBtnText, { color: colors.text }]}>−</Text>
+                </TouchableOpacity>
+                <Text style={[styles.spinnerValue, { color: colors.text }]}>
+                  {String(meetingHour).padStart(2, '0')}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.spinnerBtn, { backgroundColor: colors.bgInput }]}
+                  onPress={() => setMeetingHour(h => Math.min(END_HOUR - 1, h + 1))}
+                >
+                  <Text style={[styles.spinnerBtnText, { color: colors.text }]}>+</Text>
+                </TouchableOpacity>
+
+                <Text style={[styles.spinnerColon, { color: colors.textMuted }]}>:</Text>
+
+                <TouchableOpacity
+                  style={[styles.spinnerBtn, { backgroundColor: colors.bgInput }]}
+                  onPress={() => setMeetingMinute(m => m <= 0 ? 55 : m - 5)}
+                >
+                  <Text style={[styles.spinnerBtnText, { color: colors.text }]}>−</Text>
+                </TouchableOpacity>
+                <Text style={[styles.spinnerValue, { color: colors.text }]}>
+                  {String(meetingMinute).padStart(2, '0')}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.spinnerBtn, { backgroundColor: colors.bgInput }]}
+                  onPress={() => setMeetingMinute(m => m >= 55 ? 0 : m + 5)}
+                >
+                  <Text style={[styles.spinnerBtnText, { color: colors.text }]}>+</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Duration stepper (5-min increments) */}
               <View style={styles.meetingDurationRow}>
                 <Text style={[styles.meetingDurationLabel, { color: colors.textSecondary }]}>Duration</Text>
                 <TouchableOpacity
                   style={[styles.meetingStepBtn, { backgroundColor: colors.bgInput }]}
-                  onPress={() => setMeetingSlots(s => Math.max(1, s - 1))}
+                  onPress={() => setMeetingDuration(d => Math.max(5, d - 5))}
                 >
                   <Text style={[styles.meetingStepText, { color: colors.text }]}>−</Text>
                 </TouchableOpacity>
                 <Text style={[styles.meetingDurationValue, { color: colors.accentSecondary }]}>
-                  {meetingSlots * 30}min
+                  {meetingDuration >= 60
+                    ? `${Math.floor(meetingDuration / 60)}h${meetingDuration % 60 > 0 ? ` ${meetingDuration % 60}m` : ''}`
+                    : `${meetingDuration}min`}
                 </Text>
                 <TouchableOpacity
                   style={[styles.meetingStepBtn, { backgroundColor: colors.bgInput }]}
-                  onPress={() => setMeetingSlots(s => Math.min(8, s + 1))}
+                  onPress={() => setMeetingDuration(d => Math.min(240, d + 5))}
                 >
                   <Text style={[styles.meetingStepText, { color: colors.text }]}>+</Text>
                 </TouchableOpacity>
               </View>
 
-              {/* Time slot picker */}
-              <Text style={[styles.meetingPickLabel, { color: colors.textSecondary }]}>Time</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.meetingTimeRow}>
-                {ALL_SLOTS.filter(s => s.endsWith(':00') || s.endsWith(':30')).map(slot => {
-                  const idx = ALL_SLOTS.indexOf(slot);
-                  const available = canAssignAt(idx, meetingSlots);
-                  const isSelected = meetingSlotTarget === slot;
-                  return (
-                    <TouchableOpacity
-                      key={slot}
-                      style={[
-                        styles.meetingTimeChip,
-                        { backgroundColor: colors.bgInput, borderColor: colors.border },
-                        !available && { opacity: 0.3 },
-                        isSelected && { backgroundColor: colors.accentSecondary + '25', borderColor: colors.accentSecondary },
-                      ]}
-                      disabled={!available}
-                      onPress={() => setMeetingSlotTarget(slot)}
-                    >
-                      <Text style={[styles.meetingTimeText, { color: isSelected ? colors.accentSecondary : colors.text }]}>
-                        {formatSlotLabel(slot)}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-
               <TouchableOpacity
-                style={[styles.meetingAddBtn, { backgroundColor: colors.accentSecondary }, (!meetingText.trim() || !meetingSlotTarget) && { opacity: 0.4 }]}
+                style={[styles.meetingAddBtn, { backgroundColor: colors.accentSecondary }, (!meetingText.trim()) && { opacity: 0.4 }]}
                 onPress={addMeeting}
-                disabled={!meetingText.trim() || !meetingSlotTarget}
+                disabled={!meetingText.trim()}
               >
                 <Text style={styles.meetingAddBtnText}>Add Meeting</Text>
               </TouchableOpacity>
@@ -605,6 +632,36 @@ const styles = StyleSheet.create({
     fontSize: SIZES.sm,
     fontWeight: '600',
     marginBottom: 8,
+  },
+  spinnerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginBottom: 20,
+  },
+  spinnerBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  spinnerBtnText: {
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  spinnerValue: {
+    fontSize: 28,
+    fontWeight: '700',
+    minWidth: 44,
+    textAlign: 'center',
+    fontVariant: ['tabular-nums'],
+  },
+  spinnerColon: {
+    fontSize: 28,
+    fontWeight: '700',
+    marginHorizontal: 2,
   },
   meetingTimeRow: {
     gap: 6,
