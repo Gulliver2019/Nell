@@ -9,7 +9,7 @@ import * as Haptics from 'expo-haptics';
 
 const SWIPE_THRESHOLD = 80;
 
-export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSchedule, onEdit, onPress, drag, isActive, isNextUp }) {
+export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSchedule, onEdit, onPress, drag, isActive, isNextUp, isRoutine }) {
   const { colors } = useTheme();
   const BULLET_TYPES = getBulletTypes(colors);
   const TASK_STATES = getTaskStates(colors);
@@ -207,6 +207,11 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
             {isNextUp && (
               <Text style={[styles.nextUpBadge, { color: colors.accentGreen }]}>NEXT</Text>
             )}
+            {isRoutine && (
+              <View style={[styles.routineBadge, { backgroundColor: colors.accent + '20' }]}>
+                <Text style={[styles.routineBadgeText, { color: colors.accent }]}>🔁</Text>
+              </View>
+            )}
             {onEdit && (
               <TouchableOpacity
                 onPress={() => onEdit(entry)}
@@ -338,6 +343,15 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 1,
     marginLeft: 6,
+  },
+  routineBadge: {
+    marginLeft: 6,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  routineBadgeText: {
+    fontSize: 10,
   },
   editBtn: {
     marginLeft: 6,

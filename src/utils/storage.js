@@ -8,6 +8,8 @@ const STORAGE_KEYS = {
   SETTINGS: 'crushedit_settings',
   FUTURE_LOG: 'crushedit_future_log',
   PROJECTS: 'crushedit_projects',
+  ROUTINES: 'crushedit_routines',
+  WELLNESS_TEMPLATES: 'crushedit_wellness_templates',
 };
 
 // Generate unique ID
@@ -449,4 +451,134 @@ export const reorderProjectTasks = async (projectId, column, orderedTaskIds) => 
     .filter(Boolean);
   projects[idx].tasks = [...otherTasks, ...sorted];
   await saveProjects(projects);
+};
+
+// ─── Routines ───────────────────────────────────────────
+
+export const getRoutines = async () => {
+  try {
+    const data = await AsyncStorage.getItem(STORAGE_KEYS.ROUTINES);
+    return data ? JSON.parse(data) : [];
+  } catch (e) {
+    return [];
+  }
+};
+
+export const saveRoutines = async (routines) => {
+  await AsyncStorage.setItem(STORAGE_KEYS.ROUTINES, JSON.stringify(routines));
+};
+
+export const addRoutine = async (routine) => {
+  const routines = await getRoutines();
+  const newRoutine = {
+    id: generateId(),
+    createdAt: new Date().toISOString(),
+    text: '',
+    timeBlock: null,
+    signifier: null,
+    pomodoros: 0,
+    enabled: true,
+    sortOrder: routines.length,
+    ...routine,
+  };
+  routines.push(newRoutine);
+  await saveRoutines(routines);
+  return newRoutine;
+};
+
+export const updateRoutine = async (id, updates) => {
+  const routines = await getRoutines();
+  const idx = routines.findIndex(r => r.id === id);
+  if (idx !== -1) {
+    routines[idx] = { ...routines[idx], ...updates, updatedAt: new Date().toISOString() };
+    await saveRoutines(routines);
+    return routines[idx];
+  }
+  return null;
+};
+
+export const deleteRoutine = async (id) => {
+  const routines = await getRoutines();
+  await saveRoutines(routines.filter(r => r.id !== id));
+};
+
+// Generate daily entries from routine templates (idempotent per day)
+export const generateRoutineEntries = async (dateKey) => {
+  const routines = await getRoutines();
+  const entries = await getAllEntries();
+  const enabled = routines.filter(r => r.enabled);
+  let added = 0;
+  for (const routine of enabled) {
+    const exists = entries.some(e => e.routineId === routine.id && e.date === dateKey);
+    if (!exists) {
+      await addEntry({
+        text: routine.text,
+        type: 'task',
+        state: 'open',
+        date: dateKey,
+        signifier: routine.signifier,
+        pomodoros: routine.pomodoros,
+        timeBlock: routine.timeBlock,
+        source: 'routine',
+        routineId: routine.id,
+      });
+      added++;
+    }
+  }
+  return added;
+};
+
+// ─── Wellness ───────────────────────────────────────────
+
+const DEFAULT_WELLNESS_TEMPLATES = {
+  nutrition: [],
+  exercise: [
+    { id: 'ex_walking', name: 'Walking', type: 'walking', value: '', sortOrder: 0 },
+    { id: 'ex_gym', name: 'Gym', type: 'gym', value: '', sortOrder: 1 },
+    { id: 'ex_cardio', name: 'Cardio', type: 'cardio', value: '', sortOrder: 2 },
+  ],
+  meditation: { enabled: true },
+};
+
+export const getWellnessTemplates = async () => {
+  try {
+    const data = await AsyncStorage.getItem(STORAGE_KEYS.WELLNESS_TEMPLATES);
+    return data ? JSON.parse(data) : DEFAULT_WELLNESS_TEMPLATES;
+  } catch (e) {
+    return DEFAULT_WELLNESS_TEMPLATES;
+  }
+};
+
+export const saveWellnessTemplates = async (templates) => {
+  await AsyncStorage.setItem(STORAGE_KEYS.WELLNESS_TEMPLATES, JSON.stringify(templates));
+};
+
+const wellnessDayKey = (dateKey) => `crushedit_wellness_day_${dateKey}`;
+
+export const getWellnessDay = async (dateKey) => {
+  try {
+    const data = await AsyncStorage.getItem(wellnessDayKey(dateKey));
+    if (data) return JSON.parse(data);
+    // Generate fresh day from templates
+    const templates = await getWellnessTemplates();
+    const day = {
+      nutrition: {},
+      exercise: {},
+      meditation: { am: false, pm: false, eve: false },
+    };
+    templates.nutrition.forEach(item => {
+      day.nutrition[item.id] = { done: false, value: item.value || '' };
+    });
+    templates.exercise.forEach(item => {
+      day.exercise[item.id] = { done: false, value: item.value || '' };
+    });
+    await AsyncStorage.setItem(wellnessDayKey(dateKey), JSON.stringify(day));
+    return day;
+  } catch (e) {
+    return { nutrition: {}, exercise: {}, meditation: { am: false, pm: false, eve: false } };
+  }
+};
+
+export const saveWellnessDay = async (dateKey, dayData) => {
+  await AsyncStorage.setItem(wellnessDayKey(dateKey), JSON.stringify(dayData));
 };

@@ -12,7 +12,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { SIZES, SHADOWS } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
-import { getDateKey, formatDate } from '../utils/storage';
+import { getDateKey, formatDate, getWellnessDay, getWellnessTemplates, saveWellnessDay } from '../utils/storage';
+import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
 import EntryItem from '../components/EntryItem';
 import FAB from '../components/FAB';
 import EntryFormFlyout from '../components/EntryFormFlyout';
@@ -28,6 +29,7 @@ export default function DailyLogScreen() {
   const {
     entries, selectedDate, setSelectedDate, addEntry, updateEntry,
     deleteEntry, migrateEntry, scheduleEntry, reorderEntries, migratePastEntries,
+    generateRoutineEntries, wellnessTemplates,
   } = useApp();
 
   const today = getDateKey();
@@ -46,6 +48,34 @@ export default function DailyLogScreen() {
   const [intentionExpanded, setIntentionExpanded] = useState(false);
   const intentionKey = `crushedit_intention_${selectedDate}`;
   const glowAnim = useRef(new Animated.Value(0)).current;
+
+  // Auto-generate routine entries for selected date
+  useEffect(() => {
+    if (selectedDate) generateRoutineEntries(selectedDate);
+  }, [selectedDate, generateRoutineEntries]);
+
+  // Wellness day data for daily log integration
+  const [wellnessDayData, setWellnessDayData] = useState(null);
+  useEffect(() => {
+    (async () => {
+      const data = await getWellnessDay(selectedDate);
+      setWellnessDayData(data);
+    })();
+  }, [selectedDate, wellnessTemplates]);
+
+  const toggleWellnessItem = useCallback(async (category, itemId) => {
+    if (!wellnessDayData) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const updated = { ...wellnessDayData, [category]: { ...wellnessDayData[category] } };
+    if (category === 'meditation') {
+      updated.meditation[itemId] = !updated.meditation[itemId];
+    } else {
+      const current = updated[category][itemId] || { done: false, value: '' };
+      updated[category][itemId] = { ...current, done: !current.done };
+    }
+    setWellnessDayData(updated);
+    await saveWellnessDay(selectedDate, updated);
+  }, [wellnessDayData, selectedDate]);
 
   useEffect(() => {
     (async () => {
@@ -109,6 +139,46 @@ export default function DailyLogScreen() {
       });
   }, [entries, selectedDate]);
 
+  // Build wellness pseudo-entries for the daily list
+  const wellnessEntries = useMemo(() => {
+    if (!wellnessDayData || !wellnessTemplates) return [];
+    const items = [];
+    (wellnessTemplates.nutrition || []).forEach(t => {
+      const state = wellnessDayData.nutrition?.[t.id] || { done: false, value: '' };
+      items.push({
+        id: `wellness_nut_${t.id}`,
+        text: `🍽️ ${t.name}${state.value ? ` — ${state.value}` : ''}`,
+        type: 'wellness', source: 'wellness', wellnessCategory: 'nutrition', wellnessItemId: t.id,
+        state: state.done ? 'complete' : 'open',
+      });
+    });
+    (wellnessTemplates.exercise || []).forEach(t => {
+      const icons = { walking: '🚶', gym: '🏋️', cardio: '🏃', custom: '💪' };
+      const state = wellnessDayData.exercise?.[t.id] || { done: false, value: '' };
+      items.push({
+        id: `wellness_ex_${t.id}`,
+        text: `${icons[t.type] || '💪'} ${t.name}${state.value ? ` — ${state.value}` : ''}`,
+        type: 'wellness', source: 'wellness', wellnessCategory: 'exercise', wellnessItemId: t.id,
+        state: state.done ? 'complete' : 'open',
+      });
+    });
+    ['am', 'pm', 'eve'].forEach(slot => {
+      const icons = { am: '🌅', pm: '☀️', eve: '🌙' };
+      const labels = { am: 'AM Meditation', pm: 'PM Meditation', eve: 'Evening Meditation' };
+      items.push({
+        id: `wellness_med_${slot}`,
+        text: `${icons[slot]} ${labels[slot]}`,
+        type: 'wellness', source: 'wellness', wellnessCategory: 'meditation', wellnessItemId: slot,
+        state: wellnessDayData.meditation?.[slot] ? 'complete' : 'open',
+      });
+    });
+    return items;
+  }, [wellnessDayData, wellnessTemplates]);
+
+  const allDayEntries = useMemo(() => {
+    return [...dayEntries, ...wellnessEntries];
+  }, [dayEntries, wellnessEntries]);
+
   const stats = useMemo(() => {
     const tasks = dayEntries.filter(e => e.type === 'task');
     return {
@@ -117,6 +187,14 @@ export default function DailyLogScreen() {
       open: tasks.filter(t => t.state === 'open').length,
     };
   }, [dayEntries]);
+
+  // Tick every minute so nextUpId stays current as time passes
+  const [timeTick, setTimeTick] = useState(0);
+  useEffect(() => {
+    if (!isToday) return;
+    const id = setInterval(() => setTimeTick(t => t + 1), 60000);
+    return () => clearInterval(id);
+  }, [isToday]);
 
   // Find the "next up" entry: the first time-blocked entry whose slot is current or upcoming and not complete
   const nextUpId = useMemo(() => {
@@ -136,8 +214,10 @@ export default function DailyLogScreen() {
       const slotEnd = h * 60 + m + Math.max(1, e.pomodoros || 1) * 30;
       if (slotEnd > nowMinutes) return e.id;
     }
+    // If all slots have passed, highlight the first incomplete time-blocked entry
+    if (timeBlocked.length > 0) return timeBlocked[0].id;
     return null;
-  }, [dayEntries, isToday]);
+  }, [dayEntries, isToday, timeTick]);
 
   // Count open tasks on past days that can be migrated to today
   const migrateableCount = useMemo(() => {
@@ -198,24 +278,63 @@ export default function DailyLogScreen() {
     updateEntry(id, { state: 'migrated' });
   }, [updateEntry]);
 
-  const renderEntry = useCallback(({ item, drag, isActive }) => (
-    <ScaleDecorator>
-      <EntryItem
-        entry={item}
-        onUpdate={updateEntry}
-        onDelete={deleteEntry}
-        onMigrate={handleMigrate}
-        onSchedule={handleSchedule}
-        onEdit={handleEdit}
-        drag={drag}
-        isActive={isActive}
-        isNextUp={item.id === nextUpId}
-      />
-    </ScaleDecorator>
-  ), [updateEntry, deleteEntry, handleMigrate, handleSchedule, handleEdit, nextUpId]);
+  const renderEntry = useCallback(({ item, drag, isActive }) => {
+    // Wellness pseudo-entries get a simplified render
+    if (item.source === 'wellness') {
+      const isDone = item.state === 'complete';
+      return (
+        <TouchableOpacity
+          onPress={() => toggleWellnessItem(item.wellnessCategory, item.wellnessItemId)}
+          style={[
+            styles.wellnessRow,
+            { backgroundColor: isDone ? colors.accentGreen + '10' : colors.bg },
+            isDone && { borderLeftColor: colors.accentGreen, borderLeftWidth: 3 },
+          ]}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={isDone ? 'checkmark-circle' : 'ellipse-outline'}
+            size={22}
+            color={isDone ? colors.accentGreen : colors.textMuted}
+          />
+          <Text style={[
+            styles.wellnessText,
+            { color: colors.text },
+            isDone && { color: colors.textSecondary, textDecorationLine: 'line-through' },
+          ]}>
+            {item.text}
+          </Text>
+          <View style={[styles.wellnessBadge, { backgroundColor: colors.accentGreen + '20' }]}>
+            <Text style={[styles.wellnessBadgeText, { color: colors.accentGreen }]}>
+              {item.wellnessCategory === 'nutrition' ? 'FOOD' : item.wellnessCategory === 'exercise' ? 'FIT' : 'MED'}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      );
+    }
+    // Routine entries get a subtle badge
+    const isRoutine = item.source === 'routine';
+    return (
+      <ScaleDecorator>
+        <EntryItem
+          entry={item}
+          onUpdate={updateEntry}
+          onDelete={deleteEntry}
+          onMigrate={handleMigrate}
+          onSchedule={handleSchedule}
+          onEdit={handleEdit}
+          drag={drag}
+          isActive={isActive}
+          isNextUp={item.id === nextUpId}
+          isRoutine={isRoutine}
+        />
+      </ScaleDecorator>
+    );
+  }, [updateEntry, deleteEntry, handleMigrate, handleSchedule, handleEdit, nextUpId, toggleWellnessItem, colors]);
 
   const handleDragEnd = useCallback(({ data }) => {
-    reorderEntries(data.map(e => e.id));
+    const realEntryIds = data.filter(e => e.source !== 'wellness').map(e => e.id);
+    reorderEntries(realEntryIds);
   }, [reorderEntries]);
 
   return (
@@ -402,7 +521,7 @@ export default function DailyLogScreen() {
       {viewMode === 'list' ? (
         <DraggableFlatList
           ref={listRef}
-          data={dayEntries}
+          data={allDayEntries}
           renderItem={renderEntry}
           keyExtractor={item => item.id}
           onDragEnd={handleDragEnd}
@@ -481,6 +600,7 @@ export default function DailyLogScreen() {
         />
       )}
       </View>
+      <KnowledgeBaseButton sectionId="daily-log" />
     </SafeAreaView>
   );
 }
@@ -722,5 +842,28 @@ const styles = StyleSheet.create({
   intentionSaveBtnText: {
     fontSize: SIZES.base,
     fontWeight: '700',
+  },
+  wellnessRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    gap: 10,
+    borderRadius: 6,
+  },
+  wellnessText: {
+    flex: 1,
+    fontSize: SIZES.base,
+    lineHeight: 22,
+  },
+  wellnessBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  wellnessBadgeText: {
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
 });

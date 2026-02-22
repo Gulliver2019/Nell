@@ -25,6 +25,8 @@ import ProjectsScreen from './src/screens/ProjectsScreen';
 import ShoppingListScreen from './src/screens/ShoppingListScreen';
 import PaywallScreen from './src/screens/PaywallScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
+import RoutinesScreen from './src/screens/RoutinesScreen';
+import WellnessScreen from './src/screens/WellnessScreen';
 
 const Tab = createBottomTabNavigator();
 const MoreStack = createStackNavigator();
@@ -46,6 +48,8 @@ const TAB_ICONS = {
   Projects: { focused: 'briefcase', unfocused: 'briefcase-outline' },
   Collections: { focused: 'folder', unfocused: 'folder-outline' },
   Shopping: { focused: 'cart', unfocused: 'cart-outline' },
+  Routines: { focused: 'repeat', unfocused: 'repeat-outline' },
+  Wellness: { focused: 'leaf', unfocused: 'leaf-outline' },
   Habits: { focused: 'checkmark-circle', unfocused: 'checkmark-circle-outline' },
   Reflect: { focused: 'heart', unfocused: 'heart-outline' },
   Index: { focused: 'search', unfocused: 'search-outline' },
@@ -166,6 +170,8 @@ function AppContent() {
         <Tab.Screen name="Projects" component={ProjectsScreen} />
         <Tab.Screen name="Collections" component={CollectionsScreen} />
         <Tab.Screen name="Shopping" component={ShoppingListScreen} />
+        <Tab.Screen name="Routines" component={RoutinesScreen} />
+        <Tab.Screen name="Wellness" component={WellnessScreen} />
         <Tab.Screen name="Habits" component={HabitTrackerScreen} />
         <Tab.Screen name="Reflect" component={ReflectionScreen} />
         <Tab.Screen name="Index" component={IndexScreen} />

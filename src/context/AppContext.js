@@ -10,6 +10,8 @@ const initialState = {
   reflections: [],
   futureLog: {},
   projects: [],
+  routines: [],
+  wellnessTemplates: { nutrition: [], exercise: [], meditation: { enabled: true } },
   selectedDate: Storage.getDateKey(),
   loading: true,
   searchQuery: '',
@@ -33,6 +35,10 @@ function reducer(state, action) {
       return { ...state, futureLog: action.payload };
     case 'SET_PROJECTS':
       return { ...state, projects: action.payload };
+    case 'SET_ROUTINES':
+      return { ...state, routines: action.payload };
+    case 'SET_WELLNESS_TEMPLATES':
+      return { ...state, wellnessTemplates: action.payload };
     case 'SET_SELECTED_DATE':
       return { ...state, selectedDate: action.payload };
     case 'SET_SEARCH':
@@ -47,15 +53,17 @@ export function AppProvider({ children }) {
 
   const loadAll = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
-    const [entries, collections, habits, reflections, futureLog, projects] = await Promise.all([
+    const [entries, collections, habits, reflections, futureLog, projects, routines, wellnessTemplates] = await Promise.all([
       Storage.getAllEntries(),
       Storage.getCollections(),
       Storage.getHabits(),
       Storage.getReflections(),
       Storage.getFutureLog(),
       Storage.getProjects(),
+      Storage.getRoutines(),
+      Storage.getWellnessTemplates(),
     ]);
-    dispatch({ type: 'LOAD_ALL', payload: { entries, collections, habits, reflections, futureLog, projects } });
+    dispatch({ type: 'LOAD_ALL', payload: { entries, collections, habits, reflections, futureLog, projects, routines, wellnessTemplates } });
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
@@ -279,6 +287,40 @@ export function AppProvider({ children }) {
     dispatch({ type: 'SET_PROJECTS', payload: projects });
   }, []);
 
+  // Routine actions
+  const addRoutine = useCallback(async (routine) => {
+    await Storage.addRoutine(routine);
+    const routines = await Storage.getRoutines();
+    dispatch({ type: 'SET_ROUTINES', payload: routines });
+  }, []);
+
+  const updateRoutine = useCallback(async (id, updates) => {
+    await Storage.updateRoutine(id, updates);
+    const routines = await Storage.getRoutines();
+    dispatch({ type: 'SET_ROUTINES', payload: routines });
+  }, []);
+
+  const deleteRoutine = useCallback(async (id) => {
+    await Storage.deleteRoutine(id);
+    const routines = await Storage.getRoutines();
+    dispatch({ type: 'SET_ROUTINES', payload: routines });
+  }, []);
+
+  const generateRoutineEntries = useCallback(async (dateKey) => {
+    const added = await Storage.generateRoutineEntries(dateKey);
+    if (added > 0) {
+      const entries = await Storage.getAllEntries();
+      dispatch({ type: 'SET_ENTRIES', payload: entries });
+    }
+    return added;
+  }, []);
+
+  // Wellness actions
+  const saveWellnessTemplates = useCallback(async (templates) => {
+    await Storage.saveWellnessTemplates(templates);
+    dispatch({ type: 'SET_WELLNESS_TEMPLATES', payload: templates });
+  }, []);
+
   const setSelectedDate = useCallback((date) => {
     dispatch({ type: 'SET_SELECTED_DATE', payload: date });
   }, []);
@@ -312,6 +354,11 @@ export function AppProvider({ children }) {
     moveProjectTask,
     deleteProjectTask,
     reorderProjectTasks,
+    addRoutine,
+    updateRoutine,
+    deleteRoutine,
+    generateRoutineEntries,
+    saveWellnessTemplates,
     setSelectedDate,
     setSearchQuery,
   };
