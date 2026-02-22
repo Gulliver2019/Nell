@@ -570,7 +570,7 @@ const s = StyleSheet.create({
   catTileLabel: { fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3 },
 
   // Filter chips
-  filterScroll: { flexShrink: 0, marginTop: 4 },
+  filterScroll: { marginTop: 4, maxHeight: 36 },
   filterRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 6, paddingBottom: 2 },
   filterChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,

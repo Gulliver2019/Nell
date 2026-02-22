@@ -584,7 +584,7 @@ export default function DailyLogScreen() {
               onPress={() => setWellnessPickerVisible(true)}
               activeOpacity={0.8}
             >
-              <Text style={{ fontSize: 20 }}>🍃</Text>
+              <Text style={{ fontSize: 26 }}>🍃</Text>
             </TouchableOpacity>
           )}
           <FAB onPress={() => { setEditingEntry(null); setFlyoutVisible(true); }} />
@@ -936,13 +936,14 @@ const styles = StyleSheet.create({
   },
   wellnessFab: {
     position: 'absolute',
-    right: 76,
-    bottom: 98,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    right: 20,
+    bottom: 26,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 100,
     ...SHADOWS.medium,
   },
   wellnessPickerContainer: {
