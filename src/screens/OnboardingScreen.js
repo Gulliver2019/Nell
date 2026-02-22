@@ -13,7 +13,7 @@ import HelpScreen from './HelpScreen';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const AMAZON_URL = 'https://www.amazon.co.uk/Bullet-Journal-Method-Present-Design/dp/0008261377';
-const BOOK_IMAGE = 'https://m.media-amazon.com/images/I/71pYMiGbZBL._SL1500_.jpg';
+const BOOK_IMAGE = require('../../assets/book.png');
 
 const SLIDES = [
   {
@@ -50,7 +50,19 @@ const SLIDES = [
     emoji: '🍅',
     title: 'Time Blocking & Pomodoro',
     subtitle: 'Deep focus tools',
-    body: 'Assign tasks to time slots on your daily timeline. Use the built-in Pomodoro timer (25min focus sessions) to stay in the zone.',
+    body: 'Assign tasks to time slots on your daily timeline. Use the built-in Pomodoro timer (25min focus sessions) to stay in the zone.\n\nMark quick tasks as Admin [A] — 4 admins batch into one pomodoro.',
+  },
+  {
+    emoji: '🔁',
+    title: 'Routines',
+    subtitle: 'Set once, run daily',
+    body: 'Define recurring tasks that auto-populate your Daily Log every day. Morning stretch, review inbox, evening read — set them up once and they\'re always there.',
+  },
+  {
+    emoji: '🍃',
+    title: 'Wellness',
+    subtitle: 'Nutrition · Exercise · Meditation',
+    body: 'Track what you eat, your workouts (walking, gym, cardio) and meditation sessions (AM/PM/Eve). Everything resets at midnight so each day is a fresh start.',
   },
   {
     key: 'book',
@@ -63,7 +75,7 @@ const SLIDES = [
     emoji: '💪',
     title: 'You\'re Ready!',
     subtitle: 'Go dig those goals',
-    body: 'Track habits, reflect on your day, search everything from the Index. The more you use it, the more powerful it becomes.\n\nLet\'s get started.',
+    body: 'Track habits, set routines, monitor your wellness, reflect on your day, and search everything from the Index. The more you use it, the more powerful it becomes.\n\nLet\'s get started.',
   },
 ];
 
@@ -122,7 +134,7 @@ export default function OnboardingScreen({ onComplete }) {
           <>
             <View style={styles.bookCover}>
               <Image
-                source={{ uri: BOOK_IMAGE }}
+                source={BOOK_IMAGE}
                 style={styles.bookImage}
                 resizeMode="contain"
               />

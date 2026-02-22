@@ -3,6 +3,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet, TextInput, Alert,
   FlatList, LayoutAnimation, UIManager, Platform,
 } from 'react-native';
+import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,7 +11,6 @@ import { SIZES } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import * as Haptics from 'expo-haptics';
-import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -190,6 +190,7 @@ export default function RoutinesScreen() {
           <Ionicons name="add" size={28} color={colors.textInverse || '#fff'} />
         </TouchableOpacity>
       )}
+      <KnowledgeBaseButton sectionId="routines" />
     </SafeAreaView>
   );
 }

@@ -3,6 +3,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet, TextInput, Alert,
   ScrollView, LayoutAnimation, UIManager, Platform, FlatList,
 } from 'react-native';
+import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -349,6 +350,7 @@ export default function WellnessScreen() {
           <Ionicons name="add" size={28} color={colors.textInverse || '#fff'} />
         </TouchableOpacity>
       )}
+      <KnowledgeBaseButton sectionId="wellness" />
     </SafeAreaView>
   );
 }

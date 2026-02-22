@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, LayoutAnimation,
   Platform, UIManager,
@@ -14,6 +14,7 @@ if (Platform.OS === 'android') {
 
 const SECTIONS = [
   {
+    id: 'getting-started',
     title: 'Getting Started',
     icon: '🚀',
     items: [
@@ -28,6 +29,7 @@ const SECTIONS = [
     ],
   },
   {
+    id: 'rapid-logging',
     title: 'Rapid Logging',
     icon: '⚡',
     items: [
@@ -46,6 +48,7 @@ const SECTIONS = [
     ],
   },
   {
+    id: 'task-states',
     title: 'Task States',
     icon: '✓',
     items: [
@@ -64,6 +67,7 @@ const SECTIONS = [
     ],
   },
   {
+    id: 'migration',
     title: 'Migration & Scheduling',
     icon: '📦',
     items: [
@@ -86,6 +90,7 @@ const SECTIONS = [
     ],
   },
   {
+    id: 'daily-log',
     title: 'Daily Log',
     icon: '📅',
     items: [
@@ -104,6 +109,7 @@ const SECTIONS = [
     ],
   },
   {
+    id: 'monthly-log',
     title: 'Monthly Log',
     icon: '📆',
     items: [
@@ -118,6 +124,7 @@ const SECTIONS = [
     ],
   },
   {
+    id: 'future-log',
     title: 'Future Log',
     icon: '🔮',
     items: [
@@ -128,6 +135,7 @@ const SECTIONS = [
     ],
   },
   {
+    id: 'collections',
     title: 'Collections',
     icon: '📚',
     items: [
@@ -146,6 +154,7 @@ const SECTIONS = [
     ],
   },
   {
+    id: 'projects',
     title: 'Projects',
     icon: '📋',
     items: [
@@ -160,6 +169,7 @@ const SECTIONS = [
     ],
   },
   {
+    id: 'time-blocking',
     title: 'Time Blocking',
     icon: '🧱',
     items: [
@@ -178,6 +188,7 @@ const SECTIONS = [
     ],
   },
   {
+    id: 'pomodoro',
     title: 'Pomodoro Timer',
     icon: '🍅',
     items: [
@@ -196,6 +207,7 @@ const SECTIONS = [
     ],
   },
   {
+    id: 'shopping-list',
     title: 'Shopping List',
     icon: '🛒',
     items: [
@@ -210,6 +222,7 @@ const SECTIONS = [
     ],
   },
   {
+    id: 'habit-tracker',
     title: 'Habit Tracker',
     icon: '💪',
     items: [
@@ -228,6 +241,7 @@ const SECTIONS = [
     ],
   },
   {
+    id: 'reflection',
     title: 'Reflection',
     icon: '🪞',
     items: [
@@ -246,6 +260,7 @@ const SECTIONS = [
     ],
   },
   {
+    id: 'index-search',
     title: 'Index & Search',
     icon: '🔍',
     items: [
@@ -259,11 +274,84 @@ const SECTIONS = [
       },
     ],
   },
+  {
+    id: 'routines',
+    title: 'Routines',
+    icon: '🔁',
+    items: [
+      {
+        q: 'What are Routines?',
+        a: 'Routines are recurring daily tasks you define once and they automatically appear in your Daily Log every day. Perfect for things like "Morning stretch", "Review inbox" or "Read 30 min".',
+      },
+      {
+        q: 'How do I create a routine?',
+        a: 'Go to the Routines tab and tap +. Give it a name and optionally assign a time slot. Toggle routines on/off — disabled routines won\'t auto-populate.',
+      },
+      {
+        q: 'How do routines show on my Daily Log?',
+        a: 'Routine tasks appear mixed in with your regular entries, marked with a 🔁 badge so you can tell them apart. They work just like normal tasks — tap to complete, swipe to migrate.',
+      },
+      {
+        q: 'Can I edit or delete a routine?',
+        a: 'Tap the pencil icon to edit, or the trash icon to delete. Deleting a routine removes it from future days but won\'t affect entries already created.',
+      },
+    ],
+  },
+  {
+    id: 'wellness',
+    title: 'Wellness',
+    icon: '🍃',
+    items: [
+      {
+        q: 'What is the Wellness tab?',
+        a: 'Wellness tracks three areas of your daily health: Nutrition, Exercise and Meditation. Set up your items once, then check them off each day. Everything resets automatically at midnight.',
+      },
+      {
+        q: 'How does Nutrition tracking work?',
+        a: 'Add food items you want to eat daily (e.g. "Protein shake", "200g chicken"). Each day, check them off and optionally update the value. Tap + to add new items.',
+      },
+      {
+        q: 'How does Exercise tracking work?',
+        a: 'Walking, Gym and Cardio come pre-loaded. You can add custom exercise types too. Check off what you\'ve done and add values like "30 min" or "5km".',
+      },
+      {
+        q: 'How does Meditation tracking work?',
+        a: 'Three session slots: AM (morning), PM (afternoon) and Eve (evening). Tap each card to mark a session as done. Simple and visual.',
+      },
+      {
+        q: 'How do wellness items appear on my Daily Log?',
+        a: 'All wellness items show at the bottom of your daily list with category badges (FOOD, FIT, MED). Tap to toggle them done right from the Daily Log.',
+      },
+      {
+        q: 'Do wellness items reset each day?',
+        a: 'Yes — each new day starts fresh with unchecked items. Your past days\' data is preserved so you can review previous progress.',
+      },
+    ],
+  },
+  {
+    id: 'admin-tasks',
+    title: 'Admin Tasks',
+    icon: '📎',
+    items: [
+      {
+        q: 'What are Admin tasks?',
+        a: 'Admin tasks are small, quick tasks (emails, calls, form-filling) that you can batch together. Mark a task as Admin with the [A] toggle when creating it.',
+      },
+      {
+        q: 'How does admin grouping work?',
+        a: 'In the time block view, admin tasks stack together in the same slot. Up to 4 admin tasks fill one pomodoro (30 min). The group shows as "[A] Admin (2/4)" and displays 🍅 when full.',
+      },
+      {
+        q: 'Is there a limit?',
+        a: 'Yes — max 4 admin tasks per time slot. This equals one pomodoro session. If you have more admin tasks, assign them to a different slot.',
+      },
+    ],
+  },
 ];
 
-function AccordionItem({ item }) {
+function AccordionItem({ item, initialOpen }) {
   const { colors } = useTheme();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initialOpen || false);
 
   const toggle = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -283,8 +371,35 @@ function AccordionItem({ item }) {
   );
 }
 
-export default function HelpScreen({ navigation, embedded }) {
+export default function HelpScreen({ navigation, route, embedded }) {
   const { colors } = useTheme();
+  const sectionId = route?.params?.sectionId;
+  const scrollRef = useRef(null);
+  const sectionLayouts = useRef({});
+  const hasScrolled = useRef(false);
+
+  const handleSectionLayout = useCallback((id, event) => {
+    sectionLayouts.current[id] = event.nativeEvent.layout.y;
+  }, []);
+
+  useEffect(() => {
+    if (sectionId && !hasScrolled.current) {
+      const timer = setTimeout(() => {
+        const y = sectionLayouts.current[sectionId];
+        if (y != null && scrollRef.current) {
+          scrollRef.current.scrollTo({ y: y - 10, animated: true });
+          hasScrolled.current = true;
+        }
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [sectionId]);
+
+  // Reset scroll tracking when sectionId changes
+  useEffect(() => {
+    hasScrolled.current = false;
+  }, [sectionId]);
+
   const Wrapper = embedded ? View : SafeAreaView;
   const wrapperProps = embedded ? { style: [styles.safe, { backgroundColor: colors.bg }] } : { style: [styles.safe, { backgroundColor: colors.bg }], edges: ['top'] };
   return (
@@ -307,6 +422,7 @@ export default function HelpScreen({ navigation, embedded }) {
       )}
 
       <ScrollView
+        ref={scrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
@@ -361,17 +477,28 @@ export default function HelpScreen({ navigation, embedded }) {
         </View>
 
         {/* Accordion sections */}
-        {SECTIONS.map((section, idx) => (
-          <View key={idx} style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+        {SECTIONS.map((section, idx) => {
+          const isTarget = section.id === sectionId;
+          return (
+          <View
+            key={idx}
+            onLayout={(e) => handleSectionLayout(section.id, e)}
+            style={[
+              styles.section,
+              { backgroundColor: colors.bgCard, borderColor: isTarget ? colors.accent : colors.border },
+              isTarget && { borderWidth: 2 },
+            ]}
+          >
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionIcon}>{section.icon}</Text>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>{section.title}</Text>
             </View>
             {section.items.map((item, i) => (
-              <AccordionItem key={i} item={item} />
+              <AccordionItem key={i} item={item} initialOpen={isTarget} />
             ))}
           </View>
-        ))}
+          );
+        })}
 
         <View style={styles.footer}>
           <Text style={styles.footerEmoji}>💜</Text>
