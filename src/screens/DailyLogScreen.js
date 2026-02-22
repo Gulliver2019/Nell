@@ -68,9 +68,11 @@ export default function DailyLogScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const updated = { ...wellnessDayData, [category]: { ...wellnessDayData[category] } };
     if (category === 'meditation') {
-      updated.meditation[itemId] = !updated.meditation[itemId];
+      const current = updated.meditation[itemId];
+      const prev = typeof current === 'object' ? current : { selected: true, done: false };
+      updated.meditation[itemId] = { ...prev, done: !prev.done };
     } else {
-      const current = updated[category][itemId] || { done: false, value: '' };
+      const current = updated[category][itemId] || { done: false, selected: true, value: '' };
       updated[category][itemId] = { ...current, done: !current.done };
     }
     setWellnessDayData(updated);
@@ -139,12 +141,13 @@ export default function DailyLogScreen() {
       });
   }, [entries, selectedDate]);
 
-  // Build wellness pseudo-entries for the daily list
+  // Build wellness pseudo-entries — only include items selected on the Wellness tab
   const wellnessEntries = useMemo(() => {
     if (!wellnessDayData || !wellnessTemplates) return [];
     const items = [];
     (wellnessTemplates.nutrition || []).forEach(t => {
-      const state = wellnessDayData.nutrition?.[t.id] || { done: false, value: '' };
+      const state = wellnessDayData.nutrition?.[t.id] || { done: false, selected: false, value: '' };
+      if (!state.selected) return;
       items.push({
         id: `wellness_nut_${t.id}`,
         text: `🍽️ ${t.name}${state.value ? ` — ${state.value}` : ''}`,
@@ -154,7 +157,8 @@ export default function DailyLogScreen() {
     });
     (wellnessTemplates.exercise || []).forEach(t => {
       const icons = { walking: '🚶', gym: '🏋️', cardio: '🏃', custom: '💪' };
-      const state = wellnessDayData.exercise?.[t.id] || { done: false, value: '' };
+      const state = wellnessDayData.exercise?.[t.id] || { done: false, selected: false, value: '' };
+      if (!state.selected) return;
       items.push({
         id: `wellness_ex_${t.id}`,
         text: `${icons[t.type] || '💪'} ${t.name}${state.value ? ` — ${state.value}` : ''}`,
@@ -165,11 +169,15 @@ export default function DailyLogScreen() {
     ['am', 'pm', 'eve'].forEach(slot => {
       const icons = { am: '🌅', pm: '☀️', eve: '🌙' };
       const labels = { am: 'AM Meditation', pm: 'PM Meditation', eve: 'Evening Meditation' };
+      const slotData = wellnessDayData.meditation?.[slot];
+      const isSelected = typeof slotData === 'object' ? slotData?.selected : !!slotData;
+      const isDone = typeof slotData === 'object' ? slotData?.done : false;
+      if (!isSelected) return;
       items.push({
         id: `wellness_med_${slot}`,
         text: `${icons[slot]} ${labels[slot]}`,
         type: 'wellness', source: 'wellness', wellnessCategory: 'meditation', wellnessItemId: slot,
-        state: wellnessDayData.meditation?.[slot] ? 'complete' : 'open',
+        state: isDone ? 'complete' : 'open',
       });
     });
     return items;
