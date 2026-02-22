@@ -175,12 +175,12 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
     [entries]
   );
 
-  // Check if a range of slots is available (admin tasks can stack on admin blocks)
+  // Check if a range of slots is available (admin tasks can stack on admin blocks, max 4)
   const canAssignAt = useCallback((startIndex, slotsNeeded, forAdmin = false) => {
     for (let i = 0; i < slotsNeeded && (startIndex + i) < ALL_SLOTS.length; i++) {
       const existing = slotMap[ALL_SLOTS[startIndex + i]];
       if (existing) {
-        if (forAdmin && existing.isAdminBlock && i === 0) continue;
+        if (forAdmin && existing.isAdminBlock && i === 0 && existing.adminGroup.length < 4) continue;
         return false;
       }
     }
@@ -216,8 +216,12 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
 
     if (selectedEntry) {
       if (selectedEntry.isAdmin) {
-        // Admin entries take 1 slot and can stack on existing admin blocks or empty slots
-        if (!existing || existing.isAdminBlock) {
+        // Admin entries take 1 slot and can stack on existing admin blocks (max 4)
+        if (!existing) {
+          onUpdate?.(selectedEntry.id, { timeBlock: slot });
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setSelectedEntry(null);
+        } else if (existing.isAdminBlock && existing.adminGroup.length < 4) {
           onUpdate?.(selectedEntry.id, { timeBlock: slot });
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           setSelectedEntry(null);
@@ -286,7 +290,7 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
               <View style={styles.blockContent}>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.adminGroupHeader, { color: colors.accentOrange }]}>
-                    [A] Admin ({adminGroup.length})
+                    [A] Admin ({adminGroup.length}/4){adminGroup.length >= 4 ? ' 🍅' : ''}
                   </Text>
                   {adminGroup.map(e => (
                     <Text
@@ -302,6 +306,16 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
                     </Text>
                   ))}
                 </View>
+                <TouchableOpacity
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    adminGroup.forEach(e => onUpdate?.(e.id, { timeBlock: null }));
+                  }}
+                  style={[styles.unscheduleBtn, { backgroundColor: colors.textMuted + '20' }]}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                >
+                  <Text style={[styles.unscheduleBtnText, { color: colors.textMuted }]}>✕</Text>
+                </TouchableOpacity>
               </View>
             </TouchableOpacity>
           </View>
@@ -355,6 +369,18 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
                   {isMeeting ? `📅 ${entry.meetingTime ? formatSlotLabel(entry.meetingTime) : formatSlotLabel(entry.timeBlock)} ${entry.text}` : entry.text}
                 </Text>
               </View>
+              {!isMeeting && (
+                <TouchableOpacity
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    onUpdate?.(entry.id, { timeBlock: null });
+                  }}
+                  style={[styles.unscheduleBtn, { backgroundColor: colors.textMuted + '20' }]}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                >
+                  <Text style={[styles.unscheduleBtnText, { color: colors.textMuted }]}>✕</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </TouchableOpacity>
         </View>
@@ -895,6 +921,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+  },
+  unscheduleBtn: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  unscheduleBtnText: {
+    fontSize: 10,
+    fontWeight: '700',
   },
   blockPlay: {
     fontSize: 16,
