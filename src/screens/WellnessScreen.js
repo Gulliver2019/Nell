@@ -55,8 +55,8 @@ export default function WellnessScreen() {
     if (!dayData) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const updated = { ...dayData, nutrition: { ...dayData.nutrition } };
-    const current = updated.nutrition[itemId] || { done: false, selected: false, value: '' };
-    updated.nutrition[itemId] = { ...current, selected: !current.selected };
+    const current = updated.nutrition[itemId] || { done: false, value: '' };
+    updated.nutrition[itemId] = { ...current, done: !current.done };
     await saveDayData(updated);
   }, [dayData, saveDayData]);
 
@@ -101,8 +101,8 @@ export default function WellnessScreen() {
     if (!dayData) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const updated = { ...dayData, exercise: { ...dayData.exercise } };
-    const current = updated.exercise[itemId] || { done: false, selected: false, value: '' };
-    updated.exercise[itemId] = { ...current, selected: !current.selected };
+    const current = updated.exercise[itemId] || { done: false, value: '' };
+    updated.exercise[itemId] = { ...current, done: !current.done };
     await saveDayData(updated);
   }, [dayData, saveDayData]);
 
@@ -145,37 +145,39 @@ export default function WellnessScreen() {
   const toggleMeditation = useCallback(async (slot) => {
     if (!dayData) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const current = dayData.meditation?.[slot] || {};
-    const selected = typeof current === 'object' ? !current.selected : !current;
-    const updated = { ...dayData, meditation: { ...dayData.meditation, [slot]: { selected, done: typeof current === 'object' ? current.done : false } } };
+    const current = dayData.meditation?.[slot];
+    const isDone = typeof current === 'object' ? !!current.done : !!current;
+    const updated = { ...dayData, meditation: { ...dayData.meditation, [slot]: !isDone } };
     await saveDayData(updated);
   }, [dayData, saveDayData]);
 
   // ─── Progress ───
   const getProgress = () => {
     if (!dayData) return { done: 0, total: 0 };
-    const nutSel = Object.values(dayData.nutrition || {}).filter(n => n.selected).length;
+    const nutDone = Object.values(dayData.nutrition || {}).filter(n => n.done).length;
     const nutTotal = (wellnessTemplates.nutrition || []).length;
-    const exSel = Object.values(dayData.exercise || {}).filter(e => e.selected).length;
+    const exDone = Object.values(dayData.exercise || {}).filter(e => e.done).length;
     const exTotal = (wellnessTemplates.exercise || []).length;
-    const medSel = ['am', 'pm', 'eve'].filter(s => {
+    const medDone = ['am', 'pm', 'eve'].filter(s => {
       const d = dayData.meditation?.[s];
-      return typeof d === 'object' ? d?.selected : !!d;
+      return typeof d === 'object' ? !!d?.done : !!d;
     }).length;
-    return { done: nutSel + exSel + medSel, total: nutTotal + exTotal + 3 };
+    return { done: nutDone + exDone + medDone, total: nutTotal + exTotal + 3 };
   };
   const progress = getProgress();
 
   // ─── Render helpers ───
-  const renderCheckItem = (item, isSelected, value, onToggle, onValueChange, onDelete) => (
-    <View key={item.id} style={[styles.checkRow, { backgroundColor: colors.bgCard, borderColor: isSelected ? colors.accentGreen : colors.border }]}>
-      <TouchableOpacity onPress={onToggle} style={[styles.selectBtn, isSelected && { backgroundColor: colors.accentGreen }]}>
-        <Text style={[styles.selectBtnText, { color: isSelected ? '#fff' : colors.textMuted }]}>
-          {isSelected ? 'Selected' : 'Select'}
-        </Text>
+  const renderCheckItem = (item, isDone, value, onToggle, onValueChange, onDelete) => (
+    <View key={item.id} style={[styles.checkRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+      <TouchableOpacity onPress={onToggle} style={styles.checkBtn}>
+        <Ionicons
+          name={isDone ? 'checkmark-circle' : 'ellipse-outline'}
+          size={26}
+          color={isDone ? colors.accentGreen : colors.textMuted}
+        />
       </TouchableOpacity>
       <View style={styles.checkInfo}>
-        <Text style={[styles.checkName, { color: colors.text }]}>
+        <Text style={[styles.checkName, { color: colors.text }, isDone && { color: colors.textSecondary, textDecorationLine: 'line-through' }]}>
           {item.icon || ''} {item.name}
         </Text>
         <TextInput
@@ -236,10 +238,10 @@ export default function WellnessScreen() {
         {activeSection === 0 && (
           <>
             {(wellnessTemplates.nutrition || []).map(item => {
-              const state = dayData?.nutrition?.[item.id] || { done: false, selected: false, value: item.value || '' };
+              const state = dayData?.nutrition?.[item.id] || { done: false, value: item.value || '' };
               return renderCheckItem(
                 { ...item, icon: '🍽️' },
-                state.selected,
+                state.done,
                 state.value,
                 () => toggleNutrition(item.id),
                 (v) => updateNutritionValue(item.id, v),
@@ -260,10 +262,10 @@ export default function WellnessScreen() {
         {activeSection === 1 && (
           <>
             {(wellnessTemplates.exercise || []).map(item => {
-              const state = dayData?.exercise?.[item.id] || { done: false, selected: false, value: item.value || '' };
+              const state = dayData?.exercise?.[item.id] || { done: false, value: item.value || '' };
               return renderCheckItem(
                 { ...item, icon: EXERCISE_ICONS[item.type] || '💪' },
-                state.selected,
+                state.done,
                 state.value,
                 () => toggleExercise(item.id),
                 (v) => updateExerciseValue(item.id, v),
@@ -278,25 +280,27 @@ export default function WellnessScreen() {
           <View style={styles.meditationGrid}>
             {MEDITATION_SLOTS.map(slot => {
               const slotData = dayData?.meditation?.[slot.key];
-              const isSelected = typeof slotData === 'object' ? slotData?.selected : !!slotData;
+              const isDone = typeof slotData === 'object' ? !!slotData?.done : !!slotData;
               return (
                 <TouchableOpacity
                   key={slot.key}
                   style={[
                     styles.meditationCard,
-                    { backgroundColor: colors.bgCard, borderColor: isSelected ? colors.accentGreen : colors.border },
-                    isSelected && { backgroundColor: colors.accentGreen + '15' },
+                    { backgroundColor: colors.bgCard, borderColor: isDone ? colors.accentGreen : colors.border },
+                    isDone && { backgroundColor: colors.accentGreen + '15' },
                   ]}
                   onPress={() => toggleMeditation(slot.key)}
                   activeOpacity={0.7}
                 >
                   <Text style={styles.meditationIcon}>{slot.icon}</Text>
-                  <Text style={[styles.meditationLabel, { color: isSelected ? colors.accentGreen : colors.text }]}>
+                  <Text style={[styles.meditationLabel, { color: isDone ? colors.accentGreen : colors.text }]}>
                     {slot.label}
                   </Text>
-                  <Text style={[styles.selectBtnSmall, { color: isSelected ? colors.accentGreen : colors.textMuted }]}>
-                    {isSelected ? '✓ Selected' : 'Select'}
-                  </Text>
+                  <Ionicons
+                    name={isDone ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={28}
+                    color={isDone ? colors.accentGreen : colors.textMuted}
+                  />
                 </TouchableOpacity>
               );
             })}
@@ -424,23 +428,6 @@ const styles = StyleSheet.create({
   },
   checkBtn: {
     marginRight: 10,
-  },
-  selectBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'transparent',
-    marginRight: 10,
-  },
-  selectBtnText: {
-    fontSize: SIZES.xs,
-    fontWeight: '700',
-  },
-  selectBtnSmall: {
-    fontSize: SIZES.xs,
-    fontWeight: '700',
-    marginTop: 4,
   },
   checkInfo: {
     flex: 1,
