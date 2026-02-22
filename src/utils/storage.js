@@ -582,3 +582,17 @@ export const getWellnessDay = async (dateKey) => {
 export const saveWellnessDay = async (dateKey, dayData) => {
   await AsyncStorage.setItem(wellnessDayKey(dateKey), JSON.stringify(dayData));
 };
+
+// Track which wellness items the user has added to a specific day's Daily Log
+const dailyWellnessSelKey = (dateKey) => `crushedit_daily_wellness_sel_${dateKey}`;
+
+export const getDailyWellnessSelection = async (dateKey) => {
+  try {
+    const data = await AsyncStorage.getItem(dailyWellnessSelKey(dateKey));
+    return data ? JSON.parse(data) : []; // array of wellness entry ids
+  } catch { return []; }
+};
+
+export const saveDailyWellnessSelection = async (dateKey, ids) => {
+  await AsyncStorage.setItem(dailyWellnessSelKey(dateKey), JSON.stringify(ids));
+};

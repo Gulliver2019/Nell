@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SIZES, SHADOWS } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
-import { getDateKey, formatDate, getWellnessDay, getWellnessTemplates, saveWellnessDay } from '../utils/storage';
+import { getDateKey, formatDate, getWellnessDay, getWellnessTemplates, saveWellnessDay, getDailyWellnessSelection, saveDailyWellnessSelection } from '../utils/storage';
 import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
 import EntryItem from '../components/EntryItem';
 import FAB from '../components/FAB';
@@ -39,6 +39,8 @@ export default function DailyLogScreen() {
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'timeblock'
   const [flyoutVisible, setFlyoutVisible] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
+  const [wellnessPickerVisible, setWellnessPickerVisible] = useState(false);
+  const [dailyWellnessIds, setDailyWellnessIds] = useState([]);
   const listRef = useRef(null);
   const shouldScrollRef = useRef(false);
 
@@ -76,6 +78,23 @@ export default function DailyLogScreen() {
     setWellnessDayData(updated);
     await saveWellnessDay(selectedDate, updated);
   }, [wellnessDayData, selectedDate]);
+
+  // Load which wellness items user chose to show on this day
+  useEffect(() => {
+    (async () => {
+      const ids = await getDailyWellnessSelection(selectedDate);
+      setDailyWellnessIds(ids);
+    })();
+  }, [selectedDate]);
+
+  const toggleWellnessPick = useCallback(async (id) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const next = dailyWellnessIds.includes(id)
+      ? dailyWellnessIds.filter(x => x !== id)
+      : [...dailyWellnessIds, id];
+    setDailyWellnessIds(next);
+    await saveDailyWellnessSelection(selectedDate, next);
+  }, [dailyWellnessIds, selectedDate]);
 
   useEffect(() => {
     (async () => {
@@ -176,8 +195,9 @@ export default function DailyLogScreen() {
   }, [wellnessDayData, wellnessTemplates]);
 
   const allDayEntries = useMemo(() => {
-    return [...dayEntries];
-  }, [dayEntries]);
+    const selectedWellness = wellnessEntries.filter(e => dailyWellnessIds.includes(e.id));
+    return [...dayEntries, ...selectedWellness];
+  }, [dayEntries, wellnessEntries, dailyWellnessIds]);
 
   const stats = useMemo(() => {
     const tasks = dayEntries.filter(e => e.type === 'task');
@@ -557,7 +577,18 @@ export default function DailyLogScreen() {
 
       {/* FAB + Flyout (only show standalone FAB in list mode) */}
       {viewMode === 'list' && (
-        <FAB onPress={() => { setEditingEntry(null); setFlyoutVisible(true); }} />
+        <>
+          {wellnessEntries.length > 0 && (
+            <TouchableOpacity
+              style={[styles.wellnessFab, { backgroundColor: colors.accentGreen }]}
+              onPress={() => setWellnessPickerVisible(true)}
+              activeOpacity={0.8}
+            >
+              <Text style={{ fontSize: 20 }}>🍃</Text>
+            </TouchableOpacity>
+          )}
+          <FAB onPress={() => { setEditingEntry(null); setFlyoutVisible(true); }} />
+        </>
       )}
       <EntryFormFlyout
         visible={flyoutVisible}
@@ -566,6 +597,43 @@ export default function DailyLogScreen() {
         entry={editingEntry}
         visibleFields={['text', 'type', 'signifier', 'admin', 'pomodoros', 'timeBlock', 'date']}
       />
+
+      {/* Wellness Picker Modal */}
+      <Modal visible={wellnessPickerVisible} transparent animationType="slide">
+        <View style={styles.datePickerOverlay}>
+          <View style={[styles.wellnessPickerContainer, { backgroundColor: colors.bgCard }]}>
+            <View style={styles.datePickerHeader}>
+              <Text style={[styles.datePickerTitle, { color: colors.text }]}>Add Wellness to Daily</Text>
+              <TouchableOpacity onPress={() => setWellnessPickerVisible(false)}>
+                <Text style={[styles.datePickerCancel, { color: colors.accentGreen }]}>Done</Text>
+              </TouchableOpacity>
+            </View>
+            {wellnessEntries.map(item => {
+              const selected = dailyWellnessIds.includes(item.id);
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  style={[styles.wellnessPickRow, selected && { backgroundColor: colors.accentGreen + '15' }]}
+                  onPress={() => toggleWellnessPick(item.id)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name={selected ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={22}
+                    color={selected ? colors.accentGreen : colors.textMuted}
+                  />
+                  <Text style={[styles.wellnessPickText, { color: colors.text }]}>{item.text}</Text>
+                  <View style={[styles.wellnessBadge, { backgroundColor: colors.accentGreen + '20' }]}>
+                    <Text style={[styles.wellnessBadgeText, { color: colors.accentGreen }]}>
+                      {item.wellnessCategory === 'nutrition' ? 'FOOD' : item.wellnessCategory === 'exercise' ? 'FIT' : 'MED'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+      </Modal>
 
       {/* Date Picker for scheduling */}
       {showDatePicker && Platform.OS === 'ios' && (
@@ -865,5 +933,36 @@ const styles = StyleSheet.create({
     fontSize: 8,
     fontWeight: '800',
     letterSpacing: 0.5,
+  },
+  wellnessFab: {
+    position: 'absolute',
+    right: 76,
+    bottom: 98,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...SHADOWS.medium,
+  },
+  wellnessPickerContainer: {
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 40,
+    maxHeight: '70%',
+  },
+  wellnessPickRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    gap: 10,
+    borderRadius: 8,
+    marginBottom: 2,
+  },
+  wellnessPickText: {
+    flex: 1,
+    fontSize: SIZES.base,
   },
 });
