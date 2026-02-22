@@ -29,7 +29,7 @@ export default function DailyLogScreen() {
   const {
     entries, selectedDate, setSelectedDate, addEntry, updateEntry,
     deleteEntry, migrateEntry, scheduleEntry, reorderEntries, migratePastEntries,
-    generateRoutineEntries, wellnessTemplates,
+    generateRoutineEntries, wellnessTemplates, routines,
   } = useApp();
 
   const today = getDateKey();
@@ -54,7 +54,7 @@ export default function DailyLogScreen() {
   // Auto-generate routine entries for selected date
   useEffect(() => {
     if (selectedDate) generateRoutineEntries(selectedDate);
-  }, [selectedDate, generateRoutineEntries]);
+  }, [selectedDate, generateRoutineEntries, routines]);
 
   // Wellness day data for daily log integration
   const [wellnessDayData, setWellnessDayData] = useState(null);
