@@ -570,8 +570,8 @@ const s = StyleSheet.create({
   catTileLabel: { fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3 },
 
   // Filter chips
-  filterScroll: { flexShrink: 0, marginTop: 6 },
-  filterRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, paddingBottom: 4 },
+  filterScroll: { flexShrink: 0, marginTop: 4 },
+  filterRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 6, paddingBottom: 2 },
   filterChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, borderWidth: 1,
@@ -585,7 +585,7 @@ const s = StyleSheet.create({
   filterBadgeText: { fontSize: 9, fontWeight: '800' },
 
   // Sections
-  section: { marginTop: 16 },
+  section: { marginTop: 10 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8, paddingHorizontal: 4 },
   sectionEmoji: { fontSize: 14 },
   sectionTitle: { fontSize: SIZES.xs, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 },
