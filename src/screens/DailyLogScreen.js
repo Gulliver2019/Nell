@@ -176,8 +176,8 @@ export default function DailyLogScreen() {
   }, [wellnessDayData, wellnessTemplates]);
 
   const allDayEntries = useMemo(() => {
-    return [...dayEntries, ...wellnessEntries];
-  }, [dayEntries, wellnessEntries]);
+    return [...dayEntries];
+  }, [dayEntries]);
 
   const stats = useMemo(() => {
     const tasks = dayEntries.filter(e => e.type === 'task');
