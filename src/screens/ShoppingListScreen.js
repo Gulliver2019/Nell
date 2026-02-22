@@ -574,7 +574,7 @@ const s = StyleSheet.create({
   filterRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, paddingBottom: 4 },
   filterChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1,
+    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, borderWidth: 1,
   },
   filterEmoji: { fontSize: 13 },
   filterLabel: { fontSize: SIZES.xs, fontWeight: '600' },
