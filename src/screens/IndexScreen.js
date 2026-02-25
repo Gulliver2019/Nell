@@ -8,6 +8,7 @@ import { SIZES, getBulletTypes, getTaskStates, getSignifiers } from '../utils/th
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { formatDateShort, getDateKey, getMonthName } from '../utils/storage';
+import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
 
 export default function IndexScreen({ navigation }) {
   const { colors } = useTheme();
@@ -297,6 +298,7 @@ export default function IndexScreen({ navigation }) {
           <View style={{ height: 120 }} />
         </ScrollView>
       )}
+      <KnowledgeBaseButton sectionId="index-search" />
     </SafeAreaView>
   );
 }

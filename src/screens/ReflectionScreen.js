@@ -9,6 +9,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { getDateKey, formatDate } from '../utils/storage';
 import * as Haptics from 'expo-haptics';
+import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
 
 const MOODS = [
   { value: 1, emoji: '😞', label: 'Rough' },
@@ -227,6 +228,7 @@ export default function ReflectionScreen() {
           </ScrollView>
         )}
       </KeyboardAvoidingView>
+      <KnowledgeBaseButton sectionId="reflection" />
     </SafeAreaView>
   );
 }

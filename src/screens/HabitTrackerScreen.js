@@ -9,6 +9,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { getDateKey } from '../utils/storage';
 import * as Haptics from 'expo-haptics';
+import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
 
 const HABIT_ICONS = ['💪', '📚', '🏃', '🧘', '💧', '🎨', '🎵', '✍️', '🥗', '😴', '🧹', '💊', '🚭', '📱', '🌿', '🙏'];
 
@@ -206,6 +207,7 @@ export default function HabitTrackerScreen() {
           </View>
         )}
       </ScrollView>
+      <KnowledgeBaseButton sectionId="habit-tracker" />
     </SafeAreaView>
   );
 }

@@ -15,6 +15,7 @@ import EntryItem from '../components/EntryItem';
 import FAB from '../components/FAB';
 import EntryFormFlyout from '../components/EntryFormFlyout';
 import * as Haptics from 'expo-haptics';
+import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
 
 const ICONS = ['📋', '🎯', '📚', '💡', '🏃', '🎨', '🛒', '✈️', '💰', '🎵', '🍽️', '🧘', '💼', '🌱', '❤️', '⭐'];
 const ACCENT_COLORS = ['#6C5CE7', '#00CEC9', '#FD79A8', '#FDCB6E', '#00B894', '#E17055', '#FF6B6B', '#74B9FF'];
@@ -300,6 +301,7 @@ export default function CollectionsScreen() {
           </View>
         </View>
       </Modal>
+      <KnowledgeBaseButton sectionId="collections" />
     </SafeAreaView>
   );
 }

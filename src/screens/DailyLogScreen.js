@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SIZES, SHADOWS } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
-import { getDateKey, formatDate, getWellnessDay, getWellnessTemplates, saveWellnessDay } from '../utils/storage';
+import { getDateKey, formatDate } from '../utils/storage';
 import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
 import EntryItem from '../components/EntryItem';
 import FAB from '../components/FAB';
@@ -29,7 +29,6 @@ export default function DailyLogScreen() {
   const {
     entries, selectedDate, setSelectedDate, addEntry, updateEntry,
     deleteEntry, migrateEntry, scheduleEntry, reorderEntries, migratePastEntries,
-    generateRoutineEntries, wellnessTemplates, routines,
   } = useApp();
 
   const today = getDateKey();
@@ -48,36 +47,6 @@ export default function DailyLogScreen() {
   const [intentionExpanded, setIntentionExpanded] = useState(false);
   const intentionKey = `crushedit_intention_${selectedDate}`;
   const glowAnim = useRef(new Animated.Value(0)).current;
-
-  // Auto-generate routine entries for selected date
-  useEffect(() => {
-    if (selectedDate) generateRoutineEntries(selectedDate);
-  }, [selectedDate, generateRoutineEntries, routines]);
-
-  // Wellness day data for daily log integration
-  const [wellnessDayData, setWellnessDayData] = useState(null);
-  useEffect(() => {
-    (async () => {
-      const data = await getWellnessDay(selectedDate);
-      setWellnessDayData(data);
-    })();
-  }, [selectedDate, wellnessTemplates]);
-
-  const toggleWellnessItem = useCallback(async (category, itemId) => {
-    if (!wellnessDayData) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const updated = { ...wellnessDayData, [category]: { ...wellnessDayData[category] } };
-    if (category === 'meditation') {
-      const current = updated.meditation[itemId];
-      const prev = typeof current === 'object' ? current : { selected: true, done: false };
-      updated.meditation[itemId] = { ...prev, done: !prev.done };
-    } else {
-      const current = updated[category][itemId] || { done: false, selected: true, value: '' };
-      updated[category][itemId] = { ...current, done: !current.done };
-    }
-    setWellnessDayData(updated);
-    await saveWellnessDay(selectedDate, updated);
-  }, [wellnessDayData, selectedDate]);
 
   useEffect(() => {
     (async () => {
@@ -140,52 +109,6 @@ export default function DailyLogScreen() {
         return new Date(a.createdAt) - new Date(b.createdAt);
       });
   }, [entries, selectedDate]);
-
-  // Build wellness pseudo-entries — only include items selected on the Wellness tab
-  const wellnessEntries = useMemo(() => {
-    if (!wellnessDayData || !wellnessTemplates) return [];
-    const items = [];
-    (wellnessTemplates.nutrition || []).forEach(t => {
-      const state = wellnessDayData.nutrition?.[t.id] || { done: false, selected: false, value: '' };
-      if (!state.selected) return;
-      items.push({
-        id: `wellness_nut_${t.id}`,
-        text: `🍽️ ${t.name}${state.value ? ` — ${state.value}` : ''}`,
-        type: 'wellness', source: 'wellness', wellnessCategory: 'nutrition', wellnessItemId: t.id,
-        state: state.done ? 'complete' : 'open',
-      });
-    });
-    (wellnessTemplates.exercise || []).forEach(t => {
-      const icons = { walking: '🚶', gym: '🏋️', cardio: '🏃', custom: '💪' };
-      const state = wellnessDayData.exercise?.[t.id] || { done: false, selected: false, value: '' };
-      if (!state.selected) return;
-      items.push({
-        id: `wellness_ex_${t.id}`,
-        text: `${icons[t.type] || '💪'} ${t.name}${state.value ? ` — ${state.value}` : ''}`,
-        type: 'wellness', source: 'wellness', wellnessCategory: 'exercise', wellnessItemId: t.id,
-        state: state.done ? 'complete' : 'open',
-      });
-    });
-    ['am', 'pm', 'eve'].forEach(slot => {
-      const icons = { am: '🌅', pm: '☀️', eve: '🌙' };
-      const labels = { am: 'AM Meditation', pm: 'PM Meditation', eve: 'Evening Meditation' };
-      const slotData = wellnessDayData.meditation?.[slot];
-      const isSelected = typeof slotData === 'object' ? slotData?.selected : !!slotData;
-      const isDone = typeof slotData === 'object' ? slotData?.done : false;
-      if (!isSelected) return;
-      items.push({
-        id: `wellness_med_${slot}`,
-        text: `${icons[slot]} ${labels[slot]}`,
-        type: 'wellness', source: 'wellness', wellnessCategory: 'meditation', wellnessItemId: slot,
-        state: isDone ? 'complete' : 'open',
-      });
-    });
-    return items;
-  }, [wellnessDayData, wellnessTemplates]);
-
-  const allDayEntries = useMemo(() => {
-    return [...dayEntries];
-  }, [dayEntries]);
 
   const stats = useMemo(() => {
     const tasks = dayEntries.filter(e => e.type === 'task');
@@ -287,41 +210,6 @@ export default function DailyLogScreen() {
   }, [updateEntry]);
 
   const renderEntry = useCallback(({ item, drag, isActive }) => {
-    // Wellness pseudo-entries get a simplified render
-    if (item.source === 'wellness') {
-      const isDone = item.state === 'complete';
-      return (
-        <TouchableOpacity
-          onPress={() => toggleWellnessItem(item.wellnessCategory, item.wellnessItemId)}
-          style={[
-            styles.wellnessRow,
-            { backgroundColor: isDone ? colors.accentGreen + '10' : colors.bg },
-            isDone && { borderLeftColor: colors.accentGreen, borderLeftWidth: 3 },
-          ]}
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name={isDone ? 'checkmark-circle' : 'ellipse-outline'}
-            size={22}
-            color={isDone ? colors.accentGreen : colors.textMuted}
-          />
-          <Text style={[
-            styles.wellnessText,
-            { color: colors.text },
-            isDone && { color: colors.textSecondary, textDecorationLine: 'line-through' },
-          ]}>
-            {item.text}
-          </Text>
-          <View style={[styles.wellnessBadge, { backgroundColor: colors.accentGreen + '20' }]}>
-            <Text style={[styles.wellnessBadgeText, { color: colors.accentGreen }]}>
-              {item.wellnessCategory === 'nutrition' ? 'FOOD' : item.wellnessCategory === 'exercise' ? 'FIT' : 'MED'}
-            </Text>
-          </View>
-        </TouchableOpacity>
-      );
-    }
-    // Routine entries get a subtle badge
-    const isRoutine = item.source === 'routine';
     return (
       <ScaleDecorator>
         <EntryItem
@@ -334,14 +222,13 @@ export default function DailyLogScreen() {
           drag={drag}
           isActive={isActive}
           isNextUp={item.id === nextUpId}
-          isRoutine={isRoutine}
         />
       </ScaleDecorator>
     );
-  }, [updateEntry, deleteEntry, handleMigrate, handleSchedule, handleEdit, nextUpId, toggleWellnessItem, colors]);
+  }, [updateEntry, deleteEntry, handleMigrate, handleSchedule, handleEdit, nextUpId, colors]);
 
   const handleDragEnd = useCallback(({ data }) => {
-    const realEntryIds = data.filter(e => e.source !== 'wellness').map(e => e.id);
+    const realEntryIds = data.map(e => e.id);
     reorderEntries(realEntryIds);
   }, [reorderEntries]);
 
@@ -529,7 +416,7 @@ export default function DailyLogScreen() {
       {viewMode === 'list' ? (
         <DraggableFlatList
           ref={listRef}
-          data={allDayEntries}
+          data={dayEntries}
           renderItem={renderEntry}
           keyExtractor={item => item.id}
           onDragEnd={handleDragEnd}
@@ -850,28 +737,5 @@ const styles = StyleSheet.create({
   intentionSaveBtnText: {
     fontSize: SIZES.base,
     fontWeight: '700',
-  },
-  wellnessRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    gap: 10,
-    borderRadius: 6,
-  },
-  wellnessText: {
-    flex: 1,
-    fontSize: SIZES.base,
-    lineHeight: 22,
-  },
-  wellnessBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  wellnessBadgeText: {
-    fontSize: 8,
-    fontWeight: '800',
-    letterSpacing: 0.5,
   },
 });

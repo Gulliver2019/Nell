@@ -10,6 +10,7 @@ import { useApp } from '../context/AppContext';
 import { getMonthKey, getMonthName } from '../utils/storage';
 import FAB from '../components/FAB';
 import EntryFormFlyout from '../components/EntryFormFlyout';
+import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
 
 export default function FutureLogScreen() {
   const { colors } = useTheme();
@@ -104,6 +105,7 @@ export default function FutureLogScreen() {
         onSubmit={handleAdd}
         visibleFields={['text', 'type']}
       />
+      <KnowledgeBaseButton sectionId="future-log" />
     </SafeAreaView>
   );
 }

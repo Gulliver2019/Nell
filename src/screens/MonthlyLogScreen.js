@@ -11,6 +11,7 @@ import { useApp } from '../context/AppContext';
 import { getMonthKey, getMonthName, getDateKey } from '../utils/storage';
 import FAB from '../components/FAB';
 import EntryFormFlyout from '../components/EntryFormFlyout';
+import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -356,6 +357,7 @@ export default function MonthlyLogScreen() {
           </View>
         </View>
       </Modal>
+      <KnowledgeBaseButton sectionId="monthly-log" />
     </SafeAreaView>
   );
 }

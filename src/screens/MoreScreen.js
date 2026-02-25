@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -241,6 +241,25 @@ export default function MoreScreen({ navigation }) {
           </View>
         </View>
 
+        {/* Contact & Support */}
+        <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>📬 Contact & Support</Text>
+          <TouchableOpacity
+            onPress={() => Linking.openURL('mailto:goaldigger@sr6labs.co.uk')}
+            style={[styles.contactRow, { borderBottomColor: colors.border }]}
+          >
+            <Text style={[styles.contactLabel, { color: colors.textSecondary }]}>Email us</Text>
+            <Text style={[styles.contactValue, { color: colors.accent }]}>goaldigger@sr6labs.co.uk</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => Linking.openURL('http://sr6labs.co.uk/privacy.html')}
+            style={styles.contactRow}
+          >
+            <Text style={[styles.contactLabel, { color: colors.textSecondary }]}>Privacy Policy</Text>
+            <Text style={[styles.contactValue, { color: colors.accent }]}>View →</Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>
@@ -329,4 +348,10 @@ const styles = StyleSheet.create({
   },
   gestureAction: { fontSize: SIZES.sm, fontWeight: '600' },
   gestureResult: { fontSize: SIZES.sm },
+  contactRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  contactLabel: { fontSize: SIZES.md },
+  contactValue: { fontSize: SIZES.sm, fontWeight: '600' },
 });

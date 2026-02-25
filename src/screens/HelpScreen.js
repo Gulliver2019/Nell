@@ -275,60 +275,6 @@ const SECTIONS = [
     ],
   },
   {
-    id: 'routines',
-    title: 'Routines',
-    icon: '🔁',
-    items: [
-      {
-        q: 'What are Routines?',
-        a: 'Routines are recurring daily tasks you define once and they automatically appear in your Daily Log every day. Perfect for things like "Morning stretch", "Review inbox" or "Read 30 min".',
-      },
-      {
-        q: 'How do I create a routine?',
-        a: 'Go to the Routines tab and tap +. Give it a name and optionally assign a time slot. Toggle routines on/off — disabled routines won\'t auto-populate.',
-      },
-      {
-        q: 'How do routines show on my Daily Log?',
-        a: 'Routine tasks appear mixed in with your regular entries, marked with a 🔁 badge so you can tell them apart. They work just like normal tasks — tap to complete, swipe to migrate.',
-      },
-      {
-        q: 'Can I edit or delete a routine?',
-        a: 'Tap the pencil icon to edit, or the trash icon to delete. Deleting a routine removes it from future days but won\'t affect entries already created.',
-      },
-    ],
-  },
-  {
-    id: 'wellness',
-    title: 'Wellness',
-    icon: '🍃',
-    items: [
-      {
-        q: 'What is the Wellness tab?',
-        a: 'Wellness tracks three areas of your daily health: Nutrition, Exercise and Meditation. Set up your items once, then check them off each day. Everything resets automatically at midnight.',
-      },
-      {
-        q: 'How does Nutrition tracking work?',
-        a: 'Add food items you want to eat daily (e.g. "Protein shake", "200g chicken"). Each day, check them off and optionally update the value. Tap + to add new items.',
-      },
-      {
-        q: 'How does Exercise tracking work?',
-        a: 'Walking, Gym and Cardio come pre-loaded. You can add custom exercise types too. Check off what you\'ve done and add values like "30 min" or "5km".',
-      },
-      {
-        q: 'How does Meditation tracking work?',
-        a: 'Three session slots: AM (morning), PM (afternoon) and Eve (evening). Tap each card to mark a session as done. Simple and visual.',
-      },
-      {
-        q: 'How do wellness items appear on my Daily Log?',
-        a: 'All wellness items show at the bottom of your daily list with category badges (FOOD, FIT, MED). Tap to toggle them done right from the Daily Log.',
-      },
-      {
-        q: 'Do wellness items reset each day?',
-        a: 'Yes — each new day starts fresh with unchecked items. Your past days\' data is preserved so you can review previous progress.',
-      },
-    ],
-  },
-  {
     id: 'admin-tasks',
     title: 'Admin Tasks',
     icon: '📎',

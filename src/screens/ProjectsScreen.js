@@ -12,6 +12,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import FAB from '../components/FAB';
 import EntryFormFlyout from '../components/EntryFormFlyout';
+import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
 import * as Haptics from 'expo-haptics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -555,6 +556,7 @@ export default function ProjectsScreen() {
         onSave={handleCreateProject}
         colors={colors}
       />
+      <KnowledgeBaseButton sectionId="projects" />
     </SafeAreaView>
   );
 }
