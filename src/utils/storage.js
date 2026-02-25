@@ -400,6 +400,13 @@ export const deleteProject = async (id) => {
   await saveProjects(projects.filter(p => p.id !== id));
 };
 
+export const reorderProjects = async (orderedIds) => {
+  const projects = await getProjects();
+  const sorted = orderedIds.map(id => projects.find(p => p.id === id)).filter(Boolean);
+  const remaining = projects.filter(p => !orderedIds.includes(p.id));
+  await saveProjects([...sorted, ...remaining]);
+};
+
 export const addProjectTask = async (projectId, task) => {
   const projects = await getProjects();
   const idx = projects.findIndex(p => p.id === projectId);

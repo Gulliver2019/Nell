@@ -28,9 +28,81 @@ const COLUMNS = [
 ];
 
 // Project index board — shows all projects
-function ProjectIndexBoard({ projects, onSelect, onAdd, colors }) {
+function ProjectIndexBoard({ projects, onSelect, onAdd, onReorder, colors }) {
+  const renderProject = useCallback(({ item: project, drag, isActive }) => {
+    const total = project.tasks.length;
+    const done = project.tasks.filter(t => t.column === 'done').length;
+    const inProgress = project.tasks.filter(t => t.column === 'progress').length;
+    const progress = total > 0 ? (done / total) * 100 : 0;
+    const daysLeft = project.endDate
+      ? Math.max(0, Math.ceil((new Date(project.endDate) - new Date()) / (1000 * 60 * 60 * 24)))
+      : null;
+
+    return (
+      <ScaleDecorator>
+        <TouchableOpacity
+          style={[styles.projectCard, { backgroundColor: colors.bgCard, borderColor: isActive ? colors.accent : colors.border }]}
+          onPress={() => onSelect(project)}
+          onLongPress={drag}
+          delayLongPress={200}
+          activeOpacity={0.7}
+        >
+          {/* Colour accent bar */}
+          <View style={[styles.projectAccent, { backgroundColor: project.color }]} />
+
+          <View style={styles.projectCardBody}>
+            <View style={styles.projectCardHeader}>
+              <Text style={styles.projectEmoji}>{project.emoji}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.projectName, { color: colors.text }]} numberOfLines={1}>
+                  {project.title}
+                </Text>
+                {project.endDate && (
+                  <Text style={[styles.projectDates, { color: colors.textMuted }]}>
+                    {daysLeft === 0 ? 'Due today' : daysLeft === 1 ? '1 day left' : `${daysLeft} days left`}
+                  </Text>
+                )}
+              </View>
+            </View>
+
+            {/* Mini stats */}
+            <View style={styles.projectStats}>
+              {COLUMNS.map(col => {
+                const count = project.tasks.filter(t => t.column === col.key).length;
+                return (
+                  <View key={col.key} style={styles.miniStat}>
+                    <Text style={[styles.miniStatIcon, {
+                      color: col.key === 'done' ? colors.accentGreen
+                        : col.key === 'progress' ? colors.accentOrange
+                        : colors.textMuted
+                    }]}>{col.icon}</Text>
+                    <Text style={[styles.miniStatVal, { color: colors.text }]}>{count}</Text>
+                  </View>
+                );
+              })}
+            </View>
+
+            {/* Progress bar */}
+            {total > 0 && (
+              <View style={[styles.projectProgress, { backgroundColor: colors.border }]}>
+                <View style={[styles.projectProgressFill, {
+                  width: `${progress}%`,
+                  backgroundColor: progress === 100 ? colors.accentGreen : project.color,
+                }]} />
+              </View>
+            )}
+
+            <Text style={[styles.projectTaskCount, { color: colors.textMuted }]}>
+              {total === 0 ? 'No tasks yet' : `${done}/${total} complete`}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </ScaleDecorator>
+    );
+  }, [colors, onSelect]);
+
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.indexContent}>
+    <View style={{ flex: 1 }}>
       {/* Header */}
       <View style={styles.indexHeader}>
         <LinearGradient
@@ -38,100 +110,28 @@ function ProjectIndexBoard({ projects, onSelect, onAdd, colors }) {
           style={StyleSheet.absoluteFillObject}
         />
         <Text style={[styles.indexTitle, { color: colors.text }]}>Projects</Text>
-        <Text style={[styles.indexSub, { color: colors.textMuted }]}>Your Kanban boards</Text>
+        <Text style={[styles.indexSub, { color: colors.textMuted }]}>Your Kanban boards · hold to reorder</Text>
       </View>
 
-      {/* Project cards */}
-      <View style={styles.projectGrid}>
-        {projects.map(project => {
-          const total = project.tasks.length;
-          const done = project.tasks.filter(t => t.column === 'done').length;
-          const inProgress = project.tasks.filter(t => t.column === 'progress').length;
-          const progress = total > 0 ? (done / total) * 100 : 0;
-          const daysLeft = project.endDate
-            ? Math.max(0, Math.ceil((new Date(project.endDate) - new Date()) / (1000 * 60 * 60 * 24)))
-            : null;
-
-          return (
-            <TouchableOpacity
-              key={project.id}
-              style={[styles.projectCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
-              onPress={() => onSelect(project)}
-              onLongPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                Alert.alert('Delete Project', `Remove "${project.title}"?`, [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'Delete', style: 'destructive', onPress: () => {
-                    const { deleteProject } = require('../context/AppContext');
-                  }},
-                ]);
-              }}
-              activeOpacity={0.7}
-            >
-              {/* Colour accent bar */}
-              <View style={[styles.projectAccent, { backgroundColor: project.color }]} />
-
-              <View style={styles.projectCardBody}>
-                <View style={styles.projectCardHeader}>
-                  <Text style={styles.projectEmoji}>{project.emoji}</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.projectName, { color: colors.text }]} numberOfLines={1}>
-                      {project.title}
-                    </Text>
-                    {project.endDate && (
-                      <Text style={[styles.projectDates, { color: colors.textMuted }]}>
-                        {daysLeft === 0 ? 'Due today' : daysLeft === 1 ? '1 day left' : `${daysLeft} days left`}
-                      </Text>
-                    )}
-                  </View>
-                </View>
-
-                {/* Mini stats */}
-                <View style={styles.projectStats}>
-                  {COLUMNS.map(col => {
-                    const count = project.tasks.filter(t => t.column === col.key).length;
-                    return (
-                      <View key={col.key} style={styles.miniStat}>
-                        <Text style={[styles.miniStatIcon, {
-                          color: col.key === 'done' ? colors.accentGreen
-                            : col.key === 'progress' ? colors.accentOrange
-                            : colors.textMuted
-                        }]}>{col.icon}</Text>
-                        <Text style={[styles.miniStatVal, { color: colors.text }]}>{count}</Text>
-                      </View>
-                    );
-                  })}
-                </View>
-
-                {/* Progress bar */}
-                {total > 0 && (
-                  <View style={[styles.projectProgress, { backgroundColor: colors.border }]}>
-                    <View style={[styles.projectProgressFill, {
-                      width: `${progress}%`,
-                      backgroundColor: progress === 100 ? colors.accentGreen : project.color,
-                    }]} />
-                  </View>
-                )}
-
-                <Text style={[styles.projectTaskCount, { color: colors.textMuted }]}>
-                  {total === 0 ? 'No tasks yet' : `${done}/${total} complete`}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
-
-        {/* Add project card */}
-        <TouchableOpacity
-          style={[styles.projectCard, styles.addProjectCard, { borderColor: colors.border }]}
-          onPress={onAdd}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.addProjectIcon, { color: colors.accent }]}>+</Text>
-          <Text style={[styles.addProjectText, { color: colors.accent }]}>New Project</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+      <DraggableFlatList
+        data={projects}
+        renderItem={renderProject}
+        keyExtractor={item => item.id}
+        onDragEnd={({ data }) => onReorder(data.map(p => p.id))}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.indexContent}
+        ListFooterComponent={
+          <TouchableOpacity
+            style={[styles.projectCard, styles.addProjectCard, { borderColor: colors.border }]}
+            onPress={onAdd}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.addProjectIcon, { color: colors.accent }]}>+</Text>
+            <Text style={[styles.addProjectText, { color: colors.accent }]}>New Project</Text>
+          </TouchableOpacity>
+        }
+      />
+    </View>
   );
 }
 
@@ -497,7 +497,7 @@ function NewProjectModal({ visible, onClose, onSave, colors }) {
 
 export default function ProjectsScreen() {
   const { colors } = useTheme();
-  const { projects, addProject, updateProject, deleteProject, addProjectTask, moveProjectTask, deleteProjectTask, reorderProjectTasks } = useApp();
+  const { projects, addProject, updateProject, deleteProject, addProjectTask, moveProjectTask, deleteProjectTask, reorderProjectTasks, reorderProjects } = useApp();
   const [selectedProject, setSelectedProject] = useState(null);
   const [showNewModal, setShowNewModal] = useState(false);
 
@@ -547,6 +547,7 @@ export default function ProjectsScreen() {
           colors={colors}
           onSelect={setSelectedProject}
           onAdd={() => setShowNewModal(true)}
+          onReorder={(orderedIds) => reorderProjects(orderedIds)}
         />
       )}
 
@@ -565,7 +566,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
 
   // Index board
-  indexContent: { paddingBottom: 40 },
+  indexContent: { paddingHorizontal: 16, paddingBottom: 40, gap: 12 },
   indexHeader: {
     paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, position: 'relative',
   },
