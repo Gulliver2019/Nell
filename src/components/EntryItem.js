@@ -198,9 +198,6 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
                 </Text>
               </TouchableOpacity>
             )}
-            {entry.isAdmin && (
-              <Text style={[styles.adminBadge, { color: colors.accentOrange }]}>[A]</Text>
-            )}
             {entry.timeBlock && (
               <Text style={[styles.timeBlockIcon, { color: colors.accentOrange }]}>🧱</Text>
             )}
@@ -320,11 +317,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   pomoIndicator: {
-    fontSize: SIZES.xs,
-    marginLeft: 6,
-    fontWeight: '700',
-  },
-  adminBadge: {
     fontSize: SIZES.xs,
     marginLeft: 6,
     fontWeight: '700',

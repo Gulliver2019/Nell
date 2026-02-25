@@ -50,7 +50,7 @@ const SLIDES = [
     emoji: '🍅',
     title: 'Time Blocking & Pomodoro',
     subtitle: 'Deep focus tools',
-    body: 'Assign tasks to time slots on your daily timeline. Use the built-in Pomodoro timer (25min focus sessions) to stay in the zone.\n\nMark quick tasks as Admin [A] — 4 admins batch into one pomodoro.',
+    body: 'Assign tasks to time slots on your daily timeline. Use the built-in Pomodoro timer (25min focus sessions) to stay in the zone.',
   },
   {
     key: 'book',

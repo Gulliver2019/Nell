@@ -274,25 +274,6 @@ const SECTIONS = [
       },
     ],
   },
-  {
-    id: 'admin-tasks',
-    title: 'Admin Tasks',
-    icon: '📎',
-    items: [
-      {
-        q: 'What are Admin tasks?',
-        a: 'Admin tasks are small, quick tasks (emails, calls, form-filling) that you can batch together. Mark a task as Admin with the [A] toggle when creating it.',
-      },
-      {
-        q: 'How does admin grouping work?',
-        a: 'In the time block view, admin tasks stack together in the same slot. Up to 4 admin tasks fill one pomodoro (30 min). The group shows as "[A] Admin (2/4)" and displays 🍅 when full.',
-      },
-      {
-        q: 'Is there a limit?',
-        a: 'Yes — max 4 admin tasks per time slot. This equals one pomodoro session. If you have more admin tasks, assign them to a different slot.',
-      },
-    ],
-  },
 ];
 
 function AccordionItem({ item, initialOpen }) {

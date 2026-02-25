@@ -459,7 +459,7 @@ export default function DailyLogScreen() {
         onClose={() => { setFlyoutVisible(false); setEditingEntry(null); }}
         onSubmit={handleAdd}
         entry={editingEntry}
-        visibleFields={['text', 'type', 'signifier', 'admin', 'pomodoros', 'timeBlock', 'date']}
+        visibleFields={['text', 'type', 'signifier', 'pomodoros', 'timeBlock', 'date']}
       />
 
       {/* Date Picker for scheduling */}

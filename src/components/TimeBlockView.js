@@ -115,9 +115,9 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
   // Build a map: slot → entry or meeting (accounting for multi-slot blocks)
   const slotMap = useMemo(() => {
     const map = {};
-    // Non-admin entries
+    // Entries
     entries.forEach(entry => {
-      if (!entry.timeBlock || entry.isAdmin) return;
+      if (!entry.timeBlock) return;
       const startIdx = ALL_SLOTS.indexOf(entry.timeBlock);
       if (startIdx === -1) return;
       const slotsNeeded = Math.max(1, entry.pomodoros || 1);
@@ -130,24 +130,6 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
           totalSlots: slotsNeeded,
         };
       }
-    });
-    // Admin entries — group by slot
-    const adminBySlot = {};
-    entries.forEach(entry => {
-      if (!entry.timeBlock || !entry.isAdmin) return;
-      if (!adminBySlot[entry.timeBlock]) adminBySlot[entry.timeBlock] = [];
-      adminBySlot[entry.timeBlock].push(entry);
-    });
-    Object.entries(adminBySlot).forEach(([slot, group]) => {
-      if (map[slot]) return; // slot taken by regular entry
-      map[slot] = {
-        adminGroup: group,
-        isStart: true,
-        isEnd: true,
-        slotIndex: 0,
-        totalSlots: 1,
-        isAdminBlock: true,
-      };
     });
     // Meetings
     meetings.forEach(mtg => {
@@ -175,12 +157,11 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
     [entries]
   );
 
-  // Check if a range of slots is available (admin tasks can stack on admin blocks, max 4)
-  const canAssignAt = useCallback((startIndex, slotsNeeded, forAdmin = false) => {
+  // Check if a range of slots is available
+  const canAssignAt = useCallback((startIndex, slotsNeeded) => {
     for (let i = 0; i < slotsNeeded && (startIndex + i) < ALL_SLOTS.length; i++) {
       const existing = slotMap[ALL_SLOTS[startIndex + i]];
       if (existing) {
-        if (forAdmin && existing.isAdminBlock && i === 0 && existing.adminGroup.length < 4) continue;
         return false;
       }
     }
@@ -190,11 +171,10 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
   // Compute which slots would be highlighted for the selected entry
   const highlightSlots = useMemo(() => {
     if (!selectedEntry) return {};
-    const isAdmin = !!selectedEntry.isAdmin;
-    const slotsNeeded = isAdmin ? 1 : Math.max(1, selectedEntry.pomodoros || 1);
+    const slotsNeeded = Math.max(1, selectedEntry.pomodoros || 1);
     const highlights = {};
     ALL_SLOTS.forEach((slot, idx) => {
-      if (canAssignAt(idx, slotsNeeded, isAdmin)) {
+      if (canAssignAt(idx, slotsNeeded)) {
         highlights[slot] = true;
       }
     });
@@ -212,29 +192,16 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
 
   const handleSlotPress = (slot, slotIndex) => {
     const existing = slotMap[slot];
-    if (existing && !existing.isAdminBlock) return;
+    if (existing) return;
 
     if (selectedEntry) {
-      if (selectedEntry.isAdmin) {
-        // Admin entries take 1 slot and can stack on existing admin blocks (max 4)
-        if (!existing) {
-          onUpdate?.(selectedEntry.id, { timeBlock: slot });
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          setSelectedEntry(null);
-        } else if (existing.isAdminBlock && existing.adminGroup.length < 4) {
-          onUpdate?.(selectedEntry.id, { timeBlock: slot });
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          setSelectedEntry(null);
-        }
-      } else {
-        const slotsNeeded = Math.max(1, selectedEntry.pomodoros || 1);
-        if (canAssignAt(slotIndex, slotsNeeded)) {
-          onUpdate?.(selectedEntry.id, { timeBlock: slot });
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          setSelectedEntry(null);
-        }
+      const slotsNeeded = Math.max(1, selectedEntry.pomodoros || 1);
+      if (canAssignAt(slotIndex, slotsNeeded)) {
+        onUpdate?.(selectedEntry.id, { timeBlock: slot });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setSelectedEntry(null);
       }
-    } else if (!existing) {
+    } else {
       // Open meeting modal pre-filled with this slot's time
       Haptics.selectionAsync();
       const [h, m] = slot.split(':').map(Number);
@@ -263,65 +230,6 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
     }
 
     if (block && block.isStart) {
-      // Admin group block
-      if (block.isAdminBlock) {
-        const { adminGroup } = block;
-        const allDone = adminGroup.every(e => e.state === 'complete');
-        return (
-          <View key={slot} style={styles.slotRow}>
-            <Text style={[styles.timeLabel, { color: colors.textMuted }, isHour && styles.timeLabelHour]}>
-              {isHour ? formatSlotLabel(slot) : ''}
-            </Text>
-            <TouchableOpacity
-              style={[
-                styles.slotBlock,
-                {
-                  backgroundColor: colors.accentOrange + '15',
-                  borderLeftColor: allDone ? colors.accentGreen : colors.accentOrange,
-                  height: SLOT_HEIGHT - 2,
-                },
-              ]}
-              onLongPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                adminGroup.forEach(e => onUpdate?.(e.id, { timeBlock: null }));
-              }}
-              activeOpacity={0.7}
-            >
-              <View style={styles.blockContent}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.adminGroupHeader, { color: colors.accentOrange }]}>
-                    [A] Admin ({adminGroup.length}/4){adminGroup.length >= 4 ? ' 🍅' : ''}
-                  </Text>
-                  {adminGroup.map(e => (
-                    <Text
-                      key={e.id}
-                      style={[
-                        styles.adminGroupItem,
-                        { color: colors.text },
-                        e.state === 'complete' && { textDecorationLine: 'line-through', color: colors.textSecondary },
-                      ]}
-                      numberOfLines={1}
-                    >
-                      • {e.text}
-                    </Text>
-                  ))}
-                </View>
-                <TouchableOpacity
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    adminGroup.forEach(e => onUpdate?.(e.id, { timeBlock: null }));
-                  }}
-                  style={[styles.unscheduleBtn, { backgroundColor: colors.textMuted + '20' }]}
-                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                >
-                  <Text style={[styles.unscheduleBtnText, { color: colors.textMuted }]}>✕</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          </View>
-        );
-      }
-
       const { entry, totalSlots, isMeeting } = block;
       const pomodoroText = !isMeeting && entry.pomodoros > 0 ? `[${entry.pomodoros}]` : '';
       const isComplete = entry.state === 'complete';
@@ -424,9 +332,8 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.unassignedList}>
             {unassigned.map(entry => {
               const isSelected = selectedEntry?.id === entry.id;
-              const isAdmin = !!entry.isAdmin;
-              const slotsNeeded = isAdmin ? 1 : Math.max(1, entry.pomodoros || 1);
-              const durationText = isAdmin ? '[A]' : (slotsNeeded === 1 ? '30m' : `${slotsNeeded * 30}m`);
+              const slotsNeeded = Math.max(1, entry.pomodoros || 1);
+              const durationText = slotsNeeded === 1 ? '30m' : `${slotsNeeded * 30}m`;
               return (
                 <TouchableOpacity
                   key={entry.id}
@@ -434,7 +341,6 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
                     styles.unassignedChip,
                     { backgroundColor: colors.bgElevated, borderColor: colors.border },
                     isSelected && { borderColor: colors.accent, backgroundColor: colors.accent + '20' },
-                    isAdmin && !isSelected && { borderColor: colors.accentOrange + '50' },
                   ]}
                   onPress={() => handleChipPress(entry)}
                   activeOpacity={0.7}
@@ -442,10 +348,10 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
                   <Text style={[styles.unassignedText, { color: isSelected ? colors.accent : colors.text }]} numberOfLines={1}>
                     {entry.text}
                   </Text>
-                  {entry.pomodoros > 0 && !isAdmin && (
+                  {entry.pomodoros > 0 && (
                     <Text style={[styles.unassignedPomo, { color: colors.accentGold }]}>[{entry.pomodoros}]</Text>
                   )}
-                  <Text style={[styles.durationBadge, { color: isAdmin ? colors.accentOrange : colors.textMuted }]}>{durationText}</Text>
+                  <Text style={[styles.durationBadge, { color: colors.textMuted }]}>{durationText}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -902,16 +808,6 @@ const styles = StyleSheet.create({
   blockText: {
     fontSize: SIZES.sm,
     fontWeight: '600',
-  },
-  adminGroupHeader: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    marginBottom: 2,
-  },
-  adminGroupItem: {
-    fontSize: SIZES.xs,
-    lineHeight: 14,
   },
   blockPomo: {
     fontSize: SIZES.xs,

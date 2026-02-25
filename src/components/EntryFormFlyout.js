@@ -87,8 +87,7 @@ export default function EntryFormFlyout({
     if (!text.trim()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const data = { text: text.trim(), type, signifier, ...extraData };
-    if (show('pomodoros')) data.pomodoros = isAdmin ? 0 : pomodoros;
-    if (show('admin')) data.isAdmin = isAdmin;
+    if (show('pomodoros')) data.pomodoros = pomodoros;
     if (show('timeBlock')) data.timeBlock = timeBlock || null;
     if (show('date') && date) {
       const y = date.getFullYear();
@@ -202,27 +201,8 @@ export default function EntryFormFlyout({
               </View>
             )}
 
-            {/* Admin toggle */}
-            {show('admin') && (
-              <View style={styles.fieldRow}>
-                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Admin task</Text>
-                <TouchableOpacity
-                  style={[
-                    styles.adminToggle,
-                    { backgroundColor: colors.bgInput, borderColor: colors.border },
-                    isAdmin && { backgroundColor: colors.accentOrange + '20', borderColor: colors.accentOrange },
-                  ]}
-                  onPress={() => { setIsAdmin(!isAdmin); Haptics.selectionAsync(); }}
-                >
-                  <Text style={[styles.adminToggleText, { color: isAdmin ? colors.accentOrange : colors.textMuted }]}>
-                    {isAdmin ? '[A] Admin — groups with others' : 'Off'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
             {/* Pomodoros stepper */}
-            {show('pomodoros') && !isAdmin && (
+            {show('pomodoros') && (
               <View style={styles.fieldRow}>
                 <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Pomodoros</Text>
                 <View style={styles.stepperRow}>
@@ -435,16 +415,6 @@ const styles = StyleSheet.create({
   pomoDuration: {
     fontSize: SIZES.xs,
     marginLeft: 4,
-  },
-  adminToggle: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: SIZES.radius,
-    borderWidth: 1,
-  },
-  adminToggleText: {
-    fontSize: SIZES.sm,
-    fontWeight: '600',
   },
   pickerBtn: {
     flexDirection: 'row',
