@@ -209,7 +209,14 @@ export default function ReflectionScreen() {
               sortedReflections.map(ref => (
                 <View key={ref.id} style={[styles.historyCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
                   <View style={styles.historyHeader}>
-                    <Text style={[styles.historyDate, { color: colors.text }]}>{formatDate(ref.date)}</Text>
+                    <View style={styles.historyDateRow}>
+                      <Text style={[styles.historyDate, { color: colors.text }]}>{formatDate(ref.date)}</Text>
+                      {ref.type === 'weekly' && (
+                        <View style={[styles.weeklyBadge, { backgroundColor: colors.accent + '20' }]}>
+                          <Text style={[styles.weeklyBadgeText, { color: colors.accent }]}>WEEKLY</Text>
+                        </View>
+                      )}
+                    </View>
                     <Text style={styles.historyMood}>
                       {MOODS.find(m => m.value === ref.mood)?.emoji || '🙂'}
                     </Text>
@@ -299,6 +306,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   historyDate: { fontSize: SIZES.base, fontWeight: '600' },
+  historyDateRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  weeklyBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+  weeklyBadgeText: { fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
   historyMood: { fontSize: 24 },
   historyItem: { marginBottom: 10 },
   historyLabel: { fontSize: SIZES.sm, fontWeight: '600', marginBottom: 4 },
