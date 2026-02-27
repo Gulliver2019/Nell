@@ -37,8 +37,7 @@
     },
     "owner": "justg",
     "plugins": [
-      "@react-native-community/datetimepicker",
-      "react-native-purchases"
+      "@react-native-community/datetimepicker"
     ]
   }
 }
