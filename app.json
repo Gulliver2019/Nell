@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Goal Digger",
+    "name": "GoalDigger",
     "slug": "CrushedIT",
     "version": "1.1.0",
     "orientation": "portrait",
@@ -37,7 +37,8 @@
     },
     "owner": "justg",
     "plugins": [
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "react-native-purchases"
     ]
   }
 }

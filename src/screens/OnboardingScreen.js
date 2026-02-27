@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions,
-  ScrollView, Linking, Image,
+  ScrollView, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,7 +12,6 @@ import HelpScreen from './HelpScreen';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const AMAZON_URL = 'https://www.amazon.co.uk/Bullet-Journal-Method-Present-Design/dp/0008261377';
 const BOOK_IMAGE = require('../../assets/book.png');
 
 const SLIDES = [
@@ -57,7 +56,7 @@ const SLIDES = [
     emoji: '📖',
     title: 'The Bullet Journal Method',
     subtitle: 'By Ryder Carroll',
-    body: 'This app is inspired by the Bullet Journal method. To get the most out of it, we highly recommend reading the original book by Ryder Carroll — the creator of the system.',
+    body: 'This app is inspired by the Bullet Journal method. To get the most out of it, we recommend reading the original book by Ryder Carroll — the creator of the system.',
   },
   {
     emoji: '💪',
@@ -130,13 +129,6 @@ export default function OnboardingScreen({ onComplete }) {
             <Text style={[styles.slideTitle, { color: colors.text }]}>{slide.title}</Text>
             <Text style={[styles.slideSubtitle, { color: colors.accent }]}>{slide.subtitle}</Text>
             <Text style={[styles.slideBody, { color: colors.textSecondary }]}>{slide.body}</Text>
-            <TouchableOpacity
-              style={[styles.amazonBtn, { backgroundColor: '#FF9900' }]}
-              onPress={() => Linking.openURL(AMAZON_URL)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.amazonBtnText}>View on Amazon</Text>
-            </TouchableOpacity>
           </>
         ) : (
           <>
@@ -274,16 +266,5 @@ const styles = StyleSheet.create({
   bookImage: {
     width: '100%',
     height: '100%',
-  },
-  amazonBtn: {
-    marginTop: 20,
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
-  amazonBtnText: {
-    color: '#111',
-    fontSize: SIZES.base,
-    fontWeight: '700',
   },
 });

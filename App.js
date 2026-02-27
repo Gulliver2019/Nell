@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppProvider } from './src/context/AppContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+import { RevenueCatProvider, useRevenueCat } from './src/context/RevenueCatContext';
 
 import DailyLogScreen from './src/screens/DailyLogScreen';
 import MonthlyLogScreen from './src/screens/MonthlyLogScreen';
@@ -97,7 +98,8 @@ const PAYWALL_KEY = 'crushedit_paywall_done';
 
 function AppContent() {
   const { colors, hasChosenTheme, loading } = useTheme();
-  const [paywallDone, setPaywallDone] = useState(null);
+  const { isProUser, isReady: rcReady } = useRevenueCat();
+  const [paywallDismissed, setPaywallDismissed] = useState(null);
   const [onboardingDone, setOnboardingDone] = useState(null);
 
   useEffect(() => {
@@ -107,16 +109,16 @@ function AppContent() {
           AsyncStorage.getItem(PAYWALL_KEY),
           AsyncStorage.getItem(ONBOARDING_KEY),
         ]);
-        setPaywallDone(pw === 'true');
+        setPaywallDismissed(pw === 'true');
         setOnboardingDone(ob === 'true');
       } catch (e) {
-        setPaywallDone(false);
+        setPaywallDismissed(false);
         setOnboardingDone(false);
       }
     })();
   }, []);
 
-  if (loading || paywallDone === null) {
+  if (loading || paywallDismissed === null || !rcReady) {
     return (
       <View style={[styles.loading, { backgroundColor: colors.bg }]}>
         <ActivityIndicator size="large" color={colors.accent} />
@@ -128,11 +130,13 @@ function AppContent() {
     return <ThemePickerScreen isFirstLaunch={true} />;
   }
 
-  if (!paywallDone) {
+  // Show paywall if user is not pro and hasn't dismissed it before
+  if (!isProUser && !paywallDismissed) {
     return (
       <PaywallScreen onComplete={async () => {
+        // Only mark dismissed after a successful purchase/restore
         await AsyncStorage.setItem(PAYWALL_KEY, 'true');
-        setPaywallDone(true);
+        setPaywallDismissed(true);
       }} />
     );
   }
@@ -180,9 +184,11 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <AppProvider>
-            <AppContent />
-          </AppProvider>
+          <RevenueCatProvider>
+            <AppProvider>
+              <AppContent />
+            </AppProvider>
+          </RevenueCatProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

@@ -1,11 +1,13 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import RevenueCatUI from 'react-native-purchases-ui';
 import { SIZES, getTaskStates } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
+import { useRevenueCat } from '../context/RevenueCatContext';
 import { useApp } from '../context/AppContext';
 import { getDateKey, formatDateShort } from '../utils/storage';
 import GoalDiggerLogo from '../components/GoalDiggerLogo';
@@ -13,6 +15,8 @@ import * as Haptics from 'expo-haptics';
 
 export default function MoreScreen({ navigation }) {
   const { colors } = useTheme();
+  const { isProUser, restorePurchases } = useRevenueCat();
+  const [showCustomerCenter, setShowCustomerCenter] = useState(false);
   const TASK_STATES = getTaskStates(colors);
   const { entries, migrateEntry, updateEntry } = useApp();
 
@@ -241,6 +245,57 @@ export default function MoreScreen({ navigation }) {
           </View>
         </View>
 
+        {/* Subscription */}
+        <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>💎 Subscription</Text>
+          <View style={[styles.subscriptionStatus, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.contactLabel, { color: colors.textSecondary }]}>Status</Text>
+            <Text style={[styles.contactValue, { color: isProUser ? colors.accentGreen : colors.textMuted }]}>
+              {isProUser ? 'GoalDigger Pro ✓' : 'Free'}
+            </Text>
+          </View>
+          {isProUser ? (
+            <TouchableOpacity
+              onPress={() => setShowCustomerCenter(true)}
+              style={[styles.contactRow, { borderBottomColor: colors.border }]}
+            >
+              <Text style={[styles.contactLabel, { color: colors.textSecondary }]}>Manage Subscription</Text>
+              <Text style={[styles.contactValue, { color: colors.accent }]}>Open →</Text>
+            </TouchableOpacity>
+          ) : (
+            <>
+              <TouchableOpacity
+                onPress={() => setShowCustomerCenter(true)}
+                style={[styles.contactRow, { borderBottomColor: colors.border }]}
+              >
+                <Text style={[styles.contactLabel, { color: colors.textSecondary }]}>Upgrade to Pro</Text>
+                <Text style={[styles.contactValue, { color: colors.accent }]}>View Plans →</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={async () => {
+                  const result = await restorePurchases();
+                  if (result.success && result.customerInfo?.entitlements?.active?.['GoalDigger Pro']) {
+                    Alert.alert('Restored!', 'Your GoalDigger Pro subscription has been restored.');
+                  } else {
+                    Alert.alert('No Purchases Found', 'We couldn\'t find any previous purchases to restore.');
+                  }
+                }}
+                style={[styles.contactRow, { borderBottomColor: colors.border }]}
+              >
+                <Text style={[styles.contactLabel, { color: colors.textSecondary }]}>Restore Purchases</Text>
+                <Text style={[styles.contactValue, { color: colors.accent }]}>Restore →</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+
+        {/* Customer Center Modal */}
+        {showCustomerCenter && (
+          <RevenueCatUI.CustomerCenter
+            onDismiss={() => setShowCustomerCenter(false)}
+          />
+        )}
+
         {/* Contact & Support */}
         <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>📬 Contact & Support</Text>
@@ -252,10 +307,17 @@ export default function MoreScreen({ navigation }) {
             <Text style={[styles.contactValue, { color: colors.accent }]}>goaldigger@sr6labs.co.uk</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => Linking.openURL('http://sr6labs.co.uk/privacy.html')}
-            style={styles.contactRow}
+            onPress={() => Linking.openURL('https://sr6labs.co.uk/privacy.html')}
+            style={[styles.contactRow, { borderBottomColor: colors.border }]}
           >
             <Text style={[styles.contactLabel, { color: colors.textSecondary }]}>Privacy Policy</Text>
+            <Text style={[styles.contactValue, { color: colors.accent }]}>View →</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => Linking.openURL('https://sr6labs.co.uk/privacy.html')}
+            style={styles.contactRow}
+          >
+            <Text style={[styles.contactLabel, { color: colors.textSecondary }]}>Terms of Service</Text>
             <Text style={[styles.contactValue, { color: colors.accent }]}>View →</Text>
           </TouchableOpacity>
         </View>
@@ -349,6 +411,10 @@ const styles = StyleSheet.create({
   gestureAction: { fontSize: SIZES.sm, fontWeight: '600' },
   gestureResult: { fontSize: SIZES.sm },
   contactRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  subscriptionStatus: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth,
   },
