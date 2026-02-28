@@ -15,18 +15,23 @@ export function RevenueCatProvider({ children }) {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
+    let listener;
     const init = async () => {
       try {
         Purchases.setLogLevel(LOG_LEVEL.DEBUG);
-        Purchases.configure({ apiKey: API_KEY });
+        await Purchases.configure({ apiKey: API_KEY });
 
         const info = await Purchases.getCustomerInfo();
         updateCustomerInfo(info);
 
-        const offerings = await Purchases.getOfferings();
-        setOfferings(offerings);
+        const offs = await Purchases.getOfferings();
+        setOfferings(offs);
+
+        listener = Purchases.addCustomerInfoUpdateListener((info) => {
+          updateCustomerInfo(info);
+        });
       } catch (e) {
-        console.error('RevenueCat init error:', e);
+        console.warn('RevenueCat init error:', e.message || e);
       } finally {
         setIsReady(true);
       }
@@ -34,13 +39,8 @@ export function RevenueCatProvider({ children }) {
 
     init();
 
-    // Listen for customer info changes (e.g. subscription renewal/expiration)
-    const listener = Purchases.addCustomerInfoUpdateListener((info) => {
-      updateCustomerInfo(info);
-    });
-
     return () => {
-      listener.remove();
+      if (listener) listener.remove();
     };
   }, []);
 
