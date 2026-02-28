@@ -99,6 +99,12 @@ export default function MoreScreen({ navigation }) {
               >
                 <Text style={[styles.helpBtnText, { color: colors.accent }]}>?</Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Debug')}
+                style={[styles.helpBtn, { backgroundColor: colors.accent + '20', borderColor: colors.accent }]}
+              >
+                <Text style={[styles.helpBtnText, { color: colors.accent }]}>🔧</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>

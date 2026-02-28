@@ -26,6 +26,7 @@ import ProjectsScreen from './src/screens/ProjectsScreen';
 import ShoppingListScreen from './src/screens/ShoppingListScreen';
 import PaywallScreen from './src/screens/PaywallScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
+import DebugScreen from './src/screens/DebugScreen';
 
 const Tab = createBottomTabNavigator();
 const MoreStack = createStackNavigator();
@@ -36,6 +37,7 @@ function MoreStackScreen() {
       <MoreStack.Screen name="MoreHome" component={MoreScreen} />
       <MoreStack.Screen name="Help" component={HelpScreen} />
       <MoreStack.Screen name="ThemePicker" component={ThemePickerScreen} />
+      <MoreStack.Screen name="Debug" component={DebugScreen} />
     </MoreStack.Navigator>
   );
 }
