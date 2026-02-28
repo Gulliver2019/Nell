@@ -4,8 +4,7 @@ import Purchases, { LOG_LEVEL } from 'react-native-purchases';
 
 const RevenueCatContext = createContext();
 
-// TODO: Replace with production RevenueCat Apple API key before App Store submission
-const API_KEY = 'test_bVlAWAteFsLVvKuSKoDHTaeSgBd';
+const API_KEY = 'appl_DAxZGGbcBkxcpJbYKzIeqeGvufz';
 const ENTITLEMENT_ID = 'GoalDigger Pro';
 
 export function RevenueCatProvider({ children }) {
