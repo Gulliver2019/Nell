@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   modeBtn: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 18 },
   modeBtnActive: {},
   modeText: { fontSize: SIZES.sm, fontWeight: '600' },
-  content: { paddingHorizontal: 16, paddingBottom: 40 },
+  content: { paddingHorizontal: 16, paddingBottom: 100 },
   typeRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   typeChip: {
     paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,

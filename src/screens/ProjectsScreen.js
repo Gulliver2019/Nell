@@ -641,7 +641,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
 
   // Index board
-  indexContent: { paddingHorizontal: 16, paddingBottom: 40, gap: 12 },
+  indexContent: { paddingHorizontal: 16, paddingBottom: 100, gap: 12 },
   indexHeader: {
     paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, position: 'relative',
   },

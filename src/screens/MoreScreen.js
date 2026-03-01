@@ -336,7 +336,7 @@ export default function MoreScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  content: { paddingBottom: 20 },
+  content: { paddingBottom: 80 },
   headerBar: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, position: 'relative' },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   headerBtns: { flexDirection: 'row', gap: 8, marginTop: 4 },

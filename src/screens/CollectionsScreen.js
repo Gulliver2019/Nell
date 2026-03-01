@@ -371,7 +371,7 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: SIZES.xxl, fontWeight: '700' },
   subtitle: { fontSize: SIZES.md, marginTop: 2 },
-  grid: { paddingHorizontal: 12, paddingBottom: 40 },
+  grid: { paddingHorizontal: 12, paddingBottom: 100 },
   gridRow: { gap: 8 },
   collectionCard: {
     flex: 1, marginBottom: 8, borderRadius: SIZES.radiusLg, overflow: 'hidden',
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   detailIcon: { fontSize: 24 },
   detailTitle: { fontSize: SIZES.xl, fontWeight: '700' },
   deleteBtn: { fontSize: 20, padding: 8 },
-  list: { paddingHorizontal: 16, paddingBottom: 20, flexGrow: 1 },
+  list: { paddingHorizontal: 16, paddingBottom: 100, flexGrow: 1 },
   empty: { alignItems: 'center', paddingTop: 60 },
   emptyIcon: { fontSize: 48, marginBottom: 8 },
   emptyText: { fontSize: SIZES.md },

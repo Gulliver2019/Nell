@@ -73,7 +73,7 @@ export default function HabitTrackerScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         <View style={styles.headerBar}>
           <LinearGradient
             colors={[colors.accentGreen + '15', 'transparent']}
