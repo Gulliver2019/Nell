@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
     flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32,
   },
   slideEmoji: { fontSize: 64, marginBottom: 16 },
-  slideIcon: { width: 64, height: 64, marginBottom: 16 },
+  slideIcon: { width: 96, height: 96, marginBottom: 16 },
   slideTitle: { fontSize: SIZES.xxl, fontWeight: '800', textAlign: 'center', marginBottom: 4 },
   slideSubtitle: { fontSize: SIZES.base, fontWeight: '600', textAlign: 'center', marginBottom: 20 },
   slideBody: { fontSize: SIZES.md, lineHeight: 24, textAlign: 'center' },
