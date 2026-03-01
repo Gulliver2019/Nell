@@ -17,6 +17,7 @@ const RAPID_IMAGE = require('../../assets/rapid.png');
 const MIGRATION_IMAGE = require('../../assets/migration.png');
 const PROJECT_IMAGE = require('../../assets/project.png');
 const READY_IMAGE = require('../../assets/ready.png');
+const POM_IMAGE = require('../../assets/pom.png');
 
 const SLIDES = [
   {
@@ -53,6 +54,7 @@ const SLIDES = [
     body: 'Group related tasks into Projects with kanban boards. Create Collections for reading lists, recipes, gift ideas — whatever you need.\n\nAdd any project task or collection entry to your daily log with the → Daily button.',
   },
   {
+    key: 'pom',
     emoji: '🍅',
     title: 'Time Blocking & Pomodoro',
     subtitle: 'Deep focus tools',
@@ -138,9 +140,9 @@ export default function OnboardingScreen({ onComplete }) {
             <Text style={[styles.slideSubtitle, { color: colors.accent }]}>{slide.subtitle}</Text>
             <Text style={[styles.slideBody, { color: colors.textSecondary }]}>{slide.body}</Text>
           </>
-        ) : slide.key === 'rapid' || slide.key === 'migration' || slide.key === 'project' || slide.key === 'ready' ? (
+        ) : slide.key === 'rapid' || slide.key === 'migration' || slide.key === 'project' || slide.key === 'ready' || slide.key === 'pom' ? (
           <>
-            <Image source={slide.key === 'rapid' ? RAPID_IMAGE : slide.key === 'migration' ? MIGRATION_IMAGE : slide.key === 'project' ? PROJECT_IMAGE : READY_IMAGE} style={styles.slideIcon} resizeMode="contain" />
+            <Image source={slide.key === 'rapid' ? RAPID_IMAGE : slide.key === 'migration' ? MIGRATION_IMAGE : slide.key === 'project' ? PROJECT_IMAGE : slide.key === 'pom' ? POM_IMAGE : READY_IMAGE} style={styles.slideIcon} resizeMode="contain" />
             <Text style={[styles.slideTitle, { color: colors.text }]}>{slide.title}</Text>
             <Text style={[styles.slideSubtitle, { color: colors.accent }]}>{slide.subtitle}</Text>
             <Text style={[styles.slideBody, { color: colors.textSecondary }]}>{slide.body}</Text>

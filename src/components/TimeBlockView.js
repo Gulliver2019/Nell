@@ -2,12 +2,15 @@ import React, { useMemo, useState, useRef, useCallback, useEffect } from 'react'
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, FlatList,
   TextInput, Keyboard, Animated, Dimensions, KeyboardAvoidingView, Platform,
+  Image,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SIZES } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import * as Haptics from 'expo-haptics';
 import PomodoroTimer from './PomodoroTimer';
+
+const POM_IMAGE = require('../../assets/pom.png');
 
 const START_HOUR = 5;
 const END_HOUR = 22;
@@ -421,7 +424,7 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
           onPress={() => setShowTimer(true)}
           activeOpacity={0.8}
         >
-          <Text style={styles.fabEmoji}>🍅</Text>
+          <Image source={POM_IMAGE} style={styles.fabIcon} resizeMode="contain" />
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.fabCircle, { backgroundColor: colors.accentSecondary }]}
@@ -578,6 +581,10 @@ const styles = StyleSheet.create({
   },
   fabEmoji: {
     fontSize: 22,
+  },
+  fabIcon: {
+    width: 22,
+    height: 22,
   },
   flyoutBackdrop: {
     ...StyleSheet.absoluteFillObject,
