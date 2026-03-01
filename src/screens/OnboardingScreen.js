@@ -26,8 +26,8 @@ const SLIDES = [
   {
     emoji: '📓',
     title: 'This Is Goal Digger',
-    subtitle: 'Not a to-do list. A life operating system.',
-    body: 'One app to capture everything — tasks, projects, goals, habits, reflections, time blocks and shopping lists. Powered by AI. Designed so nothing falls through the cracks, ever.',
+    subtitle: 'Plan with intention. Execute with precision. Review with honesty.',
+    body: 'This isn\'t another productivity app — it\'s a complete operating system for ambitious people who want momentum, not just organisation.\n\nYour daily focus stays razor-sharp as projects and monthly goals intelligently migrate into action. With AI reviewing your behaviour, you don\'t just track tasks — you improve performance.\n\nEverything moves forward. Nothing gets ignored.',
   },
   {
     key: 'rapid',
