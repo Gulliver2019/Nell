@@ -447,6 +447,18 @@ export const deleteProjectTask = async (projectId, taskId) => {
   }
 };
 
+export const updateProjectTask = async (projectId, taskId, updates) => {
+  const projects = await getProjects();
+  const idx = projects.findIndex(p => p.id === projectId);
+  if (idx !== -1) {
+    const taskIdx = projects[idx].tasks.findIndex(t => t.id === taskId);
+    if (taskIdx !== -1) {
+      projects[idx].tasks[taskIdx] = { ...projects[idx].tasks[taskIdx], ...updates };
+      await saveProjects(projects);
+    }
+  }
+};
+
 export const reorderProjectTasks = async (projectId, column, orderedTaskIds) => {
   const projects = await getProjects();
   const idx = projects.findIndex(p => p.id === projectId);

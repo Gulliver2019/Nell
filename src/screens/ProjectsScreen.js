@@ -136,10 +136,11 @@ function ProjectIndexBoard({ projects, onSelect, onAdd, onReorder, colors }) {
 }
 
 // Kanban task card with arrow buttons
-function TaskCard({ task, colors, onMove, onDelete, onAddToDaily, drag, isActive }) {
+function TaskCard({ task, colors, onMove, onDelete, onAddToDaily, onEdit, drag, isActive }) {
   const colIdx = COLUMNS.findIndex(c => c.key === task.column);
   const canGoLeft = colIdx > 0;
   const canGoRight = colIdx < COLUMNS.length - 1;
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <ScaleDecorator>
@@ -162,17 +163,24 @@ function TaskCard({ task, colors, onMove, onDelete, onAddToDaily, drag, isActive
           <Text style={[styles.arrowText, { color: colors.accent }]}>‹</Text>
         </TouchableOpacity>
 
-        {/* Task text */}
-        <Text
-          style={[
-            styles.taskText,
-            { color: colors.text },
-            task.column === 'done' && { textDecorationLine: 'line-through', color: colors.textMuted },
-          ]}
-          numberOfLines={3}
+        {/* Task text — tap to expand, long-press to edit */}
+        <TouchableOpacity
+          style={{ flex: 1 }}
+          onPress={() => setExpanded(e => !e)}
+          onLongPress={() => onEdit?.(task)}
+          activeOpacity={0.7}
         >
-          {task.text}
-        </Text>
+          <Text
+            style={[
+              styles.taskText,
+              { color: colors.text },
+              task.column === 'done' && { textDecorationLine: 'line-through', color: colors.textMuted },
+            ]}
+            numberOfLines={expanded ? undefined : 3}
+          >
+            {task.text}
+          </Text>
+        </TouchableOpacity>
 
         {/* Right arrow */}
         <TouchableOpacity
@@ -211,11 +219,13 @@ function TaskCard({ task, colors, onMove, onDelete, onAddToDaily, drag, isActive
 }
 
 // Kanban board detail view
-function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onDeleteTask, onReorderTasks, onAddToDaily }) {
+function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onDeleteTask, onReorderTasks, onAddToDaily, onEditTask }) {
   const [flyoutVisible, setFlyoutVisible] = useState(false);
   const [addingToColumn, setAddingToColumn] = useState('todo');
   const [convertTask, setConvertTask] = useState(null);
   const [convertDate, setConvertDate] = useState(new Date());
+  const [editingTask, setEditingTask] = useState(null);
+  const [editText, setEditText] = useState('');
   const scrollRef = useRef(null);
 
   const total = project.tasks.length;
@@ -244,6 +254,18 @@ function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onD
     Alert.alert('Added', `"${convertTask.text}" added to daily for ${targetDate}`);
   }, [convertTask, convertDate, onAddToDaily]);
 
+  const handleEditTask = useCallback((task) => {
+    setEditingTask(task);
+    setEditText(task.text);
+  }, []);
+
+  const confirmEditTask = useCallback(() => {
+    if (!editingTask || !editText.trim()) return;
+    onEditTask(editingTask.id, { text: editText.trim() });
+    setEditingTask(null);
+    setEditText('');
+  }, [editingTask, editText, onEditTask]);
+
   const renderTask = useCallback(({ item, drag, isActive }) => (
     <TaskCard
       task={item}
@@ -251,10 +273,11 @@ function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onD
       onMove={onMoveTask}
       onDelete={onDeleteTask}
       onAddToDaily={handleAddToDaily}
+      onEdit={handleEditTask}
       drag={drag}
       isActive={isActive}
     />
-  ), [colors, onMoveTask, onDeleteTask, handleAddToDaily]);
+  ), [colors, onMoveTask, onDeleteTask, handleAddToDaily, handleEditTask]);
 
   return (
     <View style={{ flex: 1 }}>
@@ -404,6 +427,41 @@ function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onD
             </View>
           </View>
         </View>
+      </Modal>
+
+      {/* Edit task modal */}
+      <Modal visible={!!editingTask} transparent animationType="fade">
+        <KeyboardAvoidingView
+          style={styles.convertOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <View style={[styles.convertModal, { backgroundColor: colors.bgCard }]}>
+            <Text style={[styles.convertTitle, { color: colors.text }]}>Edit Task</Text>
+            <TextInput
+              style={[styles.editTaskInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.bg }]}
+              value={editText}
+              onChangeText={setEditText}
+              multiline
+              autoFocus
+              selectionColor={colors.accent}
+              placeholderTextColor={colors.textMuted}
+            />
+            <View style={styles.convertActions}>
+              <TouchableOpacity
+                style={[styles.convertBtn, { backgroundColor: colors.bgInput || colors.border }]}
+                onPress={() => setEditingTask(null)}
+              >
+                <Text style={[styles.convertBtnText, { color: colors.textMuted }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.convertBtn, { backgroundColor: colors.accent }]}
+                onPress={confirmEditTask}
+              >
+                <Text style={[styles.convertBtnText, { color: '#fff' }]}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -566,7 +624,7 @@ function NewProjectModal({ visible, onClose, onSave, colors }) {
 
 export default function ProjectsScreen() {
   const { colors } = useTheme();
-  const { projects, addProject, updateProject, deleteProject, addProjectTask, moveProjectTask, deleteProjectTask, reorderProjectTasks, reorderProjects, addEntry, updateEntry } = useApp();
+  const { projects, addProject, updateProject, deleteProject, addProjectTask, moveProjectTask, deleteProjectTask, updateProjectTask, reorderProjectTasks, reorderProjects, addEntry, updateEntry } = useApp();
   const [selectedProject, setSelectedProject] = useState(null);
   const [showNewModal, setShowNewModal] = useState(false);
 
@@ -615,6 +673,7 @@ export default function ProjectsScreen() {
           onDeleteTask={(taskId) => deleteProjectTask(activeProject.id, taskId)}
           onReorderTasks={(column, orderedIds) => reorderProjectTasks(activeProject.id, column, orderedIds)}
           onAddToDaily={handleAddTaskToDaily}
+          onEditTask={(taskId, updates) => updateProjectTask(activeProject.id, taskId, updates)}
         />
       ) : (
         <ProjectIndexBoard
@@ -813,4 +872,11 @@ const styles = StyleSheet.create({
   convertActions: { flexDirection: 'row', gap: 12, marginTop: 16 },
   convertBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
   convertBtnText: { fontSize: SIZES.md, fontWeight: '700' },
+
+  // Edit task modal
+  editTaskInput: {
+    fontSize: SIZES.base, borderWidth: 1, borderRadius: 12,
+    paddingHorizontal: 16, paddingVertical: 12, minHeight: 80,
+    textAlignVertical: 'top',
+  },
 });

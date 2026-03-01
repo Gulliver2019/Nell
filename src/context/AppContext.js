@@ -281,6 +281,12 @@ export function AppProvider({ children }) {
     dispatch({ type: 'SET_PROJECTS', payload: projects });
   }, []);
 
+  const updateProjectTask = useCallback(async (projectId, taskId, updates) => {
+    await Storage.updateProjectTask(projectId, taskId, updates);
+    const projects = await Storage.getProjects();
+    dispatch({ type: 'SET_PROJECTS', payload: projects });
+  }, []);
+
   const reorderProjectTasks = useCallback(async (projectId, column, orderedTaskIds) => {
     await Storage.reorderProjectTasks(projectId, column, orderedTaskIds);
     const projects = await Storage.getProjects();
@@ -359,6 +365,7 @@ export function AppProvider({ children }) {
     addProjectTask,
     moveProjectTask,
     deleteProjectTask,
+    updateProjectTask,
     reorderProjectTasks,
     reorderProjects,
     addRoutine,
