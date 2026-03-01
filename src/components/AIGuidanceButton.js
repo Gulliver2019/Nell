@@ -1,10 +1,11 @@
 import React, { useState, useCallback, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView,
-  ActivityIndicator, Animated, Platform,
+  ActivityIndicator, Animated, Platform, Image,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
+const BRAIN_IMAGE = require('../../assets/brain.png');
 let AI_CONFIG;
 try {
   AI_CONFIG = require('../utils/aiConfig').AI_CONFIG;
@@ -170,7 +171,7 @@ export default function AIGuidanceButton() {
         onPress={handleOpen}
         activeOpacity={0.8}
       >
-        <Text style={styles.fabText}>✨</Text>
+        <Image source={BRAIN_IMAGE} style={styles.fabIcon} resizeMode="contain" />
       </TouchableOpacity>
 
       {/* Guidance modal */}
@@ -179,7 +180,10 @@ export default function AIGuidanceButton() {
           {/* Header */}
           <View style={[styles.header, { borderBottomColor: colors.border }]}>
             <View>
-              <Text style={[styles.title, { color: colors.text }]}>✨ AI Guidance</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Image source={BRAIN_IMAGE} style={{ width: 24, height: 24 }} resizeMode="contain" />
+                <Text style={[styles.title, { color: colors.text }]}>AI Guidance</Text>
+              </View>
               <Text style={[styles.subtitle, { color: colors.textMuted }]}>Your personalised execution plan</Text>
             </View>
             <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
@@ -254,6 +258,10 @@ const styles = StyleSheet.create({
   },
   fabText: {
     fontSize: 22,
+  },
+  fabIcon: {
+    width: 28,
+    height: 28,
   },
 
   overlay: {

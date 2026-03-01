@@ -20,6 +20,8 @@ const READY_IMAGE = require('../../assets/ready.png');
 const POM_IMAGE = require('../../assets/pom.png');
 const CAL_IMAGE = require('../../assets/cal.png');
 
+const BRAIN_IMAGE = require('../../assets/brain.png');
+
 const SLIDES = [
   {
     emoji: '📓',
@@ -67,7 +69,7 @@ const SLIDES = [
     emoji: '✨',
     title: 'AI Execution Coach',
     subtitle: 'Your personal productivity OS',
-    body: 'Tap the ✨ button on any screen for AI-powered guidance. It reviews your tasks, projects, habits and reflections — then tells you exactly what to focus on, what\'s overdue, and how to get more done.',
+    body: 'Tap the brain button on any screen for AI-powered guidance. It reviews your tasks, projects, habits and reflections — then tells you exactly what to focus on, what\'s overdue, and how to get more done.',
   },
   {
     key: 'book',
@@ -149,9 +151,9 @@ export default function OnboardingScreen({ onComplete }) {
             <Text style={[styles.slideSubtitle, { color: colors.accent }]}>{slide.subtitle}</Text>
             <Text style={[styles.slideBody, { color: colors.textSecondary }]}>{slide.body}</Text>
           </>
-        ) : slide.key === 'rapid' || slide.key === 'migration' || slide.key === 'project' || slide.key === 'ready' || slide.key === 'pom' || slide.key === 'cal' ? (
+        ) : slide.key === 'rapid' || slide.key === 'migration' || slide.key === 'project' || slide.key === 'ready' || slide.key === 'pom' || slide.key === 'cal' || slide.key === 'ai' ? (
           <>
-            <Image source={slide.key === 'rapid' ? RAPID_IMAGE : slide.key === 'migration' ? MIGRATION_IMAGE : slide.key === 'project' ? PROJECT_IMAGE : slide.key === 'pom' ? POM_IMAGE : slide.key === 'cal' ? CAL_IMAGE : READY_IMAGE} style={styles.slideIcon} resizeMode="contain" />
+            <Image source={slide.key === 'rapid' ? RAPID_IMAGE : slide.key === 'migration' ? MIGRATION_IMAGE : slide.key === 'project' ? PROJECT_IMAGE : slide.key === 'pom' ? POM_IMAGE : slide.key === 'cal' ? CAL_IMAGE : slide.key === 'ai' ? BRAIN_IMAGE : READY_IMAGE} style={styles.slideIcon} resizeMode="contain" />
             <Text style={[styles.slideTitle, { color: colors.text }]}>{slide.title}</Text>
             <Text style={[styles.slideSubtitle, { color: colors.accent }]}>{slide.subtitle}</Text>
             <Text style={[styles.slideBody, { color: colors.textSecondary }]}>{slide.body}</Text>
