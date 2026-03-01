@@ -17,9 +17,9 @@ import { SIZES } from '../utils/theme';
 import { getDateKey, formatDateShort, getMonthName } from '../utils/storage';
 import * as Haptics from 'expo-haptics';
 
-const MAVIS_NAME_KEY = '@mavis_user_name';
-const MAVIS_HISTORY_KEY = '@mavis_history';
-const MAVIS_LAST_NUDGE_KEY = '@mavis_last_nudge';
+const JARVIS_NAME_KEY = '@jarvis_user_name';
+const JARVIS_HISTORY_KEY = '@jarvis_history';
+const JARVIS_LAST_NUDGE_KEY = '@jarvis_last_nudge';
 
 // ─── Chat context builder ───
 function buildContext(data) {
@@ -165,7 +165,7 @@ function buildExecutionOSPrompt(data, energyLevel) {
   return JSON.stringify(inputData);
 }
 
-const EXECUTION_OS_SYSTEM = `You are "Mavis — EXECUTION OS", an agentic planning coach that turns a user's planning data into a clear, realistic plan and a short list of next actions.
+const EXECUTION_OS_SYSTEM = `You are "Jarvis — EXECUTION OS", an agentic planning coach that turns a user's planning data into a clear, realistic plan and a short list of next actions.
 Your goals are: (1) reduce overwhelm, (2) maximize momentum, (3) protect deep work time, (4) ensure follow-through.
 You must be practical, specific, and decisive. You must not be generic or motivational.
 You must respect constraints (energy level, existing time blocks). You must never invent tasks, events, or commitments.
@@ -424,8 +424,8 @@ const AIGuidanceButton = forwardRef(function AIGuidanceButton(props, ref) {
     (async () => {
       try {
         const [name, history] = await Promise.all([
-          AsyncStorage.getItem(MAVIS_NAME_KEY),
-          AsyncStorage.getItem(MAVIS_HISTORY_KEY),
+          AsyncStorage.getItem(JARVIS_NAME_KEY),
+          AsyncStorage.getItem(JARVIS_HISTORY_KEY),
         ]);
         if (name) setUserName(name);
         if (history) {
@@ -438,11 +438,11 @@ const AIGuidanceButton = forwardRef(function AIGuidanceButton(props, ref) {
   useEffect(() => {
     if (messages.length > 0) {
       const toSave = messages.slice(-30);
-      AsyncStorage.setItem(MAVIS_HISTORY_KEY, JSON.stringify(toSave)).catch(() => {});
+      AsyncStorage.setItem(JARVIS_HISTORY_KEY, JSON.stringify(toSave)).catch(() => {});
     }
   }, [messages]);
 
-  // Auto-launch Mavis when app has no data (first use) or weekly nudge
+  // Auto-launch Jarvis when app has no data (first use) or weekly nudge
   useEffect(() => {
     if (didAutoLaunch) return;
     const { entries, projects, habits } = appData;
@@ -450,7 +450,7 @@ const AIGuidanceButton = forwardRef(function AIGuidanceButton(props, ref) {
 
     (async () => {
       if (isEmpty) {
-        // First time — open Mavis to guide setup
+        // First time — open Jarvis to guide setup
         setDidAutoLaunch(true);
         setTimeout(() => {
           setVisible(true);
@@ -466,12 +466,12 @@ const AIGuidanceButton = forwardRef(function AIGuidanceButton(props, ref) {
 
       // Weekly nudge — check last nudge date
       try {
-        const lastNudge = await AsyncStorage.getItem(MAVIS_LAST_NUDGE_KEY);
+        const lastNudge = await AsyncStorage.getItem(JARVIS_LAST_NUDGE_KEY);
         const now = Date.now();
         const oneWeek = 7 * 24 * 60 * 60 * 1000;
         if (!lastNudge || (now - parseInt(lastNudge, 10)) > oneWeek) {
           setDidAutoLaunch(true);
-          await AsyncStorage.setItem(MAVIS_LAST_NUDGE_KEY, String(now));
+          await AsyncStorage.setItem(JARVIS_LAST_NUDGE_KEY, String(now));
           setTimeout(() => {
             setVisible(true);
             sendWeeklyNudge();
@@ -482,7 +482,7 @@ const AIGuidanceButton = forwardRef(function AIGuidanceButton(props, ref) {
   }, [appData, didAutoLaunch, userName]);
 
   const sendSetupNudge = useCallback(() => {
-    const msg = `👋 Looks like you're just getting started! I'm Mavis — let me help you set up your system.\n\nHere's what I'd recommend:\n\n1️⃣ **Daily Log** — Start by adding a few tasks for today\n2️⃣ **Projects** — Create your first project and break it into tasks\n3️⃣ **Habits** — Pick 2-3 habits you want to track daily\n4️⃣ **Reflections** — End each day with a quick reflection\n\nTap "💡 Help me get started" below and I'll walk you through it step by step.`;
+    const msg = `👋 Looks like you're just getting started! I'm Jarvis — let me help you set up your system.\n\nHere's what I'd recommend:\n\n1️⃣ **Daily Log** — Start by adding a few tasks for today\n2️⃣ **Projects** — Create your first project and break it into tasks\n3️⃣ **Habits** — Pick 2-3 habits you want to track daily\n4️⃣ **Reflections** — End each day with a quick reflection\n\nTap "💡 Help me get started" below and I'll walk you through it step by step.`;
     setMessages(prev => [...prev, { role: 'assistant', content: msg }]);
   }, []);
 
@@ -491,7 +491,7 @@ const AIGuidanceButton = forwardRef(function AIGuidanceButton(props, ref) {
     const openTasks = entries.filter(e => e.type === 'task' && e.state === 'open');
     const today = getDateKey();
     const overdue = openTasks.filter(e => e.date && e.date < today);
-    const parts = [`Hey${userName ? ` ${userName}` : ''}! 👋 Weekly check-in from Mavis.`];
+    const parts = [`Hey${userName ? ` ${userName}` : ''}! 👋 Weekly check-in from Jarvis.`];
     if (overdue.length > 0) parts.push(`\n\n🚩 You have **${overdue.length} overdue tasks** that need attention.`);
     if (openTasks.length > 10) parts.push(`\n\n📋 ${openTasks.length} open tasks — might be time to defer or delete some.`);
     const stalledProjects = projects.filter(p => p.tasks.filter(t => t.column === 'progress').length === 0 && p.tasks.filter(t => t.column === 'todo').length > 0);
@@ -502,7 +502,7 @@ const AIGuidanceButton = forwardRef(function AIGuidanceButton(props, ref) {
 
   const systemPrompt = useCallback(() => {
     const nameRef = userName ? `The user's name is ${userName}. Address them by name occasionally — be warm but not sycophantic.` : '';
-    return `You are Mavis — a sharp, witty and motivating personal productivity AI built into a bullet journal app called Goal Digger. You're like a trusted chief of staff who knows everything about the user's tasks, projects, habits and reflections.
+    return `You are Jarvis — a sharp, witty and motivating personal productivity AI built into a bullet journal app called Goal Digger. You're like a trusted chief of staff who knows everything about the user's tasks, projects, habits and reflections.
 
 ${nameRef}
 
@@ -634,8 +634,8 @@ Keep responses concise — aim for 150-250 words unless the user asks for detail
     if (!name) return;
     setUserName(name);
     setShowNamePrompt(false);
-    await AsyncStorage.setItem(MAVIS_NAME_KEY, name);
-    const greeting = `Hey ${name}! 👋 I'm Mavis — your personal productivity copilot. I can see everything in your bullet journal and help you execute like a machine.\n\nTry "⚡ Plan My Day" for a full execution plan, or tap any quick action below.`;
+    await AsyncStorage.setItem(JARVIS_NAME_KEY, name);
+    const greeting = `Hey ${name}! 👋 I'm Jarvis — your personal productivity copilot. I can see everything in your bullet journal and help you execute like a machine.\n\nTry "⚡ Plan My Day" for a full execution plan, or tap any quick action below.`;
     setMessages([{ role: 'assistant', content: greeting }]);
   }, [nameInput]);
 
@@ -661,7 +661,7 @@ Keep responses concise — aim for 150-250 words unless the user asks for detail
   const handleClearHistory = useCallback(async () => {
     setMessages([]);
     setPlanData(null);
-    await AsyncStorage.removeItem(MAVIS_HISTORY_KEY);
+    await AsyncStorage.removeItem(JARVIS_HISTORY_KEY);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   }, []);
 
@@ -687,7 +687,7 @@ Keep responses concise — aim for 150-250 words unless the user asks for detail
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
               <Image source={BRAIN_IMAGE} style={{ width: 28, height: 28 }} resizeMode="contain" />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.title, { color: colors.text }]}>Mavis</Text>
+                <Text style={[styles.title, { color: colors.text }]}>Jarvis</Text>
                 <Text style={[styles.subtitle, { color: colors.textMuted }]}>
                   {userName ? `Working for ${userName}` : 'Your productivity copilot'}
                 </Text>
@@ -706,7 +706,7 @@ Keep responses concise — aim for 150-250 words unless the user asks for detail
             <View style={[styles.namePrompt, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
               <Text style={[styles.nameTitle, { color: colors.text }]}>👋 Hey there!</Text>
               <Text style={[styles.nameBody, { color: colors.textSecondary }]}>
-                I'm Mavis — your personal productivity copilot. What should I call you?
+                I'm Jarvis — your personal productivity copilot. What should I call you?
               </Text>
               <View style={styles.nameRow}>
                 <TextInput
@@ -808,7 +808,7 @@ Keep responses concise — aim for 150-250 words unless the user asks for detail
                 ]}
               >
                 {msg.role === 'assistant' && (
-                  <Text style={[styles.bubbleLabel, { color: colors.accent }]}>Mavis</Text>
+                  <Text style={[styles.bubbleLabel, { color: colors.accent }]}>Jarvis</Text>
                 )}
                 <Text style={[
                   styles.bubbleText,
@@ -821,7 +821,7 @@ Keep responses concise — aim for 150-250 words unless the user asks for detail
 
             {loading && (
               <View style={[styles.assistantBubble, styles.bubble, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                <Text style={[styles.bubbleLabel, { color: colors.accent }]}>Mavis</Text>
+                <Text style={[styles.bubbleLabel, { color: colors.accent }]}>Jarvis</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <ActivityIndicator size="small" color={colors.accent} />
                   <Text style={[styles.typingText, { color: colors.textMuted }]}>
@@ -865,7 +865,7 @@ Keep responses concise — aim for 150-250 words unless the user asks for detail
             <View style={[styles.inputBar, { borderTopColor: colors.border, backgroundColor: colors.bg }]}>
               <TextInput
                 style={[styles.input, { color: colors.text, backgroundColor: colors.bgCard, borderColor: colors.border }]}
-                placeholder="Ask Mavis anything..."
+                placeholder="Ask Jarvis anything..."
                 placeholderTextColor={colors.textMuted}
                 value={inputText}
                 onChangeText={setInputText}
