@@ -6,6 +6,7 @@ import * as Haptics from 'expo-haptics';
 import { SIZES } from '../utils/theme';
 
 const PLAY_IMAGE = require('../../assets/play.png');
+const PAUSE_IMAGE = require('../../assets/pause.png');
 
 const WORK_DURATION = 25 * 60;
 const SHORT_BREAK = 5 * 60;
@@ -254,7 +255,7 @@ export default function PomodoroTimer({ colors, activeEntry, onPomodoroComplete,
                 style={[styles.primaryBtn, { backgroundColor: phaseColor }]}
                 onPress={isRunning ? pause : start}
               >
-                {isRunning ? <Text style={styles.primaryBtnText}>⏸</Text> : <Image source={PLAY_IMAGE} style={styles.playIcon} resizeMode="contain" />}
+                {isRunning ? <Image source={PAUSE_IMAGE} style={styles.playIcon} resizeMode="contain" /> : <Image source={PLAY_IMAGE} style={styles.playIcon} resizeMode="contain" />}
               </TouchableOpacity>
 
               <TouchableOpacity style={[styles.secondaryBtn, { borderColor: colors.border }]} onPress={skip}>
