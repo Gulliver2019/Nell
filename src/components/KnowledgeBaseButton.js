@@ -33,7 +33,7 @@ export default function KnowledgeBaseButton({ sectionId }) {
       onPress={handlePress}
       onLongPress={() => setHidden(true)}
       delayLongPress={500}
-      style={[styles.banner, { backgroundColor: colors.accent + '12', borderTopColor: colors.border }]}
+      style={[styles.banner, { backgroundColor: '#000', borderTopColor: colors.border }]}
       activeOpacity={0.7}
     >
       <Text style={[styles.text, { color: colors.accent }]} numberOfLines={1}>
