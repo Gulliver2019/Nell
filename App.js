@@ -168,7 +168,6 @@ function AppContent() {
           },
         })}
       >
-        <Tab.Screen name="Index" component={IndexScreen} />
         <Tab.Screen name="Daily" component={DailyLogScreen} />
         <Tab.Screen name="Monthly" component={MonthlyLogScreen} />
         <Tab.Screen name="Future" component={FutureLogScreen} />
@@ -177,6 +176,7 @@ function AppContent() {
         <Tab.Screen name="Shopping" component={ShoppingListScreen} />
         <Tab.Screen name="Habits" component={HabitTrackerScreen} />
         <Tab.Screen name="Reflect" component={ReflectionScreen} />
+        <Tab.Screen name="Index" component={IndexScreen} />
         <Tab.Screen name="More" component={MoreStackScreen} />
       </Tab.Navigator>
       <AIGuidanceButton />
