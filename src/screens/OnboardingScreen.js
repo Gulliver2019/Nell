@@ -15,6 +15,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BOOK_IMAGE = require('../../assets/book.png');
 const RAPID_IMAGE = require('../../assets/rapid.png');
 const MIGRATION_IMAGE = require('../../assets/migration.png');
+const PROJECT_IMAGE = require('../../assets/project.png');
 
 const SLIDES = [
   {
@@ -44,6 +45,7 @@ const SLIDES = [
     body: 'Daily Log — today\'s rapid log\nMonthly Log — bird\'s eye view of the month\nFuture Log — plan months ahead\n\nEverything connects. Nothing gets lost.',
   },
   {
+    key: 'project',
     emoji: '🎯',
     title: 'Projects & Collections',
     subtitle: 'Custom pages for anything',
@@ -134,9 +136,9 @@ export default function OnboardingScreen({ onComplete }) {
             <Text style={[styles.slideSubtitle, { color: colors.accent }]}>{slide.subtitle}</Text>
             <Text style={[styles.slideBody, { color: colors.textSecondary }]}>{slide.body}</Text>
           </>
-        ) : slide.key === 'rapid' || slide.key === 'migration' ? (
+        ) : slide.key === 'rapid' || slide.key === 'migration' || slide.key === 'project' ? (
           <>
-            <Image source={slide.key === 'rapid' ? RAPID_IMAGE : MIGRATION_IMAGE} style={styles.slideIcon} resizeMode="contain" />
+            <Image source={slide.key === 'rapid' ? RAPID_IMAGE : slide.key === 'migration' ? MIGRATION_IMAGE : PROJECT_IMAGE} style={styles.slideIcon} resizeMode="contain" />
             <Text style={[styles.slideTitle, { color: colors.text }]}>{slide.title}</Text>
             <Text style={[styles.slideSubtitle, { color: colors.accent }]}>{slide.subtitle}</Text>
             <Text style={[styles.slideBody, { color: colors.textSecondary }]}>{slide.body}</Text>
