@@ -37,6 +37,7 @@ const CATEGORIES = [
   { key: 'goodies', label: 'Goodies', icon: '🍫' },
   { key: 'pet', label: 'Pet', icon: '🐾' },
   { key: 'household', label: 'Household', icon: '🏠' },
+  { key: 'others', label: 'Others', icon: '📦' },
 ];
 
 const CATEGORY_MAP = {};
