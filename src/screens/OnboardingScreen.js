@@ -43,7 +43,7 @@ const SLIDES = [
     emoji: '🎯',
     title: 'Projects & Collections',
     subtitle: 'Custom pages for anything',
-    body: 'Group related tasks into Projects with kanban boards. Create Collections for reading lists, recipes, gift ideas — whatever you need.',
+    body: 'Group related tasks into Projects with kanban boards. Create Collections for reading lists, recipes, gift ideas — whatever you need.\n\nAdd any project task or collection entry to your daily log with the → Daily button.',
   },
   {
     emoji: '🍅',
@@ -62,7 +62,7 @@ const SLIDES = [
     emoji: '💪',
     title: 'You\'re Ready!',
     subtitle: 'Go dig those goals',
-    body: 'Track habits, reflect on your day, and search everything from the Index. The more you use it, the more powerful it becomes.\n\nLet\'s get started.',
+    body: 'Track habits, reflect on your day, organise your shopping list by aisle, and search everything from the Index. The more you use it, the more powerful it becomes.\n\nLet\'s get started.',
   },
 ];
 

@@ -39,7 +39,7 @@ const SECTIONS = [
       },
       {
         q: 'How do I add an entry?',
-        a: 'Use the input bar at the bottom of the Daily Log. Tap the bullet symbol (•/○/—) to change the entry type before typing. Hit return or tap the arrow to add it.',
+        a: 'Tap the + button at the bottom of the Daily Log. Choose the entry type, add signifiers if needed, and type your note. You can also assign a time block or pomodoro count.',
       },
       {
         q: 'What are signifiers?',
@@ -106,6 +106,10 @@ const SECTIONS = [
         q: 'What does the progress bar show?',
         a: 'It shows how many of today\'s tasks you\'ve completed. Chase that 100%!',
       },
+      {
+        q: 'What does the NEXT badge mean?',
+        a: 'In the time block view, the first incomplete time-blocked task is highlighted with a green NEXT badge. It stays on that task until you complete it or remove it from the time block — it won\'t skip ahead.',
+      },
     ],
   },
   {
@@ -120,6 +124,10 @@ const SECTIONS = [
       {
         q: 'What do the coloured dots mean?',
         a: 'Purple dot — tasks exist that day\nGreen dot — all tasks completed\nTeal dot — events logged\nRed dot — priority items',
+      },
+      {
+        q: 'How do I move a monthly entry to my daily?',
+        a: 'Tap the green "→ Daily" button next to any monthly entry. Pick a date and the entry will be copied to that day\'s daily log. A ✓ badge appears once it\'s been added.',
       },
     ],
   },
@@ -151,6 +159,10 @@ const SECTIONS = [
         q: 'How do I delete a collection?',
         a: 'Long-press on a collection card to delete it. Warning: this removes all entries inside it too.',
       },
+      {
+        q: 'How do I add a collection entry to my daily?',
+        a: 'Each entry in a collection has a green "→ Daily" button. Tap it, pick a date, and the entry is copied to that day\'s daily log. You can also swipe left on an entry to schedule it to a specific date.',
+      },
     ],
   },
   {
@@ -160,11 +172,19 @@ const SECTIONS = [
     items: [
       {
         q: 'How do Projects work?',
-        a: 'Projects have a kanban-style board with three columns: To Do, In Progress and Done. Use the arrow buttons to move between columns, and long-press to drag and reorder tasks.',
+        a: 'Projects have a kanban-style board with three columns: To Do, In Progress and Done. Use the ‹ › arrow buttons to move tasks between columns, and long-press to drag and reorder tasks within a column.',
       },
       {
         q: 'How do I create a project?',
-        a: 'Go to the Projects tab and tap "+ New Project". Give it a name, emoji and colour. Add tasks with the + button inside each project.',
+        a: 'Go to the Projects tab and tap "+ New Project". Give it a name, emoji, colour and optional timeline. Add tasks with the + button inside each column.',
+      },
+      {
+        q: 'How do I read or edit a task?',
+        a: 'Tap the task text to expand it and see the full content. Long-press the task text to open an edit modal where you can update it.',
+      },
+      {
+        q: 'How do I add a project task to my daily?',
+        a: 'Tap the green "→ Daily" button on any task card. Pick a date and it\'ll be copied to that day\'s daily log with a 🎯 badge so you know it came from a project.',
       },
     ],
   },
@@ -213,11 +233,15 @@ const SECTIONS = [
     items: [
       {
         q: 'How does the Shopping List work?',
-        a: 'Quick-add items with a category (Produce, Meat, Dairy, etc). Tap to check off, long-press to delete. Checked items sink to the bottom. Use "Clear Checked" to bulk remove purchased items.',
+        a: 'Quick-add items with a category (Produce, Meat, Dairy, Pasta & Rice, Canned Goods, Cereals, Oils, Frozen, and more). Tap to check off, long-press to delete. Checked items sink to the bottom. Use "Clear Checked" to bulk remove purchased items.',
       },
       {
         q: 'Can I filter by category?',
         a: 'Yes — use the scrollable category chips at the top to filter. Each chip shows the count of remaining items in that category.',
+      },
+      {
+        q: 'Can I reorder the sections to match my shop?',
+        a: 'Yes! When viewing all items, each category section has ▲ and ▼ arrows in the header. Tap them to move sections up or down so they match the layout of your shop. The order is saved automatically.',
       },
     ],
   },
@@ -266,11 +290,11 @@ const SECTIONS = [
     items: [
       {
         q: 'What is the Index?',
-        a: 'The Index is your master directory — a searchable list of every entry across your entire journal. Filter by type (tasks, events, notes), status (open, priority) or search by keyword.',
+        a: 'The Index is your master directory — a dashboard showing open tasks, projects, collections and monthly summaries at a glance. It also has a powerful search that covers everything in your journal.',
       },
       {
         q: 'How do I find something?',
-        a: 'Type in the search bar to filter entries by text. Use the filter chips below to narrow by type. Tap any result to jump to that day.',
+        a: 'Type in the search bar to search across all your content — daily entries, monthly entries, future log, project tasks and collection entries. Each result shows where it lives and tapping it takes you straight there.',
       },
     ],
   },
