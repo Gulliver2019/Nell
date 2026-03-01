@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView,
   ActivityIndicator, Platform, Image, TextInput, KeyboardAvoidingView,
@@ -19,6 +19,7 @@ import * as Haptics from 'expo-haptics';
 
 const JARVIS_NAME_KEY = '@jarvis_user_name';
 const JARVIS_HISTORY_KEY = '@jarvis_history';
+const JARVIS_LAST_NUDGE_KEY = '@jarvis_last_nudge';
 
 // ─── Chat context builder ───
 function buildContext(data) {
@@ -396,7 +397,7 @@ function HabitsCard({ items, colors }) {
 }
 
 // ─── Main Component ───
-export default function AIGuidanceButton() {
+const AIGuidanceButton = forwardRef(function AIGuidanceButton(props, ref) {
   const { colors } = useTheme();
   const appData = useApp();
   const [visible, setVisible] = useState(false);
@@ -408,7 +409,16 @@ export default function AIGuidanceButton() {
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [planData, setPlanData] = useState(null);
   const [showEnergyPicker, setShowEnergyPicker] = useState(false);
+  const [didAutoLaunch, setDidAutoLaunch] = useState(false);
   const scrollRef = useRef(null);
+
+  // Expose open method to parent
+  useImperativeHandle(ref, () => ({
+    open: () => {
+      setVisible(true);
+      if (!userName) setShowNamePrompt(true);
+    },
+  }), [userName]);
 
   useEffect(() => {
     (async () => {
@@ -431,6 +441,64 @@ export default function AIGuidanceButton() {
       AsyncStorage.setItem(JARVIS_HISTORY_KEY, JSON.stringify(toSave)).catch(() => {});
     }
   }, [messages]);
+
+  // Auto-launch Jarvis when app has no data (first use) or weekly nudge
+  useEffect(() => {
+    if (didAutoLaunch) return;
+    const { entries, projects, habits } = appData;
+    const isEmpty = entries.length === 0 && projects.length === 0 && habits.length === 0;
+
+    (async () => {
+      if (isEmpty) {
+        // First time — open Jarvis to guide setup
+        setDidAutoLaunch(true);
+        setTimeout(() => {
+          setVisible(true);
+          if (!userName) {
+            setShowNamePrompt(true);
+          } else {
+            // Existing user with cleared data
+            sendSetupNudge();
+          }
+        }, 800);
+        return;
+      }
+
+      // Weekly nudge — check last nudge date
+      try {
+        const lastNudge = await AsyncStorage.getItem(JARVIS_LAST_NUDGE_KEY);
+        const now = Date.now();
+        const oneWeek = 7 * 24 * 60 * 60 * 1000;
+        if (!lastNudge || (now - parseInt(lastNudge, 10)) > oneWeek) {
+          setDidAutoLaunch(true);
+          await AsyncStorage.setItem(JARVIS_LAST_NUDGE_KEY, String(now));
+          setTimeout(() => {
+            setVisible(true);
+            sendWeeklyNudge();
+          }, 1000);
+        }
+      } catch (_) {}
+    })();
+  }, [appData, didAutoLaunch, userName]);
+
+  const sendSetupNudge = useCallback(() => {
+    const msg = `👋 Looks like you're just getting started! I'm Jarvis — let me help you set up your system.\n\nHere's what I'd recommend:\n\n1️⃣ **Daily Log** — Start by adding a few tasks for today\n2️⃣ **Projects** — Create your first project and break it into tasks\n3️⃣ **Habits** — Pick 2-3 habits you want to track daily\n4️⃣ **Reflections** — End each day with a quick reflection\n\nTap "💡 Help me get started" below and I'll walk you through it step by step.`;
+    setMessages(prev => [...prev, { role: 'assistant', content: msg }]);
+  }, []);
+
+  const sendWeeklyNudge = useCallback(() => {
+    const { entries, projects, habits } = appData;
+    const openTasks = entries.filter(e => e.type === 'task' && e.state === 'open');
+    const today = getDateKey();
+    const overdue = openTasks.filter(e => e.date && e.date < today);
+    const parts = [`Hey${userName ? ` ${userName}` : ''}! 👋 Weekly check-in from Jarvis.`];
+    if (overdue.length > 0) parts.push(`\n\n🚩 You have **${overdue.length} overdue tasks** that need attention.`);
+    if (openTasks.length > 10) parts.push(`\n\n📋 ${openTasks.length} open tasks — might be time to defer or delete some.`);
+    const stalledProjects = projects.filter(p => p.tasks.filter(t => t.column === 'progress').length === 0 && p.tasks.filter(t => t.column === 'todo').length > 0);
+    if (stalledProjects.length > 0) parts.push(`\n\n🏗️ ${stalledProjects.length} project${stalledProjects.length > 1 ? 's' : ''} with nothing in progress.`);
+    parts.push('\n\nTry **⚡ Plan My Day** to get a structured execution plan, or ask me anything.');
+    setMessages(prev => [...prev, { role: 'assistant', content: parts.join('') }]);
+  }, [appData, userName]);
 
   const systemPrompt = useCallback(() => {
     const nameRef = userName ? `The user's name is ${userName}. Address them by name occasionally — be warm but not sycophantic.` : '';
@@ -821,7 +889,7 @@ Keep responses concise — aim for 150-250 words unless the user asks for detail
       </Modal>
     </>
   );
-}
+});
 
 // ─── Styles ───
 const styles = StyleSheet.create({
@@ -948,3 +1016,5 @@ const cardStyles = StyleSheet.create({
   habitName: { fontSize: SIZES.sm, fontWeight: '600' },
   habitPrompt: { fontSize: SIZES.sm, lineHeight: 18 },
 });
+
+export default AIGuidanceButton;

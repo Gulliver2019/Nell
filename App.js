@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, ActivityIndicator, StyleSheet, ScrollView, TouchableOpacity, Text } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
@@ -98,22 +98,27 @@ function ScrollableTabBar({ state, descriptors, navigation, colors }) {
 
 const ONBOARDING_KEY = 'crushedit_onboarding_done';
 const PAYWALL_KEY = 'crushedit_paywall_done';
+const DEFAULT_SCREEN_KEY = '@default_screen';
 
 function AppContent() {
   const { colors, hasChosenTheme, loading } = useTheme();
   const { isProUser, isReady: rcReady } = useRevenueCat();
   const [paywallDismissed, setPaywallDismissed] = useState(null);
   const [onboardingDone, setOnboardingDone] = useState(null);
+  const [defaultScreen, setDefaultScreen] = useState('Daily');
+  const jarvisRef = useRef(null);
 
   useEffect(() => {
     (async () => {
       try {
-        const [pw, ob] = await Promise.all([
+        const [pw, ob, ds] = await Promise.all([
           AsyncStorage.getItem(PAYWALL_KEY),
           AsyncStorage.getItem(ONBOARDING_KEY),
+          AsyncStorage.getItem(DEFAULT_SCREEN_KEY),
         ]);
         setPaywallDismissed(pw === 'true');
         setOnboardingDone(false); // TEMP: force onboarding for review
+        if (ds) setDefaultScreen(ds);
       } catch (e) {
         setPaywallDismissed(false);
         setOnboardingDone(false);
@@ -153,11 +158,23 @@ function AppContent() {
     );
   }
 
+  // If default is Jarvis, open it after mount
+  const didOpenJarvisDefault = useRef(false);
+  useEffect(() => {
+    if (defaultScreen === 'Jarvis' && !didOpenJarvisDefault.current && onboardingDone) {
+      didOpenJarvisDefault.current = true;
+      setTimeout(() => jarvisRef.current?.open(), 500);
+    }
+  }, [defaultScreen, onboardingDone]);
+
+  const initialRoute = defaultScreen === 'Jarvis' ? 'Daily' : defaultScreen;
+
   return (
     <NavigationContainer>
       <StatusBar style="light" />
       <View style={{ flex: 1 }}>
       <Tab.Navigator
+        initialRouteName={initialRoute}
         tabBar={(props) => <ScrollableTabBar {...props} colors={colors} />}
         screenOptions={({ route }) => ({
           headerShown: false,
@@ -179,7 +196,7 @@ function AppContent() {
         <Tab.Screen name="Index" component={IndexScreen} />
         <Tab.Screen name="More" component={MoreStackScreen} />
       </Tab.Navigator>
-      <AIGuidanceButton />
+      <AIGuidanceButton ref={jarvisRef} />
       </View>
     </NavigationContainer>
   );

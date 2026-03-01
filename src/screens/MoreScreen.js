@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import RevenueCatUI from 'react-native-purchases-ui';
 import { SIZES, getTaskStates } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
@@ -13,12 +14,30 @@ import { getDateKey, formatDateShort } from '../utils/storage';
 import GoalDiggerLogo from '../components/GoalDiggerLogo';
 import * as Haptics from 'expo-haptics';
 
+const DEFAULT_SCREEN_KEY = '@default_screen';
+const SCREEN_OPTIONS = [
+  { value: 'Daily', label: 'Daily Log' },
+  { value: 'Jarvis', label: 'Jarvis (AI)' },
+  { value: 'Index', label: 'Index' },
+];
+
 export default function MoreScreen({ navigation }) {
   const { colors } = useTheme();
   const { isProUser, restorePurchases } = useRevenueCat();
   const [showCustomerCenter, setShowCustomerCenter] = useState(false);
   const TASK_STATES = getTaskStates(colors);
   const { entries, migrateEntry, updateEntry } = useApp();
+  const [defaultScreen, setDefaultScreen] = useState('Daily');
+
+  useEffect(() => {
+    AsyncStorage.getItem(DEFAULT_SCREEN_KEY).then(v => { if (v) setDefaultScreen(v); }).catch(() => {});
+  }, []);
+
+  const handleDefaultScreen = async (value) => {
+    Haptics.selectionAsync();
+    setDefaultScreen(value);
+    await AsyncStorage.setItem(DEFAULT_SCREEN_KEY, value);
+  };
 
   // Open tasks from past days (migration candidates)
   const migrationCandidates = useMemo(() => {
@@ -106,6 +125,31 @@ export default function MoreScreen({ navigation }) {
                 <Text style={[styles.helpBtnText, { color: colors.accent }]}>🔧</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+
+        {/* Default Screen Picker */}
+        <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>🏠 Default Screen</Text>
+          <Text style={[styles.sectionSub, { color: colors.textMuted, marginBottom: 10 }]}>Choose what opens when you launch the app</Text>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {SCREEN_OPTIONS.map(opt => (
+              <TouchableOpacity
+                key={opt.value}
+                onPress={() => handleDefaultScreen(opt.value)}
+                style={[
+                  styles.screenChip,
+                  { borderColor: colors.border, backgroundColor: colors.bg },
+                  defaultScreen === opt.value && { borderColor: colors.accent, backgroundColor: colors.accent + '20' },
+                ]}
+              >
+                <Text style={[
+                  styles.screenChipText,
+                  { color: colors.textSecondary },
+                  defaultScreen === opt.value && { color: colors.accent, fontWeight: '700' },
+                ]}>{opt.label}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
@@ -377,6 +421,11 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { fontSize: SIZES.lg, fontWeight: '700' },
   sectionSub: { fontSize: SIZES.sm, marginTop: 2 },
+  screenChip: {
+    flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10,
+    borderWidth: 1,
+  },
+  screenChipText: { fontSize: SIZES.sm, fontWeight: '500' },
   migrateAllBtn: {
     borderRadius: 12,
     paddingHorizontal: 12, paddingVertical: 6,
