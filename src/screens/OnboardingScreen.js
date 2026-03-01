@@ -63,6 +63,13 @@ const SLIDES = [
     body: 'Assign tasks to time slots on your daily timeline. Use the built-in Pomodoro timer (25min focus sessions) to stay in the zone.',
   },
   {
+    key: 'ai',
+    emoji: '✨',
+    title: 'AI Execution Coach',
+    subtitle: 'Your personal productivity OS',
+    body: 'Tap the ✨ button on any screen for AI-powered guidance. It reviews your tasks, projects, habits and reflections — then tells you exactly what to focus on, what\'s overdue, and how to get more done.',
+  },
+  {
     key: 'book',
     emoji: '📖',
     title: 'The Bullet Journal Method',
