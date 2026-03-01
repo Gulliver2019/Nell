@@ -27,6 +27,7 @@ import ShoppingListScreen from './src/screens/ShoppingListScreen';
 import PaywallScreen from './src/screens/PaywallScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import DebugScreen from './src/screens/DebugScreen';
+import AIGuidanceButton from './src/components/AIGuidanceButton';
 
 const Tab = createBottomTabNavigator();
 const MoreStack = createStackNavigator();
@@ -155,6 +156,7 @@ function AppContent() {
   return (
     <NavigationContainer>
       <StatusBar style="light" />
+      <View style={{ flex: 1 }}>
       <Tab.Navigator
         tabBar={(props) => <ScrollableTabBar {...props} colors={colors} />}
         screenOptions={({ route }) => ({
@@ -177,6 +179,8 @@ function AppContent() {
         <Tab.Screen name="Reflect" component={ReflectionScreen} />
         <Tab.Screen name="More" component={MoreStackScreen} />
       </Tab.Navigator>
+      <AIGuidanceButton />
+      </View>
     </NavigationContainer>
   );
 }
