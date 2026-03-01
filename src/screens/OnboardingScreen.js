@@ -16,6 +16,7 @@ const BOOK_IMAGE = require('../../assets/book.png');
 const RAPID_IMAGE = require('../../assets/rapid.png');
 const MIGRATION_IMAGE = require('../../assets/migration.png');
 const PROJECT_IMAGE = require('../../assets/project.png');
+const READY_IMAGE = require('../../assets/ready.png');
 
 const SLIDES = [
   {
@@ -65,6 +66,7 @@ const SLIDES = [
     body: 'This app is inspired by the Bullet Journal method. To get the most out of it, we recommend reading the original book by Ryder Carroll — the creator of the system.',
   },
   {
+    key: 'ready',
     emoji: '💪',
     title: 'You\'re Ready!',
     subtitle: 'Go dig those goals',
@@ -136,9 +138,9 @@ export default function OnboardingScreen({ onComplete }) {
             <Text style={[styles.slideSubtitle, { color: colors.accent }]}>{slide.subtitle}</Text>
             <Text style={[styles.slideBody, { color: colors.textSecondary }]}>{slide.body}</Text>
           </>
-        ) : slide.key === 'rapid' || slide.key === 'migration' || slide.key === 'project' ? (
+        ) : slide.key === 'rapid' || slide.key === 'migration' || slide.key === 'project' || slide.key === 'ready' ? (
           <>
-            <Image source={slide.key === 'rapid' ? RAPID_IMAGE : slide.key === 'migration' ? MIGRATION_IMAGE : PROJECT_IMAGE} style={styles.slideIcon} resizeMode="contain" />
+            <Image source={slide.key === 'rapid' ? RAPID_IMAGE : slide.key === 'migration' ? MIGRATION_IMAGE : slide.key === 'project' ? PROJECT_IMAGE : READY_IMAGE} style={styles.slideIcon} resizeMode="contain" />
             <Text style={[styles.slideTitle, { color: colors.text }]}>{slide.title}</Text>
             <Text style={[styles.slideSubtitle, { color: colors.accent }]}>{slide.subtitle}</Text>
             <Text style={[styles.slideBody, { color: colors.textSecondary }]}>{slide.body}</Text>
