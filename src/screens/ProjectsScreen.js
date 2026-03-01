@@ -136,7 +136,7 @@ function ProjectIndexBoard({ projects, onSelect, onAdd, onReorder, colors }) {
 }
 
 // Kanban task card with arrow buttons
-function TaskCard({ task, colors, onMove, onDelete, drag, isActive }) {
+function TaskCard({ task, colors, onMove, onDelete, onAddToDaily, drag, isActive }) {
   const colIdx = COLUMNS.findIndex(c => c.key === task.column);
   const canGoLeft = colIdx > 0;
   const canGoRight = colIdx < COLUMNS.length - 1;
@@ -184,6 +184,20 @@ function TaskCard({ task, colors, onMove, onDelete, drag, isActive }) {
           <Text style={[styles.arrowText, { color: colors.accent }]}>›</Text>
         </TouchableOpacity>
 
+        {/* Add to Daily */}
+        {task.column !== 'done' && (
+          <TouchableOpacity
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onAddToDaily?.(task); }}
+            style={[styles.addToDailyBtn, { backgroundColor: colors.accentGreen + '18' }]}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={[styles.addToDailyText, { color: colors.accentGreen }]}>→ Daily</Text>
+          </TouchableOpacity>
+        )}
+        {task._addedToDaily && (
+          <Text style={[styles.addedBadge, { color: colors.textMuted }]}>✓</Text>
+        )}
+
         {/* Delete */}
         <TouchableOpacity
           onPress={() => { Haptics.selectionAsync(); onDelete(task.id); }}
@@ -197,9 +211,11 @@ function TaskCard({ task, colors, onMove, onDelete, drag, isActive }) {
 }
 
 // Kanban board detail view
-function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onDeleteTask, onReorderTasks }) {
+function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onDeleteTask, onReorderTasks, onAddToDaily }) {
   const [flyoutVisible, setFlyoutVisible] = useState(false);
   const [addingToColumn, setAddingToColumn] = useState('todo');
+  const [convertTask, setConvertTask] = useState(null);
+  const [convertDate, setConvertDate] = useState(new Date());
   const scrollRef = useRef(null);
 
   const total = project.tasks.length;
@@ -212,16 +228,33 @@ function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onD
     onAddTask({ text: data.text.trim(), column: addingToColumn });
   };
 
+  const handleAddToDaily = useCallback((task) => {
+    setConvertTask(task);
+    setConvertDate(new Date());
+  }, []);
+
+  const confirmAddToDaily = useCallback(async () => {
+    if (!convertTask) return;
+    const y = convertDate.getFullYear();
+    const m = String(convertDate.getMonth() + 1).padStart(2, '0');
+    const d = String(convertDate.getDate()).padStart(2, '0');
+    const targetDate = `${y}-${m}-${d}`;
+    await onAddToDaily(convertTask, targetDate);
+    setConvertTask(null);
+    Alert.alert('Added', `"${convertTask.text}" added to daily for ${targetDate}`);
+  }, [convertTask, convertDate, onAddToDaily]);
+
   const renderTask = useCallback(({ item, drag, isActive }) => (
     <TaskCard
       task={item}
       colors={colors}
       onMove={onMoveTask}
       onDelete={onDeleteTask}
+      onAddToDaily={handleAddToDaily}
       drag={drag}
       isActive={isActive}
     />
-  ), [colors, onMoveTask, onDeleteTask]);
+  ), [colors, onMoveTask, onDeleteTask, handleAddToDaily]);
 
   return (
     <View style={{ flex: 1 }}>
@@ -335,11 +368,47 @@ function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onD
         onSubmit={handleAddTask}
         visibleFields={['text']}
       />
+
+      {/* Add to Daily date picker modal */}
+      <Modal visible={!!convertTask} transparent animationType="fade">
+        <View style={styles.convertOverlay}>
+          <View style={[styles.convertModal, { backgroundColor: colors.bgCard }]}>
+            <Text style={[styles.convertTitle, { color: colors.text }]}>Add to Daily</Text>
+            <Text style={[styles.convertSubtitle, { color: colors.textMuted }]} numberOfLines={2}>
+              {convertTask?.text}
+            </Text>
+            <Text style={[styles.convertLabel, { color: colors.textSecondary }]}>Pick a date:</Text>
+            <DateTimePicker
+              value={convertDate}
+              mode="date"
+              display="inline"
+              themeVariant="dark"
+              accentColor={colors.accent}
+              onChange={(event, selected) => {
+                if (selected) setConvertDate(selected);
+              }}
+            />
+            <View style={styles.convertActions}>
+              <TouchableOpacity
+                style={[styles.convertBtn, { backgroundColor: colors.bgInput || colors.border }]}
+                onPress={() => setConvertTask(null)}
+              >
+                <Text style={[styles.convertBtnText, { color: colors.textMuted }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.convertBtn, { backgroundColor: colors.accentGreen }]}
+                onPress={confirmAddToDaily}
+              >
+                <Text style={[styles.convertBtnText, { color: '#fff' }]}>Add to Daily</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
-// Format a Date object as YYYY-MM-DD
 function formatDate(date) {
   if (!date) return '';
   const y = date.getFullYear();
@@ -497,7 +566,7 @@ function NewProjectModal({ visible, onClose, onSave, colors }) {
 
 export default function ProjectsScreen() {
   const { colors } = useTheme();
-  const { projects, addProject, updateProject, deleteProject, addProjectTask, moveProjectTask, deleteProjectTask, reorderProjectTasks, reorderProjects } = useApp();
+  const { projects, addProject, updateProject, deleteProject, addProjectTask, moveProjectTask, deleteProjectTask, reorderProjectTasks, reorderProjects, addEntry, updateEntry } = useApp();
   const [selectedProject, setSelectedProject] = useState(null);
   const [showNewModal, setShowNewModal] = useState(false);
 
@@ -527,6 +596,11 @@ export default function ProjectsScreen() {
     ]);
   };
 
+  const handleAddTaskToDaily = useCallback(async (task, targetDate) => {
+    await addEntry({ text: task.text, type: 'task', date: targetDate, source: 'daily' });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, [addEntry]);
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       <StatusBar barStyle="light-content" />
@@ -540,6 +614,7 @@ export default function ProjectsScreen() {
           onMoveTask={(taskId, toCol) => moveProjectTask(activeProject.id, taskId, toCol)}
           onDeleteTask={(taskId) => deleteProjectTask(activeProject.id, taskId)}
           onReorderTasks={(column, orderedIds) => reorderProjectTasks(activeProject.id, column, orderedIds)}
+          onAddToDaily={handleAddTaskToDaily}
         />
       ) : (
         <ProjectIndexBoard
@@ -716,4 +791,26 @@ const styles = StyleSheet.create({
     flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center',
   },
   modalBtnText: { fontSize: SIZES.md, fontWeight: '700' },
+
+  // Add to Daily
+  addToDailyBtn: {
+    paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 2,
+  },
+  addToDailyText: { fontSize: SIZES.xs, fontWeight: '700' },
+  addedBadge: { fontSize: SIZES.xs, marginLeft: 2 },
+
+  // Convert to Daily modal
+  convertOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center', alignItems: 'center', padding: 24,
+  },
+  convertModal: {
+    borderRadius: 20, padding: 24, width: '100%', maxWidth: 360,
+  },
+  convertTitle: { fontSize: SIZES.lg, fontWeight: '700', marginBottom: 8, textAlign: 'center' },
+  convertSubtitle: { fontSize: SIZES.sm, textAlign: 'center', marginBottom: 16 },
+  convertLabel: { fontSize: SIZES.xs, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  convertActions: { flexDirection: 'row', gap: 12, marginTop: 16 },
+  convertBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
+  convertBtnText: { fontSize: SIZES.md, fontWeight: '700' },
 });
