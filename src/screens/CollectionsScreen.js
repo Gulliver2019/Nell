@@ -37,6 +37,8 @@ export default function CollectionsScreen() {
   const [editingEntry, setEditingEntry] = useState(null);
   const [scheduleEntryId, setScheduleEntryId] = useState(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [convertEntry, setConvertEntry] = useState(null);
+  const [convertDate, setConvertDate] = useState(new Date());
 
   const collectionEntries = useMemo(() => {
     if (!selectedCollection) return [];
@@ -108,6 +110,24 @@ export default function CollectionsScreen() {
     reorderEntries(data.map(e => e.id));
   }, [reorderEntries]);
 
+  const handleAddToDaily = useCallback((entry) => {
+    setConvertEntry(entry);
+    setConvertDate(new Date());
+  }, []);
+
+  const confirmAddToDaily = useCallback(async () => {
+    if (!convertEntry) return;
+    const y = convertDate.getFullYear();
+    const m = String(convertDate.getMonth() + 1).padStart(2, '0');
+    const d = String(convertDate.getDate()).padStart(2, '0');
+    const targetDate = `${y}-${m}-${d}`;
+    const { id, collection, createdAt, sortOrder, ...rest } = convertEntry;
+    await addEntry({ ...rest, date: targetDate, source: 'daily' });
+    await updateEntry(id, { _addedToDaily: true });
+    setConvertEntry(null);
+    Alert.alert('Added', `"${convertEntry.text}" added to daily for ${targetDate}`);
+  }, [convertEntry, convertDate, addEntry, updateEntry]);
+
   const renderCollectionEntry = useCallback(({ item, drag, isActive }) => (
     <ScaleDecorator>
       <EntryItem
@@ -116,12 +136,13 @@ export default function CollectionsScreen() {
         onDelete={deleteEntry}
         onMigrate={() => migrateEntry(item.id)}
         onSchedule={handleSchedule}
+        onAddToDaily={handleAddToDaily}
         onEdit={handleEditEntry}
         drag={drag}
         isActive={isActive}
       />
     </ScaleDecorator>
-  ), [updateEntry, deleteEntry, migrateEntry, handleSchedule]);
+  ), [updateEntry, deleteEntry, migrateEntry, handleSchedule, handleAddToDaily]);
 
   // Collection detail view
   if (selectedCollection) {
@@ -195,6 +216,43 @@ export default function CollectionsScreen() {
             onChange={handleDatePicked}
           />
         )}
+
+        {/* Add to Daily date picker modal */}
+        <Modal visible={!!convertEntry} transparent animationType="fade">
+          <View style={styles.convertOverlay}>
+            <View style={[styles.convertModal, { backgroundColor: colors.bgCard }]}>
+              <Text style={[styles.convertTitle, { color: colors.text }]}>Add to Daily</Text>
+              <Text style={[styles.convertSubtitle, { color: colors.textMuted }]} numberOfLines={2}>
+                {convertEntry?.text}
+              </Text>
+              <Text style={[styles.convertLabel, { color: colors.textSecondary }]}>Pick a date:</Text>
+              <DateTimePicker
+                value={convertDate}
+                mode="date"
+                display="inline"
+                themeVariant="dark"
+                accentColor={colors.accent}
+                onChange={(event, selected) => {
+                  if (selected) setConvertDate(selected);
+                }}
+              />
+              <View style={styles.convertActions}>
+                <TouchableOpacity
+                  style={[styles.convertBtn, { backgroundColor: colors.bgInput }]}
+                  onPress={() => setConvertEntry(null)}
+                >
+                  <Text style={[styles.convertBtnText, { color: colors.textMuted }]}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.convertBtn, { backgroundColor: colors.accentGreen }]}
+                  onPress={confirmAddToDaily}
+                >
+                  <Text style={[styles.convertBtnText, { color: '#fff' }]}>Add to Daily</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     );
   }
@@ -400,4 +458,18 @@ const styles = StyleSheet.create({
   },
   datePickerTitle: { fontSize: SIZES.lg, fontWeight: '700' },
   datePickerCancel: { fontSize: SIZES.md, fontWeight: '600' },
+  // Add to Daily modal
+  convertOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center', alignItems: 'center', padding: 24,
+  },
+  convertModal: {
+    borderRadius: 20, padding: 24, width: '100%', maxWidth: 360,
+  },
+  convertTitle: { fontSize: SIZES.lg, fontWeight: '700', marginBottom: 8, textAlign: 'center' },
+  convertSubtitle: { fontSize: SIZES.sm, textAlign: 'center', marginBottom: 16 },
+  convertLabel: { fontSize: SIZES.xs, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  convertActions: { flexDirection: 'row', gap: 12, marginTop: 16 },
+  convertBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
+  convertBtnText: { fontSize: SIZES.md, fontWeight: '700' },
 });

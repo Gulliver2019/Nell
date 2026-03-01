@@ -9,7 +9,7 @@ import * as Haptics from 'expo-haptics';
 
 const SWIPE_THRESHOLD = 80;
 
-export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSchedule, onEdit, onPress, drag, isActive, isNextUp }) {
+export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSchedule, onAddToDaily, onEdit, onPress, drag, isActive, isNextUp }) {
   const { colors } = useTheme();
   const BULLET_TYPES = getBulletTypes(colors);
   const TASK_STATES = getTaskStates(colors);
@@ -204,6 +204,18 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
             {isNextUp && (
               <Text style={[styles.nextUpBadge, { color: colors.accentGreen }]}>NEXT</Text>
             )}
+            {onAddToDaily && !entry._addedToDaily && entry.state !== 'complete' && (
+              <TouchableOpacity
+                onPress={() => onAddToDaily(entry)}
+                hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}
+                style={[styles.addToDailyBtn, { backgroundColor: colors.accentGreen + '18' }]}
+              >
+                <Text style={[styles.addToDailyText, { color: colors.accentGreen }]}>→ Daily</Text>
+              </TouchableOpacity>
+            )}
+            {onAddToDaily && entry._addedToDaily && (
+              <Text style={[styles.addedBadge, { color: colors.textMuted }]}>✓</Text>
+            )}
             {onEdit && (
               <TouchableOpacity
                 onPress={() => onEdit(entry)}
@@ -350,4 +362,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     paddingBottom: 2,
   },
+  addToDailyBtn: {
+    paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 6,
+  },
+  addToDailyText: { fontSize: SIZES.xs, fontWeight: '700' },
+  addedBadge: { fontSize: SIZES.xs, marginLeft: 6 },
 });
