@@ -15,20 +15,46 @@ export default function IndexScreen({ navigation }) {
   const BULLET_TYPES = getBulletTypes(colors);
   const TASK_STATES = getTaskStates(colors);
   const SIGNIFIERS = getSignifiers(colors);
-  const { entries, collections, projects, searchQuery, setSearchQuery, setSelectedDate } = useApp();
+  const { entries, collections, projects, futureLog, searchQuery, setSearchQuery, setSelectedDate } = useApp();
   const [expandedSection, setExpandedSection] = useState(null);
 
   const today = getDateKey();
 
-  // Search results
+  // Search results — searches entries (daily/monthly/collections), future log, and project tasks
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
     const q = searchQuery.toLowerCase();
-    return entries
-      .filter(e => e.text?.toLowerCase().includes(q))
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, 30);
-  }, [entries, searchQuery]);
+    const results = [];
+
+    // Daily, monthly, collection entries
+    entries.forEach(e => {
+      if (e.text?.toLowerCase().includes(q)) {
+        results.push(e);
+      }
+    });
+
+    // Future log entries
+    Object.entries(futureLog).forEach(([monthKey, monthEntries]) => {
+      (monthEntries || []).forEach(e => {
+        if (e.text?.toLowerCase().includes(q)) {
+          results.push({ ...e, _source: 'future', _monthKey: monthKey });
+        }
+      });
+    });
+
+    // Project tasks
+    projects.forEach(project => {
+      (project.tasks || []).forEach(task => {
+        if (task.text?.toLowerCase().includes(q)) {
+          results.push({ ...task, _source: 'project', _projectName: project.title, _projectEmoji: project.emoji });
+        }
+      });
+    });
+
+    return results
+      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+      .slice(0, 50);
+  }, [entries, futureLog, projects, searchQuery]);
 
   // Open tasks across everything
   const openTasks = useMemo(() =>
@@ -58,7 +84,11 @@ export default function IndexScreen({ navigation }) {
   const getCollectionName = (colId) => collections.find(c => c.id === colId)?.title;
 
   const navigateToEntry = (item) => {
-    if (item.collection) {
+    if (item._source === 'future') {
+      navigation.navigate('FutureLog');
+    } else if (item._source === 'project') {
+      navigation.navigate('Projects');
+    } else if (item.collection) {
       navigation.navigate('Collections');
     } else if (item.date) {
       setSelectedDate(item.date);
@@ -72,6 +102,17 @@ export default function IndexScreen({ navigation }) {
       : BULLET_TYPES[item.type] || BULLET_TYPES.task;
     const sig = item.signifier ? SIGNIFIERS[item.signifier] : null;
     const colName = item.collection ? getCollectionName(item.collection) : null;
+
+    let metaText = '';
+    if (item._source === 'future') {
+      metaText = `Future · ${getMonthName(item._monthKey)}`;
+    } else if (item._source === 'project') {
+      metaText = `${item._projectEmoji} ${item._projectName}`;
+    } else {
+      metaText = item.date ? formatDateShort(item.date) : '';
+      if (colName) metaText += ` · ${colName}`;
+      if (item.source === 'monthly') metaText += ' · Monthly';
+    }
 
     return (
       <TouchableOpacity
@@ -92,7 +133,7 @@ export default function IndexScreen({ navigation }) {
             {item.text}
           </Text>
           <Text style={[styles.entryMeta, { color: colors.textMuted }]}>
-            {item.date ? formatDateShort(item.date) : ''}{colName ? ` · ${colName}` : ''}
+            {metaText}
           </Text>
         </View>
         <Text style={[styles.entryArrow, { color: colors.textMuted }]}>›</Text>
