@@ -69,7 +69,7 @@ const SLIDES = [
     emoji: '✨',
     title: 'Meet Jarvis',
     subtitle: 'Your AI-powered chief of staff',
-    body: 'Jarvis sees everything — your tasks, projects, habits, reflections. Tap the brain icon for:\n\n⚡ Plan My Day — a full execution plan\n🚩 Risk flags when you\'re overloaded\n🏗️ Project coaching & next steps\n\nThis isn\'t a chatbot. It\'s your operating system.',
+    body: 'Jarvis sees everything — your tasks, projects, habits, reflections. Tap the brain icon for:\n\nPlan My Day — a full execution plan\nRisk flags when you\'re overloaded\nProject coaching & next steps\n\nThis isn\'t a chatbot. It\'s your operating system.',
   },
   {
     key: 'book',

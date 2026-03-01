@@ -107,6 +107,7 @@ function AppContent() {
   const [onboardingDone, setOnboardingDone] = useState(null);
   const [defaultScreen, setDefaultScreen] = useState('Daily');
   const jarvisRef = useRef(null);
+  const didOpenJarvisDefault = useRef(false);
 
   useEffect(() => {
     (async () => {
@@ -159,7 +160,6 @@ function AppContent() {
   }
 
   // If default is Jarvis, open it after mount
-  const didOpenJarvisDefault = useRef(false);
   useEffect(() => {
     if (defaultScreen === 'Jarvis' && !didOpenJarvisDefault.current && onboardingDone) {
       didOpenJarvisDefault.current = true;
