@@ -106,8 +106,8 @@ function AppContent() {
   const [paywallDismissed, setPaywallDismissed] = useState(null);
   const [onboardingDone, setOnboardingDone] = useState(null);
   const [defaultScreen, setDefaultScreen] = useState('Daily');
-  const jarvisRef = useRef(null);
-  const didOpenJarvisDefault = useRef(false);
+  const mavisRef = useRef(null);
+  const didOpenMavisDefault = useRef(false);
 
   useEffect(() => {
     (async () => {
@@ -159,15 +159,15 @@ function AppContent() {
     );
   }
 
-  // If default is Jarvis, open it after mount
+  // If default is Mavis, open it after mount
   useEffect(() => {
-    if (defaultScreen === 'Jarvis' && !didOpenJarvisDefault.current && onboardingDone) {
-      didOpenJarvisDefault.current = true;
-      setTimeout(() => jarvisRef.current?.open(), 500);
+    if (defaultScreen === 'Mavis' && !didOpenMavisDefault.current && onboardingDone) {
+      didOpenMavisDefault.current = true;
+      setTimeout(() => mavisRef.current?.open(), 500);
     }
   }, [defaultScreen, onboardingDone]);
 
-  const initialRoute = defaultScreen === 'Jarvis' ? 'Daily' : defaultScreen;
+  const initialRoute = defaultScreen === 'Mavis' ? 'Daily' : defaultScreen;
 
   return (
     <NavigationContainer>
@@ -196,7 +196,7 @@ function AppContent() {
         <Tab.Screen name="Index" component={IndexScreen} />
         <Tab.Screen name="More" component={MoreStackScreen} />
       </Tab.Navigator>
-      <AIGuidanceButton ref={jarvisRef} />
+      <AIGuidanceButton ref={mavisRef} />
       </View>
     </NavigationContainer>
   );

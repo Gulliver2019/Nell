@@ -17,7 +17,7 @@ import * as Haptics from 'expo-haptics';
 const DEFAULT_SCREEN_KEY = '@default_screen';
 const SCREEN_OPTIONS = [
   { value: 'Daily', label: 'Daily Log' },
-  { value: 'Jarvis', label: 'Jarvis (AI)' },
+  { value: 'Mavis', label: 'Mavis (AI)' },
   { value: 'Index', label: 'Index' },
 ];
 
