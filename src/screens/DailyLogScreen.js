@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, StatusBar, Alert, Modal,
-  Platform, TextInput, Animated, LayoutAnimation, UIManager,
+  Platform, TextInput, Animated, LayoutAnimation, UIManager, KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -219,7 +219,7 @@ export default function DailyLogScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       <StatusBar barStyle="light-content" />
-      <View style={styles.flex}>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
       
       {/* Header */}
       <View style={styles.header}>
@@ -478,7 +478,7 @@ export default function DailyLogScreen() {
           onChange={handleDatePicked}
         />
       )}
-      </View>
+      </KeyboardAvoidingView>
       <KnowledgeBaseButton sectionId="daily-log" />
     </SafeAreaView>
   );

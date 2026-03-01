@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet, Alert, Modal,
-  Platform,
+  Platform, KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -148,6 +148,7 @@ export default function CollectionsScreen() {
   if (selectedCollection) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
         <View style={styles.detailHeader}>
           <TouchableOpacity onPress={() => setSelectedCollection(null)} style={styles.backBtn}>
             <Text style={[styles.backArrow, { color: colors.accent }]}>‹</Text>
@@ -253,6 +254,7 @@ export default function CollectionsScreen() {
             </View>
           </View>
         </Modal>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     );
   }
