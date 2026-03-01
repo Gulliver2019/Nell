@@ -7,6 +7,7 @@ import { SIZES } from '../utils/theme';
 
 const PLAY_IMAGE = require('../../assets/play.png');
 const PAUSE_IMAGE = require('../../assets/pause.png');
+const REFRESH_IMAGE = require('../../assets/refresh.png');
 
 const WORK_DURATION = 25 * 60;
 const SHORT_BREAK = 5 * 60;
@@ -248,7 +249,7 @@ export default function PomodoroTimer({ colors, activeEntry, onPomodoroComplete,
             {/* Controls */}
             <View style={styles.controls}>
               <TouchableOpacity style={[styles.secondaryBtn, { borderColor: colors.border }]} onPress={reset}>
-                <Text style={[styles.secondaryBtnText, { color: colors.textMuted }]}>↺</Text>
+                <Image source={REFRESH_IMAGE} style={styles.secondaryIcon} resizeMode="contain" />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -405,5 +406,10 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     tintColor: '#fff',
+  },
+  secondaryIcon: {
+    width: 20,
+    height: 20,
+    tintColor: '#999',
   },
 });
