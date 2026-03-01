@@ -18,6 +18,7 @@ const MIGRATION_IMAGE = require('../../assets/migration.png');
 const PROJECT_IMAGE = require('../../assets/project.png');
 const READY_IMAGE = require('../../assets/ready.png');
 const POM_IMAGE = require('../../assets/pom.png');
+const CAL_IMAGE = require('../../assets/cal.png');
 
 const SLIDES = [
   {
@@ -41,6 +42,7 @@ const SLIDES = [
     body: 'At the end of each day, review your open tasks. If it still matters, migrate it forward. If not, cancel it.\n\nThis forces you to regularly ask: "Is this still worth my time?"',
   },
   {
+    key: 'cal',
     emoji: '📅',
     title: 'Daily · Monthly · Future',
     subtitle: 'Three time horizons',
@@ -140,9 +142,9 @@ export default function OnboardingScreen({ onComplete }) {
             <Text style={[styles.slideSubtitle, { color: colors.accent }]}>{slide.subtitle}</Text>
             <Text style={[styles.slideBody, { color: colors.textSecondary }]}>{slide.body}</Text>
           </>
-        ) : slide.key === 'rapid' || slide.key === 'migration' || slide.key === 'project' || slide.key === 'ready' || slide.key === 'pom' ? (
+        ) : slide.key === 'rapid' || slide.key === 'migration' || slide.key === 'project' || slide.key === 'ready' || slide.key === 'pom' || slide.key === 'cal' ? (
           <>
-            <Image source={slide.key === 'rapid' ? RAPID_IMAGE : slide.key === 'migration' ? MIGRATION_IMAGE : slide.key === 'project' ? PROJECT_IMAGE : slide.key === 'pom' ? POM_IMAGE : READY_IMAGE} style={styles.slideIcon} resizeMode="contain" />
+            <Image source={slide.key === 'rapid' ? RAPID_IMAGE : slide.key === 'migration' ? MIGRATION_IMAGE : slide.key === 'project' ? PROJECT_IMAGE : slide.key === 'pom' ? POM_IMAGE : slide.key === 'cal' ? CAL_IMAGE : READY_IMAGE} style={styles.slideIcon} resizeMode="contain" />
             <Text style={[styles.slideTitle, { color: colors.text }]}>{slide.title}</Text>
             <Text style={[styles.slideSubtitle, { color: colors.accent }]}>{slide.subtitle}</Text>
             <Text style={[styles.slideBody, { color: colors.textSecondary }]}>{slide.body}</Text>
