@@ -113,7 +113,7 @@ function AppContent() {
           AsyncStorage.getItem(ONBOARDING_KEY),
         ]);
         setPaywallDismissed(pw === 'true');
-        setOnboardingDone(false); // TEMP: force onboarding for testing
+        setOnboardingDone(ob === 'true');
       } catch (e) {
         setPaywallDismissed(false);
         setOnboardingDone(false);
