@@ -8,6 +8,7 @@ import { SIZES } from '../utils/theme';
 const PLAY_IMAGE = require('../../assets/play.png');
 const PAUSE_IMAGE = require('../../assets/pause.png');
 const REFRESH_IMAGE = require('../../assets/refresh.png');
+const SKIP_IMAGE = require('../../assets/skip.png');
 
 const WORK_DURATION = 25 * 60;
 const SHORT_BREAK = 5 * 60;
@@ -260,7 +261,7 @@ export default function PomodoroTimer({ colors, activeEntry, onPomodoroComplete,
               </TouchableOpacity>
 
               <TouchableOpacity style={[styles.secondaryBtn, { borderColor: colors.border }]} onPress={skip}>
-                <Text style={[styles.secondaryBtnText, { color: colors.textMuted }]}>⏭</Text>
+                <Image source={SKIP_IMAGE} style={styles.secondaryIcon} resizeMode="contain" />
               </TouchableOpacity>
             </View>
           </View>
