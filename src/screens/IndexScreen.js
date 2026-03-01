@@ -243,8 +243,12 @@ export default function IndexScreen({ navigation }) {
 
           {/* Projects */}
           {projects.length > 0 && (
-            <View style={[styles.sectionCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-              <View style={[styles.sectionHeader, { marginBottom: 8 }]}>
+            <TouchableOpacity
+              style={[styles.sectionCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
+              onPress={() => toggleSection('projects')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.sectionHeader}>
                 <View style={styles.sectionTitleRow}>
                   <Text style={styles.sectionEmoji}>🚀</Text>
                   <Text style={[styles.sectionTitle, { color: colors.text }]}>Projects</Text>
@@ -253,26 +257,30 @@ export default function IndexScreen({ navigation }) {
                   <Text style={[styles.countText, { color: colors.textMuted }]}>{projects.length}</Text>
                 </View>
               </View>
-              {projects.map(project => {
-                const total = project.tasks.length;
-                const done = project.tasks.filter(t => t.column === 'done').length;
-                const progress = total > 0 ? Math.round((done / total) * 100) : 0;
-                return (
-                  <TouchableOpacity
-                    key={project.id}
-                    style={[styles.itemRow, { borderBottomColor: colors.border }]}
-                    onPress={() => navigation.navigate('Projects')}
-                    activeOpacity={0.7}
-                  >
-                    <View style={[styles.accentDot, { backgroundColor: project.color }]} />
-                    <Text style={styles.itemEmoji}>{project.emoji}</Text>
-                    <Text style={[styles.itemText, { color: colors.text }]} numberOfLines={1}>{project.title}</Text>
-                    <Text style={[styles.itemMeta, { color: colors.textMuted }]}>{progress}%</Text>
-                    <Text style={[styles.entryArrow, { color: colors.textMuted }]}>›</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+              {expandedSection === 'projects' && (
+                <View style={styles.sectionBody}>
+                  {projects.map(project => {
+                    const total = project.tasks.length;
+                    const done = project.tasks.filter(t => t.column === 'done').length;
+                    const progress = total > 0 ? Math.round((done / total) * 100) : 0;
+                    return (
+                      <TouchableOpacity
+                        key={project.id}
+                        style={[styles.itemRow, { borderBottomColor: colors.border }]}
+                        onPress={() => navigation.navigate('Projects')}
+                        activeOpacity={0.7}
+                      >
+                        <View style={[styles.accentDot, { backgroundColor: project.color }]} />
+                        <Text style={styles.itemEmoji}>{project.emoji}</Text>
+                        <Text style={[styles.itemText, { color: colors.text }]} numberOfLines={1}>{project.title}</Text>
+                        <Text style={[styles.itemMeta, { color: colors.textMuted }]}>{progress}%</Text>
+                        <Text style={[styles.entryArrow, { color: colors.textMuted }]}>›</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+            </TouchableOpacity>
           )}
 
           {/* Collections */}
@@ -307,33 +315,44 @@ export default function IndexScreen({ navigation }) {
 
           {/* Monthly Overview */}
           {monthlySummaries.length > 0 && (
-            <View style={[styles.sectionCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-              <View style={[styles.sectionHeader, { marginBottom: 8 }]}>
+            <TouchableOpacity
+              style={[styles.sectionCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
+              onPress={() => toggleSection('monthly')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.sectionHeader}>
                 <View style={styles.sectionTitleRow}>
                   <Text style={styles.sectionEmoji}>📅</Text>
                   <Text style={[styles.sectionTitle, { color: colors.text }]}>Monthly</Text>
                 </View>
+                <View style={[styles.countBadge, { backgroundColor: colors.bgElevated }]}>
+                  <Text style={[styles.countText, { color: colors.textMuted }]}>{monthlySummaries.length}</Text>
+                </View>
               </View>
-              {monthlySummaries.map(m => {
-                const label = getMonthName(m.key);
-                return (
-                  <TouchableOpacity
-                    key={m.key}
-                    style={[styles.itemRow, { borderBottomColor: colors.border }]}
-                    onPress={() => navigation.navigate('Monthly')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.itemText, { color: colors.text }]}>{label}</Text>
-                    <View style={styles.monthStats}>
-                      {m.open > 0 && <Text style={[styles.monthStat, { color: colors.accentOrange }]}>{m.open} open</Text>}
-                      {m.done > 0 && <Text style={[styles.monthStat, { color: colors.accentGreen }]}>{m.done} done</Text>}
-                      <Text style={[styles.monthStat, { color: colors.textMuted }]}>{m.total} total</Text>
-                    </View>
-                    <Text style={[styles.entryArrow, { color: colors.textMuted }]}>›</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+              {expandedSection === 'monthly' && (
+                <View style={styles.sectionBody}>
+                  {monthlySummaries.map(m => {
+                    const label = getMonthName(m.key);
+                    return (
+                      <TouchableOpacity
+                        key={m.key}
+                        style={[styles.itemRow, { borderBottomColor: colors.border }]}
+                        onPress={() => navigation.navigate('Monthly')}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.itemText, { color: colors.text }]}>{label}</Text>
+                        <View style={styles.monthStats}>
+                          {m.open > 0 && <Text style={[styles.monthStat, { color: colors.accentOrange }]}>{m.open} open</Text>}
+                          {m.done > 0 && <Text style={[styles.monthStat, { color: colors.accentGreen }]}>{m.done} done</Text>}
+                          <Text style={[styles.monthStat, { color: colors.textMuted }]}>{m.total} total</Text>
+                        </View>
+                        <Text style={[styles.entryArrow, { color: colors.textMuted }]}>›</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+            </TouchableOpacity>
           )}
 
           <View style={{ height: 120 }} />
