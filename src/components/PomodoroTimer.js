@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, AppState, Modal, Animated,
+  View, Text, TouchableOpacity, StyleSheet, AppState, Modal, Animated, Image,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { SIZES } from '../utils/theme';
+
+const PLAY_IMAGE = require('../../assets/play.png');
 
 const WORK_DURATION = 25 * 60;
 const SHORT_BREAK = 5 * 60;
@@ -252,7 +254,7 @@ export default function PomodoroTimer({ colors, activeEntry, onPomodoroComplete,
                 style={[styles.primaryBtn, { backgroundColor: phaseColor }]}
                 onPress={isRunning ? pause : start}
               >
-                <Text style={styles.primaryBtnText}>{isRunning ? '⏸' : '▶'}</Text>
+                {isRunning ? <Text style={styles.primaryBtnText}>⏸</Text> : <Image source={PLAY_IMAGE} style={styles.playIcon} resizeMode="contain" />}
               </TouchableOpacity>
 
               <TouchableOpacity style={[styles.secondaryBtn, { borderColor: colors.border }]} onPress={skip}>
@@ -397,5 +399,10 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     fontSize: 24,
     color: '#fff',
+  },
+  playIcon: {
+    width: 28,
+    height: 28,
+    tintColor: '#fff',
   },
 });
