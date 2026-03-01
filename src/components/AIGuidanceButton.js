@@ -5,7 +5,12 @@ import {
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
-import { AI_CONFIG } from '../utils/aiConfig';
+let AI_CONFIG;
+try {
+  AI_CONFIG = require('../utils/aiConfig').AI_CONFIG;
+} catch (e) {
+  AI_CONFIG = { apiKey: '', model: 'gpt-4o', maxTokens: 1500 };
+}
 import { SIZES } from '../utils/theme';
 import { getDateKey, formatDateShort, getMonthName } from '../utils/storage';
 import * as Haptics from 'expo-haptics';
@@ -101,6 +106,11 @@ export default function AIGuidanceButton() {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   const fetchGuidance = useCallback(async () => {
+    if (!AI_CONFIG.apiKey) {
+      setError('API key not configured. Add your key to src/utils/aiConfig.js');
+      setVisible(true);
+      return;
+    }
     setLoading(true);
     setError(null);
     setGuidance(null);
