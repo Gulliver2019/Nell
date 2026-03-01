@@ -153,19 +153,8 @@ function TaskCard({ task, colors, onMove, onDelete, onAddToDaily, onEdit, drag, 
         activeOpacity={0.8}
         delayLongPress={150}
       >
-        {/* Left arrow */}
-        <TouchableOpacity
-          onPress={() => { if (canGoLeft) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onMove(task.id, COLUMNS[colIdx - 1].key); } }}
-          style={[styles.arrowBtn, !canGoLeft && { opacity: 0.2 }]}
-          disabled={!canGoLeft}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Text style={[styles.arrowText, { color: colors.accent }]}>‹</Text>
-        </TouchableOpacity>
-
         {/* Task text — tap to expand, long-press to edit */}
         <TouchableOpacity
-          style={{ flex: 1 }}
           onPress={() => setExpanded(e => !e)}
           onLongPress={() => onEdit?.(task)}
           activeOpacity={0.7}
@@ -182,37 +171,52 @@ function TaskCard({ task, colors, onMove, onDelete, onAddToDaily, onEdit, drag, 
           </Text>
         </TouchableOpacity>
 
-        {/* Right arrow */}
-        <TouchableOpacity
-          onPress={() => { if (canGoRight) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onMove(task.id, COLUMNS[colIdx + 1].key); } }}
-          style={[styles.arrowBtn, !canGoRight && { opacity: 0.2 }]}
-          disabled={!canGoRight}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Text style={[styles.arrowText, { color: colors.accent }]}>›</Text>
-        </TouchableOpacity>
-
-        {/* Add to Daily */}
-        {task.column !== 'done' && (
+        {/* Action row: arrows, daily, delete */}
+        <View style={styles.taskActions}>
+          {/* Left arrow */}
           <TouchableOpacity
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onAddToDaily?.(task); }}
-            style={[styles.addToDailyBtn, { backgroundColor: colors.accentGreen + '18' }]}
+            onPress={() => { if (canGoLeft) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onMove(task.id, COLUMNS[colIdx - 1].key); } }}
+            style={[styles.arrowBtn, !canGoLeft && { opacity: 0.2 }]}
+            disabled={!canGoLeft}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Text style={[styles.addToDailyText, { color: colors.accentGreen }]}>→ Daily</Text>
+            <Text style={[styles.arrowText, { color: colors.accent }]}>‹</Text>
           </TouchableOpacity>
-        )}
-        {task._addedToDaily && (
-          <Text style={[styles.addedBadge, { color: colors.textMuted }]}>✓</Text>
-        )}
 
-        {/* Delete */}
-        <TouchableOpacity
-          onPress={() => { Haptics.selectionAsync(); onDelete(task.id); }}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Text style={[styles.taskDelete, { color: colors.textMuted }]}>✕</Text>
-        </TouchableOpacity>
+          {/* Right arrow */}
+          <TouchableOpacity
+            onPress={() => { if (canGoRight) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onMove(task.id, COLUMNS[colIdx + 1].key); } }}
+            style={[styles.arrowBtn, !canGoRight && { opacity: 0.2 }]}
+            disabled={!canGoRight}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={[styles.arrowText, { color: colors.accent }]}>›</Text>
+          </TouchableOpacity>
+
+          {/* Add to Daily */}
+          {task.column !== 'done' && (
+            <TouchableOpacity
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onAddToDaily?.(task); }}
+              style={[styles.addToDailyBtn, { backgroundColor: colors.accentGreen + '18' }]}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={[styles.addToDailyText, { color: colors.accentGreen }]}>→ Daily</Text>
+            </TouchableOpacity>
+          )}
+          {task._addedToDaily && (
+            <Text style={[styles.addedBadge, { color: colors.textMuted }]}>✓</Text>
+          )}
+
+          <View style={{ flex: 1 }} />
+
+          {/* Delete */}
+          <TouchableOpacity
+            onPress={() => { Haptics.selectionAsync(); onDelete(task.id); }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={[styles.taskDelete, { color: colors.textMuted }]}>✕</Text>
+          </TouchableOpacity>
+        </View>
       </TouchableOpacity>
     </ScaleDecorator>
   );
@@ -785,6 +789,9 @@ const styles = StyleSheet.create({
   taskCard: {
     borderRadius: 12, borderWidth: 1,
     padding: 10, marginBottom: 8,
+    gap: 6,
+  },
+  taskActions: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
   },
   arrowBtn: {
@@ -793,7 +800,7 @@ const styles = StyleSheet.create({
   arrowText: {
     fontSize: 22, fontWeight: '300',
   },
-  taskText: { fontSize: SIZES.sm, flex: 1, lineHeight: 20 },
+  taskText: { fontSize: SIZES.sm, lineHeight: 20 },
   taskDelete: { fontSize: 12, marginLeft: 4 },
 
   emptyColumn: { paddingVertical: 24, alignItems: 'center' },
