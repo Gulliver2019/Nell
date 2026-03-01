@@ -16,6 +16,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 const STORAGE_KEY = 'crushedit_shopping';
+const CATEGORY_ORDER_KEY = 'crushedit_shopping_cat_order';
 
 const CATEGORIES = [
   { key: 'all', label: 'All', icon: '🛒' },
@@ -119,7 +120,7 @@ function ShoppingItem({ item, colors, onToggle, onDelete, onQty }) {
                   s.itemName, { color: colors.text },
                   item.checked && { textDecorationLine: 'line-through', color: colors.textMuted },
                 ]}
-                numberOfLines={1}
+                numberOfLines={3}
               >
                 {item.text}
               </Text>
@@ -159,6 +160,7 @@ export default function ShoppingListScreen() {
   const [selectedCategory, setSelectedCategory] = useState('produce');
   const [filterCategory, setFilterCategory] = useState('all');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [categoryOrder, setCategoryOrder] = useState(null);
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -166,6 +168,8 @@ export default function ShoppingListScreen() {
       try {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (raw) setItems(JSON.parse(raw));
+        const orderRaw = await AsyncStorage.getItem(CATEGORY_ORDER_KEY);
+        if (orderRaw) setCategoryOrder(JSON.parse(orderRaw));
       } catch (e) { /* ignore */ }
     })();
   }, []);
@@ -280,12 +284,44 @@ export default function ShoppingListScreen() {
       if (!groups[key]) groups[key] = [];
       groups[key].push(i);
     });
-    const sectionList = Object.entries(groups).map(([key, sectionItems]) => ({
+    let sectionList = Object.entries(groups).map(([key, sectionItems]) => ({
       category: CATEGORY_MAP[key] || CATEGORY_MAP.produce,
       items: sectionItems,
     }));
+    // Sort by saved category order
+    if (categoryOrder) {
+      sectionList.sort((a, b) => {
+        const ai = categoryOrder.indexOf(a.category.key);
+        const bi = categoryOrder.indexOf(b.category.key);
+        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+      });
+    }
     return { sections: sectionList, checked };
-  }, [displayItems, filterCategory]);
+  }, [displayItems, filterCategory, categoryOrder]);
+
+  const moveSectionUp = useCallback((catKey) => {
+    if (!sections) return;
+    const keys = sections.sections.map(s => s.category.key);
+    const idx = keys.indexOf(catKey);
+    if (idx <= 0) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    animateLayout();
+    [keys[idx - 1], keys[idx]] = [keys[idx], keys[idx - 1]];
+    setCategoryOrder(keys);
+    AsyncStorage.setItem(CATEGORY_ORDER_KEY, JSON.stringify(keys)).catch(() => {});
+  }, [sections]);
+
+  const moveSectionDown = useCallback((catKey) => {
+    if (!sections) return;
+    const keys = sections.sections.map(s => s.category.key);
+    const idx = keys.indexOf(catKey);
+    if (idx === -1 || idx >= keys.length - 1) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    animateLayout();
+    [keys[idx], keys[idx + 1]] = [keys[idx + 1], keys[idx]];
+    setCategoryOrder(keys);
+    AsyncStorage.setItem(CATEGORY_ORDER_KEY, JSON.stringify(keys)).catch(() => {});
+  }, [sections]);
 
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: colors.bg }]} edges={['top']}>
@@ -459,13 +495,29 @@ export default function ShoppingListScreen() {
           </View>
         ) : sections && filterCategory === 'all' ? (
           <>
-            {sections.sections.map(({ category, items: sectionItems }) => (
+            {sections.sections.map(({ category, items: sectionItems }, sIdx) => (
               <View key={category.key} style={s.section}>
                 <View style={s.sectionHeader}>
                   <Text style={s.sectionEmoji}>{category.icon}</Text>
                   <Text style={[s.sectionTitle, { color: colors.textSecondary }]}>{category.label}</Text>
                   <View style={[s.sectionLine, { backgroundColor: colors.border }]} />
                   <Text style={[s.sectionCount, { color: colors.textMuted }]}>{sectionItems.length}</Text>
+                  <TouchableOpacity
+                    onPress={() => moveSectionUp(category.key)}
+                    style={[s.sectionArrow, sIdx === 0 && { opacity: 0.2 }]}
+                    disabled={sIdx === 0}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Text style={[s.sectionArrowText, { color: colors.textMuted }]}>▲</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => moveSectionDown(category.key)}
+                    style={[s.sectionArrow, sIdx === sections.sections.length - 1 && { opacity: 0.2 }]}
+                    disabled={sIdx === sections.sections.length - 1}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Text style={[s.sectionArrowText, { color: colors.textMuted }]}>▼</Text>
+                  </TouchableOpacity>
                 </View>
                 {sectionItems.map(item => (
                   <ShoppingItem
@@ -596,6 +648,8 @@ const s = StyleSheet.create({
   sectionTitle: { fontSize: SIZES.xs, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 },
   sectionLine: { flex: 1, height: StyleSheet.hairlineWidth },
   sectionCount: { fontSize: SIZES.xs, fontWeight: '700' },
+  sectionArrow: { padding: 2 },
+  sectionArrowText: { fontSize: 10 },
 
   // Item card
   itemCard: {
