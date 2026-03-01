@@ -119,19 +119,10 @@ export default function DailyLogScreen() {
     };
   }, [dayEntries]);
 
-  // Tick every minute so nextUpId stays current as time passes
-  const [timeTick, setTimeTick] = useState(0);
-  useEffect(() => {
-    if (!isToday) return;
-    const id = setInterval(() => setTimeTick(t => t + 1), 60000);
-    return () => clearInterval(id);
-  }, [isToday]);
-
-  // Find the "next up" entry: the first time-blocked entry whose slot is current or upcoming and not complete
+  // Find the "next up" entry: the first incomplete time-blocked entry in time order
+  // Stays on the current item until it is completed or removed from the time block
   const nextUpId = useMemo(() => {
     if (!isToday) return null;
-    const now = new Date();
-    const nowMinutes = now.getHours() * 60 + now.getMinutes();
     const timeBlocked = dayEntries
       .filter(e => e.timeBlock && e.state !== 'complete' && e.state !== 'cancelled')
       .sort((a, b) => {
@@ -139,16 +130,9 @@ export default function DailyLogScreen() {
         const [bh, bm] = b.timeBlock.split(':').map(Number);
         return (ah * 60 + am) - (bh * 60 + bm);
       });
-    // Find first entry whose time block is current or in the future
-    for (const e of timeBlocked) {
-      const [h, m] = e.timeBlock.split(':').map(Number);
-      const slotEnd = h * 60 + m + Math.max(1, e.pomodoros || 1) * 30;
-      if (slotEnd > nowMinutes) return e.id;
-    }
-    // If all slots have passed, highlight the first incomplete time-blocked entry
     if (timeBlocked.length > 0) return timeBlocked[0].id;
     return null;
-  }, [dayEntries, isToday, timeTick]);
+  }, [dayEntries, isToday]);
 
   // Count open tasks on past days that can be migrated to today
   const migrateableCount = useMemo(() => {
