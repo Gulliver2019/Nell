@@ -597,7 +597,7 @@ export default function ProjectsScreen() {
   };
 
   const handleAddTaskToDaily = useCallback(async (task, targetDate) => {
-    await addEntry({ text: task.text, type: 'task', date: targetDate, source: 'daily' });
+    await addEntry({ text: task.text, type: 'task', date: targetDate, source: 'daily', fromProject: true });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   }, [addEntry]);
 

@@ -201,6 +201,9 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
             {entry.timeBlock && (
               <Text style={[styles.timeBlockIcon, { color: colors.accentOrange }]}>🧱</Text>
             )}
+            {entry.fromProject && (
+              <Text style={styles.projectBadge}>🎯</Text>
+            )}
             {isNextUp && (
               <Text style={[styles.nextUpBadge, { color: colors.accentGreen }]}>NEXT</Text>
             )}
@@ -334,6 +337,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   timeBlockIcon: {
+    fontSize: SIZES.xs,
+    marginLeft: 4,
+  },
+  projectBadge: {
     fontSize: SIZES.xs,
     marginLeft: 4,
   },
