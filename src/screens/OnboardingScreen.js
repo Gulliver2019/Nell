@@ -13,6 +13,7 @@ import HelpScreen from './HelpScreen';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const BOOK_IMAGE = require('../../assets/book.png');
+const RAPID_IMAGE = require('../../assets/rapid.png');
 
 const SLIDES = [
   {
@@ -22,6 +23,7 @@ const SLIDES = [
     body: 'A beautifully simple system for organising your life — tasks, events, notes, habits and reflections, all in one place.',
   },
   {
+    key: 'rapid',
     emoji: '⚡',
     title: 'Rapid Logging',
     subtitle: 'The core technique',
@@ -130,6 +132,13 @@ export default function OnboardingScreen({ onComplete }) {
             <Text style={[styles.slideSubtitle, { color: colors.accent }]}>{slide.subtitle}</Text>
             <Text style={[styles.slideBody, { color: colors.textSecondary }]}>{slide.body}</Text>
           </>
+        ) : slide.key === 'rapid' ? (
+          <>
+            <Image source={RAPID_IMAGE} style={styles.slideIcon} resizeMode="contain" />
+            <Text style={[styles.slideTitle, { color: colors.text }]}>{slide.title}</Text>
+            <Text style={[styles.slideSubtitle, { color: colors.accent }]}>{slide.subtitle}</Text>
+            <Text style={[styles.slideBody, { color: colors.textSecondary }]}>{slide.body}</Text>
+          </>
         ) : (
           <>
             <Text style={styles.slideEmoji}>{slide.emoji}</Text>
@@ -213,6 +222,7 @@ const styles = StyleSheet.create({
     flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32,
   },
   slideEmoji: { fontSize: 64, marginBottom: 16 },
+  slideIcon: { width: 64, height: 64, marginBottom: 16 },
   slideTitle: { fontSize: SIZES.xxl, fontWeight: '800', textAlign: 'center', marginBottom: 4 },
   slideSubtitle: { fontSize: SIZES.base, fontWeight: '600', textAlign: 'center', marginBottom: 20 },
   slideBody: { fontSize: SIZES.md, lineHeight: 24, textAlign: 'center' },
