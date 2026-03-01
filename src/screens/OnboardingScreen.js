@@ -14,6 +14,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const BOOK_IMAGE = require('../../assets/book.png');
 const RAPID_IMAGE = require('../../assets/rapid.png');
+const MIGRATION_IMAGE = require('../../assets/migration.png');
 
 const SLIDES = [
   {
@@ -30,6 +31,7 @@ const SLIDES = [
     body: 'Bullet journaling uses short-form notation to capture information quickly:\n\n•  Task — something to do\n○  Event — something happening\n—  Note — a thought to remember\n\nJust write what matters. No fluff.',
   },
   {
+    key: 'migration',
     emoji: '🔄',
     title: 'Migration',
     subtitle: 'Stay intentional',
@@ -132,9 +134,9 @@ export default function OnboardingScreen({ onComplete }) {
             <Text style={[styles.slideSubtitle, { color: colors.accent }]}>{slide.subtitle}</Text>
             <Text style={[styles.slideBody, { color: colors.textSecondary }]}>{slide.body}</Text>
           </>
-        ) : slide.key === 'rapid' ? (
+        ) : slide.key === 'rapid' || slide.key === 'migration' ? (
           <>
-            <Image source={RAPID_IMAGE} style={styles.slideIcon} resizeMode="contain" />
+            <Image source={slide.key === 'rapid' ? RAPID_IMAGE : MIGRATION_IMAGE} style={styles.slideIcon} resizeMode="contain" />
             <Text style={[styles.slideTitle, { color: colors.text }]}>{slide.title}</Text>
             <Text style={[styles.slideSubtitle, { color: colors.accent }]}>{slide.subtitle}</Text>
             <Text style={[styles.slideBody, { color: colors.textSecondary }]}>{slide.body}</Text>
