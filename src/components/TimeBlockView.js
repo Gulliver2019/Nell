@@ -156,7 +156,7 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
 
   // Unassigned entries (no timeBlock)
   const unassigned = useMemo(() =>
-    entries.filter(e => !e.timeBlock && e.state !== 'migrated' && e.state !== 'cancelled'),
+    entries.filter(e => !e.timeBlock && e.state !== 'migrated' && e.state !== 'cancelled' && e.state !== 'complete'),
     [entries]
   );
 
