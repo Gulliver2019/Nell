@@ -11,12 +11,10 @@ const PRIVACY_URL = 'https://sr6labs.co.uk/privacy';
 const TERMS_URL = 'https://sr6labs.co.uk/terms';
 
 const FEATURES = [
-  { icon: '🧠', title: 'AI Brain Dump', desc: 'Turn thoughts into organised tasks instantly' },
-  { icon: '🍅', title: 'Pomodoro Timer', desc: 'Stay focused with smart work sessions' },
-  { icon: '📅', title: 'Calendar Sync', desc: 'See tasks alongside your schedule' },
-  { icon: '📊', title: 'Project Boards', desc: 'Kanban boards to track progress' },
-  { icon: '📚', title: 'Reading List', desc: 'Track books and reading goals' },
-  { icon: '⚡', title: 'Unlimited Everything', desc: 'No limits on tasks, projects, or goals' },
+  { icon: '🧠', title: 'AI Brain Dump', desc: 'Thoughts into tasks instantly' },
+  { icon: '🍅', title: 'Pomodoro Timer', desc: 'Smart focus sessions' },
+  { icon: '📊', title: 'Project Boards', desc: 'Kanban boards & calendar sync' },
+  { icon: '⚡', title: 'Unlimited Everything', desc: 'No limits on tasks or projects' },
 ];
 
 export default function PaywallScreen({ onComplete }) {
@@ -96,8 +94,18 @@ export default function PaywallScreen({ onComplete }) {
 
   const formatSubPrice = (pkg) => {
     if (!pkg || pkg.packageType !== 'ANNUAL') return null;
-    const monthly = (pkg.product.price / 12).toFixed(2);
-    return `Just ${pkg.product.currencyCode === 'GBP' ? '£' : '$'}${monthly}/month`;
+    const p = pkg.product;
+    const monthlyPrice = p.price / 12;
+    // Use Intl to format in the user's locale with the correct currency
+    try {
+      const formatted = new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency: p.currencyCode,
+      }).format(monthlyPrice);
+      return `Just ${formatted}/month`;
+    } catch {
+      return null;
+    }
   };
 
   return (
@@ -243,13 +251,13 @@ const styles = StyleSheet.create({
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { paddingHorizontal: 20, paddingBottom: 20 },
 
-  header: { alignItems: 'center', paddingTop: 24, paddingBottom: 20 },
-  icon: { width: 80, height: 80, borderRadius: 18, marginBottom: 16 },
-  title: { fontSize: 26, fontWeight: '800', letterSpacing: -0.5, marginBottom: 6 },
-  subtitle: { fontSize: 16, fontWeight: '500' },
+  header: { alignItems: 'center', paddingTop: 16, paddingBottom: 14 },
+  icon: { width: 64, height: 64, borderRadius: 14, marginBottom: 12 },
+  title: { fontSize: 24, fontWeight: '800', letterSpacing: -0.5, marginBottom: 4 },
+  subtitle: { fontSize: 15, fontWeight: '500' },
 
-  featuresCard: { borderRadius: 16, borderWidth: 1, overflow: 'hidden', marginBottom: 24 },
-  featureRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16 },
+  featuresCard: { borderRadius: 16, borderWidth: 1, overflow: 'hidden', marginBottom: 20 },
+  featureRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16 },
   featureIcon: { fontSize: 22, width: 36 },
   featureText: { flex: 1 },
   featureTitle: { fontSize: 15, fontWeight: '700', marginBottom: 2 },
