@@ -10,6 +10,8 @@ import { SIZES, SHADOWS } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import * as Haptics from 'expo-haptics';
 import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
+import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -42,6 +44,37 @@ const CATEGORIES = [
 
 const CATEGORY_MAP = {};
 CATEGORIES.forEach(c => { CATEGORY_MAP[c.key] = c; });
+
+/* ── Auto-categorise keywords ── */
+const AUTO_CAT = {
+  produce: ['apple','banana','orange','lemon','lime','grape','strawberry','blueberry','raspberry','avocado','tomato','potato','onion','garlic','ginger','carrot','broccoli','cauliflower','pepper','cucumber','lettuce','spinach','kale','celery','mushroom','corn','courgette','zucchini','aubergine','eggplant','pea','bean','sprout','cabbage','leek','parsnip','turnip','beetroot','radish','asparagus','mango','pineapple','melon','watermelon','peach','pear','plum','cherry','kiwi','coconut','fig','pomegranate','fruit','veg','salad','herb','basil','parsley','coriander','mint','chilli','spring onion','rocket','watercress'],
+  meat: ['chicken','beef','pork','lamb','mince','steak','sausage','bacon','turkey','duck','ham','gammon','ribs','chop','fillet','sirloin','brisket','veal','venison'],
+  bakery: ['bread','roll','baguette','croissant','muffin','scone','bagel','wrap','pitta','naan','cake','pastry','doughnut','brioche','sourdough','crumpet','pancake','waffle','teacake'],
+  pasta: ['pasta','spaghetti','penne','fusilli','rice','noodle','couscous','risotto','macaroni','lasagne','tagliatelle','orzo','linguine','basmati','long grain','arborio','egg noodle','ramen','udon'],
+  canned: ['tin','canned','baked bean','soup','chopped tomato','tuna','sweetcorn','chickpea','kidney bean','coconut milk','sardine','spam','corned beef'],
+  cereals: ['cereal','porridge','oat','granola','muesli','weetabix','cornflake','bran','shreddies','cheerio'],
+  oils: ['oil','olive oil','vegetable oil','coconut oil','sunflower oil','sesame oil','vinegar','balsamic','spray oil'],
+  frozen: ['frozen','ice cream','fish finger','chips','pizza','ice','frozen veg','frozen fruit','ice lolly','waffle','frozen pie','oven chips','potato waffle'],
+  medicine: ['paracetamol','ibuprofen','plaster','bandage','vitamin','cough','cold','flu','tablet','medicine','antiseptic','cream','ointment'],
+  readymeals: ['ready meal','microwave','meal deal','sandwich','wrap','salad bowl','pot noodle','instant','ready made'],
+  cookemeats: ['cooked chicken','sliced ham','salami','pepperoni','chorizo','pate','scotch egg','pork pie','cooked meat','deli'],
+  dairy: ['milk','cheese','butter','yoghurt','yogurt','cream','egg','cheddar','mozzarella','parmesan','brie','camembert','cottage cheese','cream cheese','sour cream','double cream','single cream','skimmed','semi-skimmed','whole milk','goat','feta','halloumi','ricotta','mascarpone'],
+  sauces: ['sauce','ketchup','mayo','mayonnaise','mustard','dressing','gravy','stock','oxo','soy sauce','worcestershire','hot sauce','chutney','pickle','relish','pesto','salsa','bbq','brown sauce','hp','sriracha','tabasco','marinade'],
+  beverages: ['water','juice','cola','coke','pepsi','lemonade','squash','tea','coffee','beer','wine','gin','vodka','whisky','rum','prosecco','champagne','cordial','fizzy','sparkling','tonic','energy drink','lucozade','ribena','smoothie','oat milk','almond milk','soy milk'],
+  goodies: ['chocolate','sweet','candy','biscuit','crisp','chip','cookie','cake','fudge','toffee','jelly','gummy','haribo','popcorn','nut','cashew','almond','peanut','pistachio','snack','treat','brownie','cereal bar','protein bar'],
+  pet: ['dog food','cat food','pet food','litter','cat litter','dog treat','cat treat','pet treat','kibble','wet food','chew','dog chew','flea','worming'],
+  household: ['toilet roll','kitchen roll','bin bag','washing','detergent','bleach','sponge','cloth','fairy','cleaner','polish','air freshener','candle','foil','cling film','baking paper','battery','bulb','soap','hand wash','shower gel','shampoo','conditioner','toothpaste','toothbrush','deodorant','razor','tissue','wipe','dishwasher','tablet','softener','stain remover'],
+};
+
+function guessCategory(itemText) {
+  const lower = itemText.toLowerCase().trim();
+  for (const [cat, keywords] of Object.entries(AUTO_CAT)) {
+    for (const kw of keywords) {
+      if (lower === kw || lower.includes(kw)) return cat;
+    }
+  }
+  return null;
+}
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
@@ -157,9 +190,6 @@ export default function ShoppingListScreen() {
   const { colors } = useTheme();
   const [items, setItems] = useState([]);
   const [text, setText] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('produce');
-  const [filterCategory, setFilterCategory] = useState('all');
-  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [categoryOrder, setCategoryOrder] = useState(null);
   const inputRef = useRef(null);
 
@@ -184,10 +214,11 @@ export default function ShoppingListScreen() {
     if (!trimmed) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     animateLayout();
+    const category = guessCategory(trimmed) || 'others';
     const newItem = {
       id: generateId(),
       text: trimmed,
-      category: selectedCategory,
+      category,
       quantity: 1,
       checked: false,
       createdAt: new Date().toISOString(),
@@ -195,7 +226,7 @@ export default function ShoppingListScreen() {
     persist([newItem, ...items]);
     setText('');
     Keyboard.dismiss();
-  }, [text, selectedCategory, items, persist]);
+  }, [text, items, persist]);
 
   const toggleCheck = useCallback((id) => {
     Haptics.selectionAsync();
@@ -234,15 +265,29 @@ export default function ShoppingListScreen() {
     );
   }, [items, persist]);
 
-  const displayItems = useMemo(() => {
-    let filtered = items;
-    if (filterCategory !== 'all') {
-      filtered = filtered.filter(i => i.category === filterCategory);
+  // Always group by category
+  const sections = useMemo(() => {
+    const unchecked = items.filter(i => !i.checked);
+    const checked = items.filter(i => i.checked);
+    const groups = {};
+    unchecked.forEach(i => {
+      const key = i.category || 'others';
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(i);
+    });
+    let sectionList = Object.entries(groups).map(([key, sectionItems]) => ({
+      category: CATEGORY_MAP[key] || CATEGORY_MAP.others,
+      items: sectionItems,
+    }));
+    if (categoryOrder) {
+      sectionList.sort((a, b) => {
+        const ai = categoryOrder.indexOf(a.category.key);
+        const bi = categoryOrder.indexOf(b.category.key);
+        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+      });
     }
-    const unchecked = filtered.filter(i => !i.checked);
-    const checked = filtered.filter(i => i.checked);
-    return [...unchecked, ...checked];
-  }, [items, filterCategory]);
+    return { sections: sectionList, checked };
+  }, [items, categoryOrder]);
 
   const handleShare = useCallback(async () => {
     const unchecked = items.filter(i => !i.checked);
@@ -252,7 +297,7 @@ export default function ShoppingListScreen() {
     }
     const grouped = {};
     unchecked.forEach(i => {
-      const cat = CATEGORY_MAP[i.category] || CATEGORY_MAP.produce;
+      const cat = CATEGORY_MAP[i.category] || CATEGORY_MAP.others;
       if (!grouped[cat.label]) grouped[cat.label] = [];
       const qty = (i.quantity || 1) > 1 ? ` x${i.quantity}` : '';
       grouped[cat.label].push(`  • ${i.text}${qty}`);
@@ -272,32 +317,6 @@ export default function ShoppingListScreen() {
   const totalCount = items.length;
   const remaining = totalCount - checkedCount;
   const progress = totalCount > 0 ? checkedCount / totalCount : 0;
-
-  // Group display items by category for section rendering
-  const sections = useMemo(() => {
-    if (filterCategory !== 'all') return null;
-    const unchecked = displayItems.filter(i => !i.checked);
-    const checked = displayItems.filter(i => i.checked);
-    const groups = {};
-    unchecked.forEach(i => {
-      const key = i.category || 'produce';
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(i);
-    });
-    let sectionList = Object.entries(groups).map(([key, sectionItems]) => ({
-      category: CATEGORY_MAP[key] || CATEGORY_MAP.produce,
-      items: sectionItems,
-    }));
-    // Sort by saved category order
-    if (categoryOrder) {
-      sectionList.sort((a, b) => {
-        const ai = categoryOrder.indexOf(a.category.key);
-        const bi = categoryOrder.indexOf(b.category.key);
-        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-      });
-    }
-    return { sections: sectionList, checked };
-  }, [displayItems, filterCategory, categoryOrder]);
 
   const moveSectionUp = useCallback((catKey) => {
     if (!sections) return;
@@ -322,6 +341,14 @@ export default function ShoppingListScreen() {
     setCategoryOrder(keys);
     AsyncStorage.setItem(CATEGORY_ORDER_KEY, JSON.stringify(keys)).catch(() => {});
   }, [sections]);
+
+  const handleDragEnd = useCallback((catKey, { data }) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const reorderedIds = data.map(i => i.id);
+    const otherItems = items.filter(i => i.category !== catKey || i.checked);
+    const reordered = reorderedIds.map(id => items.find(i => i.id === id)).filter(Boolean);
+    persist([...reordered, ...otherItems]);
+  }, [items, persist]);
 
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: colors.bg }]} edges={['top']}>
@@ -369,15 +396,7 @@ export default function ShoppingListScreen() {
 
       {/* ── Add bar ── */}
       <View style={[s.addBar, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-        <TouchableOpacity
-          style={[s.catPickerBtn, { backgroundColor: colors.bgElevated }]}
-          onPress={() => { setShowCategoryPicker(!showCategoryPicker); Haptics.selectionAsync(); }}
-        >
-          <Text style={s.catPickerEmoji}>
-            {(CATEGORY_MAP[selectedCategory] || CATEGORY_MAP.produce).icon}
-          </Text>
-          <Text style={[s.catPickerCaret, { color: colors.textMuted }]}>▾</Text>
-        </TouchableOpacity>
+        <Text style={s.addBarEmoji}>🛒</Text>
 
         <TextInput
           ref={inputRef}
@@ -400,172 +419,99 @@ export default function ShoppingListScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* ── Category picker ── */}
-      {showCategoryPicker && (
-        <View style={[s.catGrid, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-          {CATEGORIES.filter(c => c.key !== 'all').map(cat => {
-            const active = selectedCategory === cat.key;
-            return (
-              <TouchableOpacity
-                key={cat.key}
-                style={[
-                  s.catTile,
-                  { backgroundColor: colors.bgInput },
-                  active && { backgroundColor: colors.accent + '20', borderColor: colors.accent },
-                ]}
-                onPress={() => {
-                  setSelectedCategory(cat.key);
-                  setShowCategoryPicker(false);
-                  Haptics.selectionAsync();
-                }}
-              >
-                <Text style={s.catTileIcon}>{cat.icon}</Text>
-                <Text style={[s.catTileLabel, { color: active ? colors.accent : colors.textMuted }]}
-                  numberOfLines={1}
-                >
-                  {cat.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      )}
-
-      {/* ── Filter chips ── */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={s.filterScroll}
-        contentContainerStyle={s.filterRow}
-      >
-        {CATEGORIES.map(cat => {
-          const isActive = filterCategory === cat.key;
-          const count = cat.key === 'all'
-            ? items.filter(i => !i.checked).length
-            : items.filter(i => i.category === cat.key && !i.checked).length;
-          if (cat.key !== 'all' && count === 0 && !isActive) return null;
-          return (
-            <TouchableOpacity
-              key={cat.key}
-              style={[
-                s.filterChip,
-                { backgroundColor: colors.bgInput, borderColor: 'transparent' },
-                isActive && { backgroundColor: colors.accent + '18', borderColor: colors.accent },
-              ]}
-              onPress={() => {
-                setFilterCategory(cat.key);
-                if (cat.key !== 'all') setSelectedCategory(cat.key);
-                Haptics.selectionAsync();
-              }}
-            >
-              <Text style={s.filterEmoji}>{cat.icon}</Text>
-              <Text style={[s.filterLabel, { color: isActive ? colors.accent : colors.textSecondary }]}>
-                {cat.label}
+      {/* ── Item list with drag & drop ── */}
+      <GestureHandlerRootView style={s.listScroll}>
+        <ScrollView
+          contentContainerStyle={s.listContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {items.length === 0 ? (
+            <View style={s.empty}>
+              <View style={[s.emptyCircle, { backgroundColor: colors.bgCard }]}>
+                <Text style={s.emptyIcon}>🛒</Text>
+              </View>
+              <Text style={[s.emptyTitle, { color: colors.textSecondary }]}>Start your list</Text>
+              <Text style={[s.emptyHint, { color: colors.textMuted }]}>
+                Type an item and it will be auto-sorted into the right aisle
               </Text>
-              {count > 0 && (
-                <View style={[s.filterBadge, { backgroundColor: isActive ? colors.accent : colors.bgElevated }]}>
-                  <Text style={[s.filterBadgeText, { color: isActive ? '#fff' : colors.textMuted }]}>
-                    {count}
-                  </Text>
+            </View>
+          ) : sections ? (
+            <>
+              {sections.sections.map(({ category, items: sectionItems }, sIdx) => (
+                <View key={category.key} style={s.section}>
+                  <View style={s.sectionHeader}>
+                    <Text style={s.sectionEmoji}>{category.icon}</Text>
+                    <Text style={[s.sectionTitle, { color: colors.textSecondary }]}>{category.label}</Text>
+                    <View style={[s.sectionLine, { backgroundColor: colors.border }]} />
+                    <Text style={[s.sectionCount, { color: colors.textMuted }]}>{sectionItems.length}</Text>
+                    <TouchableOpacity
+                      onPress={() => moveSectionUp(category.key)}
+                      style={[s.sectionArrow, sIdx === 0 && { opacity: 0.2 }]}
+                      disabled={sIdx === 0}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Text style={[s.sectionArrowText, { color: colors.textMuted }]}>▲</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => moveSectionDown(category.key)}
+                      style={[s.sectionArrow, sIdx === sections.sections.length - 1 && { opacity: 0.2 }]}
+                      disabled={sIdx === sections.sections.length - 1}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Text style={[s.sectionArrowText, { color: colors.textMuted }]}>▼</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <DraggableFlatList
+                    data={sectionItems}
+                    keyExtractor={item => item.id}
+                    scrollEnabled={false}
+                    onDragEnd={(data) => handleDragEnd(category.key, data)}
+                    renderItem={({ item, drag, isActive }) => (
+                      <ScaleDecorator>
+                        <TouchableOpacity
+                          onLongPress={drag}
+                          disabled={isActive}
+                          activeOpacity={0.7}
+                        >
+                          <ShoppingItem
+                            item={item}
+                            colors={colors}
+                            onToggle={toggleCheck}
+                            onDelete={deleteItem}
+                            onQty={updateQuantity}
+                          />
+                        </TouchableOpacity>
+                      </ScaleDecorator>
+                    )}
+                  />
+                </View>
+              ))}
+              {sections.checked.length > 0 && (
+                <View style={s.section}>
+                  <View style={s.sectionHeader}>
+                    <Text style={s.sectionEmoji}>✅</Text>
+                    <Text style={[s.sectionTitle, { color: colors.textMuted }]}>Done</Text>
+                    <View style={[s.sectionLine, { backgroundColor: colors.border }]} />
+                    <Text style={[s.sectionCount, { color: colors.textMuted }]}>{sections.checked.length}</Text>
+                  </View>
+                  {sections.checked.map(item => (
+                    <ShoppingItem
+                      key={item.id}
+                      item={item}
+                      colors={colors}
+                      onToggle={toggleCheck}
+                      onDelete={deleteItem}
+                      onQty={updateQuantity}
+                    />
+                  ))}
                 </View>
               )}
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-
-      {/* ── Item list ── */}
-      <ScrollView
-        style={s.listScroll}
-        contentContainerStyle={s.listContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {displayItems.length === 0 ? (
-          <View style={s.empty}>
-            <View style={[s.emptyCircle, { backgroundColor: colors.bgCard }]}>
-              <Text style={s.emptyIcon}>🛒</Text>
-            </View>
-            <Text style={[s.emptyTitle, { color: colors.textSecondary }]}>
-              {filterCategory !== 'all' ? 'Nothing here' : 'Start your list'}
-            </Text>
-            <Text style={[s.emptyHint, { color: colors.textMuted }]}>
-              {filterCategory !== 'all' ? 'No items in this category yet' : 'Tap the field above to add items'}
-            </Text>
-          </View>
-        ) : sections && filterCategory === 'all' ? (
-          <>
-            {sections.sections.map(({ category, items: sectionItems }, sIdx) => (
-              <View key={category.key} style={s.section}>
-                <View style={s.sectionHeader}>
-                  <Text style={s.sectionEmoji}>{category.icon}</Text>
-                  <Text style={[s.sectionTitle, { color: colors.textSecondary }]}>{category.label}</Text>
-                  <View style={[s.sectionLine, { backgroundColor: colors.border }]} />
-                  <Text style={[s.sectionCount, { color: colors.textMuted }]}>{sectionItems.length}</Text>
-                  <TouchableOpacity
-                    onPress={() => moveSectionUp(category.key)}
-                    style={[s.sectionArrow, sIdx === 0 && { opacity: 0.2 }]}
-                    disabled={sIdx === 0}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Text style={[s.sectionArrowText, { color: colors.textMuted }]}>▲</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => moveSectionDown(category.key)}
-                    style={[s.sectionArrow, sIdx === sections.sections.length - 1 && { opacity: 0.2 }]}
-                    disabled={sIdx === sections.sections.length - 1}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Text style={[s.sectionArrowText, { color: colors.textMuted }]}>▼</Text>
-                  </TouchableOpacity>
-                </View>
-                {sectionItems.map(item => (
-                  <ShoppingItem
-                    key={item.id}
-                    item={item}
-                    colors={colors}
-                    onToggle={toggleCheck}
-                    onDelete={deleteItem}
-                    onQty={updateQuantity}
-                  />
-                ))}
-              </View>
-            ))}
-            {sections.checked.length > 0 && (
-              <View style={s.section}>
-                <View style={s.sectionHeader}>
-                  <Text style={s.sectionEmoji}>✅</Text>
-                  <Text style={[s.sectionTitle, { color: colors.textMuted }]}>Done</Text>
-                  <View style={[s.sectionLine, { backgroundColor: colors.border }]} />
-                  <Text style={[s.sectionCount, { color: colors.textMuted }]}>{sections.checked.length}</Text>
-                </View>
-                {sections.checked.map(item => (
-                  <ShoppingItem
-                    key={item.id}
-                    item={item}
-                    colors={colors}
-                    onToggle={toggleCheck}
-                    onDelete={deleteItem}
-                    onQty={updateQuantity}
-                  />
-                ))}
-              </View>
-            )}
-          </>
-        ) : (
-          displayItems.map(item => (
-            <ShoppingItem
-              key={item.id}
-              item={item}
-              colors={colors}
-              onToggle={toggleCheck}
-              onDelete={deleteItem}
-              onQty={updateQuantity}
-            />
-          ))
-        )}
-        <View style={{ height: 100 }} />
-      </ScrollView>
+            </>
+          ) : null}
+          <View style={{ height: 100 }} />
+        </ScrollView>
+      </GestureHandlerRootView>
 
       <KnowledgeBaseButton sectionId="shopping-list" />
     </SafeAreaView>
@@ -601,45 +547,12 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginTop: 4,
     borderRadius: SIZES.radiusLg, borderWidth: 1, paddingHorizontal: 6, paddingVertical: 6, gap: 8,
   },
-  catPickerBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 2,
-    paddingHorizontal: 10, paddingVertical: 8, borderRadius: SIZES.radius,
-  },
-  catPickerEmoji: { fontSize: 18 },
-  catPickerCaret: { fontSize: 10, marginLeft: 2 },
+  addBarEmoji: { fontSize: 20, marginLeft: 8 },
   addInput: { flex: 1, fontSize: SIZES.base, paddingVertical: 8 },
   addBtn: {
     width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center',
   },
   addBtnText: { fontSize: 24, fontWeight: '600', color: '#fff', lineHeight: 26 },
-
-  // Category grid
-  catGrid: {
-    flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginHorizontal: 16,
-    marginTop: 10, padding: 12, borderRadius: SIZES.radiusLg, borderWidth: 1,
-  },
-  catTile: {
-    alignItems: 'center', gap: 4, paddingVertical: 10, paddingHorizontal: 6,
-    borderRadius: SIZES.radius, borderWidth: 1, borderColor: 'transparent',
-    width: '22%', flexGrow: 1,
-  },
-  catTileIcon: { fontSize: 20 },
-  catTileLabel: { fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3 },
-
-  // Filter chips
-  filterScroll: { marginTop: 4, maxHeight: 36 },
-  filterRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 6, paddingBottom: 2 },
-  filterChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, borderWidth: 1,
-  },
-  filterEmoji: { fontSize: 13 },
-  filterLabel: { fontSize: SIZES.xs, fontWeight: '600' },
-  filterBadge: {
-    minWidth: 18, height: 18, borderRadius: 9,
-    alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4,
-  },
-  filterBadgeText: { fontSize: 9, fontWeight: '800' },
 
   // Sections
   section: { marginTop: 10 },
