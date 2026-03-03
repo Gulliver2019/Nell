@@ -150,8 +150,8 @@ function AppContent() {
   // Show onboarding first
   if (!onboardingDone) {
     return (
-      <OnboardingScreen onComplete={async () => {
-        await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
+      <OnboardingScreen onComplete={() => {
+        AsyncStorage.setItem(ONBOARDING_KEY, 'true').catch(() => {});
         setOnboardingDone(true);
       }} />
     );
@@ -160,8 +160,8 @@ function AppContent() {
   // Then show paywall if user is not pro and hasn't dismissed it before
   if (!isProUser && !paywallDismissed) {
     return (
-      <PaywallScreen onComplete={async () => {
-        await AsyncStorage.setItem(PAYWALL_KEY, 'true');
+      <PaywallScreen onComplete={() => {
+        AsyncStorage.setItem(PAYWALL_KEY, 'true').catch(() => {});
         setPaywallDismissed(true);
       }} />
     );
