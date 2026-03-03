@@ -233,15 +233,23 @@ const SECTIONS = [
     items: [
       {
         q: 'How does the Shopping List work?',
-        a: 'Quick-add items with a category (Produce, Meat, Dairy, Pasta & Rice, Canned Goods, Cereals, Oils, Frozen, and more). Tap to check off, long-press to delete. Checked items sink to the bottom. Use "Clear Checked" to bulk remove purchased items.',
+        a: 'Just type an item name and tap +. GoalDigger automatically sorts it into the right aisle — milk goes to Dairy, bread to Bakery, chicken to Meat, and so on. No need to pick a category yourself.',
       },
       {
-        q: 'Can I filter by category?',
-        a: 'Yes — use the scrollable category chips at the top to filter. Each chip shows the count of remaining items in that category.',
+        q: 'How do I edit an item?',
+        a: 'Tap any item to open the edit screen. You can change the name, category, quantity, and add notes (e.g. "get the big one" or "Lurpak brand"). Notes appear under the item on your list.',
       },
       {
-        q: 'Can I reorder the sections to match my shop?',
-        a: 'Yes! When viewing all items, each category section has ▲ and ▼ arrows in the header. Tap them to move sections up or down so they match the layout of your shop. The order is saved automatically.',
+        q: 'Can I reorder items?',
+        a: 'Yes — long-press and drag an item to reorder it within its category. You can also reorder entire category sections using the ▲ ▼ arrows in the section headers to match your shop layout.',
+      },
+      {
+        q: 'How do I delete an item?',
+        a: 'Long-press an item and confirm to delete it. Or check off items as you shop, then use "Clear Checked" to remove them all at once.',
+      },
+      {
+        q: 'What if an item ends up in the wrong category?',
+        a: 'Tap the item to edit it, then change the category from the dropdown. The auto-categoriser learns from common product names but you can always override it.',
       },
     ],
   },

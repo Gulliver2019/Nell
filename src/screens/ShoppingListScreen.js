@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  View, Text, TextInput, TouchableOpacity, StyleSheet, Modal,
   Alert, Animated, Keyboard, ScrollView, Share, LayoutAnimation, UIManager, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -98,7 +98,7 @@ function ProgressRing({ progress, size, accent, bg }) {
 }
 
 /* ── Swipeable item row ── */
-function ShoppingItem({ item, colors, onToggle, onDelete, onQty }) {
+function ShoppingItem({ item, colors, onToggle, onDelete, onQty, onEdit }) {
   const cat = CATEGORY_MAP[item.category] || CATEGORY_MAP.produce;
   const pan = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(1)).current;
@@ -138,7 +138,7 @@ function ShoppingItem({ item, colors, onToggle, onDelete, onQty }) {
           {/* Main content */}
           <TouchableOpacity
             style={s.itemBody}
-            onPress={() => onToggle(item.id)}
+            onPress={() => onEdit(item)}
             onLongPress={() => {
               Alert.alert('Delete', `Remove "${item.text}"?`, [
                 { text: 'Cancel', style: 'cancel' },
@@ -159,6 +159,9 @@ function ShoppingItem({ item, colors, onToggle, onDelete, onQty }) {
               </Text>
             </View>
             <Text style={[s.itemCatText, { color: colors.textMuted }]}>{cat.label}</Text>
+            {item.notes ? (
+              <Text style={[s.itemNotes, { color: colors.textMuted }]} numberOfLines={2}>{item.notes}</Text>
+            ) : null}
           </TouchableOpacity>
 
           {/* Quantity */}
@@ -191,6 +194,12 @@ export default function ShoppingListScreen() {
   const [items, setItems] = useState([]);
   const [text, setText] = useState('');
   const [categoryOrder, setCategoryOrder] = useState(null);
+  const [editItem, setEditItem] = useState(null);
+  const [editName, setEditName] = useState('');
+  const [editCategory, setEditCategory] = useState('others');
+  const [editQuantity, setEditQuantity] = useState(1);
+  const [editNotes, setEditNotes] = useState('');
+  const [showEditCatPicker, setShowEditCatPicker] = useState(false);
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -350,6 +359,34 @@ export default function ShoppingListScreen() {
     persist([...reordered, ...otherItems]);
   }, [items, persist]);
 
+  const openEdit = useCallback((item) => {
+    setEditItem(item);
+    setEditName(item.text);
+    setEditCategory(item.category || 'others');
+    setEditQuantity(item.quantity || 1);
+    setEditNotes(item.notes || '');
+    setShowEditCatPicker(false);
+  }, []);
+
+  const saveEdit = useCallback(() => {
+    if (!editItem || !editName.trim()) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    animateLayout();
+    const newCat = guessCategory(editName.trim()) || editCategory;
+    persist(items.map(i => i.id === editItem.id ? {
+      ...i,
+      text: editName.trim(),
+      category: newCat,
+      quantity: editQuantity,
+      notes: editNotes.trim() || undefined,
+    } : i));
+    setEditItem(null);
+  }, [editItem, editName, editCategory, editQuantity, editNotes, items, persist]);
+
+  const cancelEdit = useCallback(() => {
+    setEditItem(null);
+  }, []);
+
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       {/* ── Header ── */}
@@ -480,6 +517,7 @@ export default function ShoppingListScreen() {
                             onToggle={toggleCheck}
                             onDelete={deleteItem}
                             onQty={updateQuantity}
+                            onEdit={openEdit}
                           />
                         </TouchableOpacity>
                       </ScaleDecorator>
@@ -503,6 +541,7 @@ export default function ShoppingListScreen() {
                       onToggle={toggleCheck}
                       onDelete={deleteItem}
                       onQty={updateQuantity}
+                      onEdit={openEdit}
                     />
                   ))}
                 </View>
@@ -512,6 +551,97 @@ export default function ShoppingListScreen() {
           <View style={{ height: 100 }} />
         </ScrollView>
       </GestureHandlerRootView>
+
+      {/* ── Edit Modal ── */}
+      <Modal visible={!!editItem} animationType="slide" transparent>
+        <View style={s.modalOverlay}>
+          <View style={[s.modalCard, { backgroundColor: colors.bgCard }]}>
+            <Text style={[s.modalTitle, { color: colors.text }]}>Edit Item</Text>
+
+            {/* Name */}
+            <Text style={[s.modalLabel, { color: colors.textSecondary }]}>Name</Text>
+            <TextInput
+              style={[s.modalInput, { color: colors.text, backgroundColor: colors.bgInput, borderColor: colors.border }]}
+              value={editName}
+              onChangeText={setEditName}
+              selectionColor={colors.accent}
+              autoFocus
+            />
+
+            {/* Category */}
+            <Text style={[s.modalLabel, { color: colors.textSecondary }]}>Category</Text>
+            <TouchableOpacity
+              style={[s.modalCatBtn, { backgroundColor: colors.bgInput, borderColor: colors.border }]}
+              onPress={() => setShowEditCatPicker(!showEditCatPicker)}
+            >
+              <Text style={{ fontSize: 18 }}>{(CATEGORY_MAP[editCategory] || CATEGORY_MAP.others).icon}</Text>
+              <Text style={[s.modalCatLabel, { color: colors.text }]}>
+                {(CATEGORY_MAP[editCategory] || CATEGORY_MAP.others).label}
+              </Text>
+              <Text style={{ color: colors.textMuted }}>▾</Text>
+            </TouchableOpacity>
+            {showEditCatPicker && (
+              <View style={[s.modalCatGrid, { backgroundColor: colors.bgInput }]}>
+                {CATEGORIES.filter(c => c.key !== 'all').map(cat => (
+                  <TouchableOpacity
+                    key={cat.key}
+                    style={[
+                      s.modalCatTile,
+                      { backgroundColor: colors.bgElevated },
+                      editCategory === cat.key && { backgroundColor: colors.accent + '20', borderColor: colors.accent, borderWidth: 1 },
+                    ]}
+                    onPress={() => { setEditCategory(cat.key); setShowEditCatPicker(false); }}
+                  >
+                    <Text style={{ fontSize: 16 }}>{cat.icon}</Text>
+                    <Text style={[s.modalCatTileLabel, { color: editCategory === cat.key ? colors.accent : colors.textMuted }]} numberOfLines={1}>{cat.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {/* Quantity */}
+            <Text style={[s.modalLabel, { color: colors.textSecondary }]}>Quantity</Text>
+            <View style={s.modalQtyRow}>
+              <TouchableOpacity
+                style={[s.modalQtyBtn, { backgroundColor: colors.bgInput }]}
+                onPress={() => setEditQuantity(Math.max(1, editQuantity - 1))}
+              >
+                <Text style={[s.modalQtyBtnTxt, { color: colors.textSecondary }]}>−</Text>
+              </TouchableOpacity>
+              <Text style={[s.modalQtyVal, { color: colors.accent }]}>{editQuantity}</Text>
+              <TouchableOpacity
+                style={[s.modalQtyBtn, { backgroundColor: colors.bgInput }]}
+                onPress={() => setEditQuantity(editQuantity + 1)}
+              >
+                <Text style={[s.modalQtyBtnTxt, { color: colors.textSecondary }]}>+</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Notes */}
+            <Text style={[s.modalLabel, { color: colors.textSecondary }]}>Notes</Text>
+            <TextInput
+              style={[s.modalInput, s.modalNotes, { color: colors.text, backgroundColor: colors.bgInput, borderColor: colors.border }]}
+              value={editNotes}
+              onChangeText={setEditNotes}
+              placeholder="Add a note..."
+              placeholderTextColor={colors.textMuted}
+              selectionColor={colors.accent}
+              multiline
+              textAlignVertical="top"
+            />
+
+            {/* Buttons */}
+            <View style={s.modalBtns}>
+              <TouchableOpacity style={[s.modalBtn, { backgroundColor: colors.bgInput }]} onPress={cancelEdit}>
+                <Text style={[s.modalBtnText, { color: colors.textSecondary }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[s.modalBtn, { backgroundColor: colors.accent }]} onPress={saveEdit}>
+                <Text style={[s.modalBtnText, { color: '#fff' }]}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <KnowledgeBaseButton sectionId="shopping-list" />
     </SafeAreaView>
@@ -610,4 +740,27 @@ const s = StyleSheet.create({
   emptyIcon: { fontSize: 36 },
   emptyTitle: { fontSize: SIZES.lg, fontWeight: '700', marginBottom: 4 },
   emptyHint: { fontSize: SIZES.sm },
+
+  // Item notes
+  itemNotes: { fontSize: 11, marginTop: 2, marginLeft: 26, fontStyle: 'italic', lineHeight: 15 },
+
+  // Edit modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  modalCard: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40, maxHeight: '90%' },
+  modalTitle: { fontSize: 20, fontWeight: '800', marginBottom: 20, textAlign: 'center' },
+  modalLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6, marginTop: 14 },
+  modalInput: { borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16 },
+  modalNotes: { minHeight: 80, paddingTop: 12 },
+  modalCatBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12 },
+  modalCatLabel: { flex: 1, fontSize: 16 },
+  modalCatGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8, padding: 8, borderRadius: 12 },
+  modalCatTile: { alignItems: 'center', gap: 2, paddingVertical: 8, paddingHorizontal: 4, borderRadius: 8, width: '22%', flexGrow: 1, borderWidth: 1, borderColor: 'transparent' },
+  modalCatTileLabel: { fontSize: 8, fontWeight: '700', textTransform: 'uppercase' },
+  modalQtyRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  modalQtyBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  modalQtyBtnTxt: { fontSize: 20, fontWeight: '700' },
+  modalQtyVal: { fontSize: 24, fontWeight: '800', minWidth: 30, textAlign: 'center' },
+  modalBtns: { flexDirection: 'row', gap: 12, marginTop: 24 },
+  modalBtn: { flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center' },
+  modalBtnText: { fontSize: 16, fontWeight: '700' },
 });
