@@ -285,8 +285,12 @@ export default function IndexScreen({ navigation }) {
 
           {/* Collections */}
           {collections.length > 0 && (
-            <View style={[styles.sectionCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-              <View style={[styles.sectionHeader, { marginBottom: 8 }]}>
+            <TouchableOpacity
+              style={[styles.sectionCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
+              onPress={() => toggleSection('collections')}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.sectionHeader, { marginBottom: expandedSection === 'collections' ? 8 : 0 }]}>
                 <View style={styles.sectionTitleRow}>
                   <Text style={styles.sectionEmoji}>📋</Text>
                   <Text style={[styles.sectionTitle, { color: colors.text }]}>Collections</Text>
@@ -295,7 +299,7 @@ export default function IndexScreen({ navigation }) {
                   <Text style={[styles.countText, { color: colors.textMuted }]}>{collections.length}</Text>
                 </View>
               </View>
-              {collections.map(col => {
+              {expandedSection === 'collections' && collections.map(col => {
                 const colEntries = entries.filter(e => e.collection === col.id);
                 return (
                   <TouchableOpacity
@@ -310,7 +314,7 @@ export default function IndexScreen({ navigation }) {
                   </TouchableOpacity>
                 );
               })}
-            </View>
+            </TouchableOpacity>
           )}
 
           {/* Monthly Overview */}

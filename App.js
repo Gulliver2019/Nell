@@ -27,7 +27,7 @@ import ShoppingListScreen from './src/screens/ShoppingListScreen';
 import PaywallScreen from './src/screens/PaywallScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import DebugScreen from './src/screens/DebugScreen';
-import AIGuidanceButton from './src/components/AIGuidanceButton';
+// import AIGuidanceButton from './src/components/AIGuidanceButton'; // AI disabled
 
 const Tab = createBottomTabNavigator();
 const MoreStack = createStackNavigator();
@@ -106,8 +106,8 @@ function AppContent() {
   const [paywallDismissed, setPaywallDismissed] = useState(null);
   const [onboardingDone, setOnboardingDone] = useState(null);
   const [defaultScreen, setDefaultScreen] = useState('Daily');
-  const jarvisRef = useRef(null);
-  const didOpenJarvisDefault = useRef(false);
+  // const jarvisRef = useRef(null); // AI disabled
+  // const didOpenJarvisDefault = useRef(false); // AI disabled
 
   useEffect(() => {
     (async () => {
@@ -127,6 +127,14 @@ function AppContent() {
     })();
   }, []);
 
+  // AI disabled — Jarvis auto-open removed
+  // useEffect(() => {
+  //   if (defaultScreen === 'Jarvis' && !didOpenJarvisDefault.current && onboardingDone) {
+  //     didOpenJarvisDefault.current = true;
+  //     setTimeout(() => jarvisRef.current?.open(), 500);
+  //   }
+  // }, [defaultScreen, onboardingDone]);
+
   if (loading || paywallDismissed === null || !rcReady) {
     return (
       <View style={[styles.loading, { backgroundColor: colors.bg }]}>
@@ -139,17 +147,7 @@ function AppContent() {
     return <ThemePickerScreen isFirstLaunch={true} />;
   }
 
-  // Show paywall if user is not pro and hasn't dismissed it before
-  if (!isProUser && !paywallDismissed) {
-    return (
-      <PaywallScreen onComplete={async () => {
-        // Only mark dismissed after a successful purchase/restore
-        await AsyncStorage.setItem(PAYWALL_KEY, 'true');
-        setPaywallDismissed(true);
-      }} />
-    );
-  }
-
+  // Show onboarding first
   if (!onboardingDone) {
     return (
       <OnboardingScreen onComplete={async () => {
@@ -159,15 +157,17 @@ function AppContent() {
     );
   }
 
-  // If default is Jarvis, open it after mount
-  useEffect(() => {
-    if (defaultScreen === 'Jarvis' && !didOpenJarvisDefault.current && onboardingDone) {
-      didOpenJarvisDefault.current = true;
-      setTimeout(() => jarvisRef.current?.open(), 500);
-    }
-  }, [defaultScreen, onboardingDone]);
+  // Then show paywall if user is not pro and hasn't dismissed it before
+  if (!isProUser && !paywallDismissed) {
+    return (
+      <PaywallScreen onComplete={async () => {
+        await AsyncStorage.setItem(PAYWALL_KEY, 'true');
+        setPaywallDismissed(true);
+      }} />
+    );
+  }
 
-  const initialRoute = defaultScreen === 'Jarvis' ? 'Daily' : defaultScreen;
+  const initialRoute = (defaultScreen === 'Jarvis') ? 'Daily' : defaultScreen; // AI disabled — Jarvis always falls back to Daily
 
   return (
     <NavigationContainer>
@@ -196,7 +196,7 @@ function AppContent() {
         <Tab.Screen name="Index" component={IndexScreen} />
         <Tab.Screen name="More" component={MoreStackScreen} />
       </Tab.Navigator>
-      <AIGuidanceButton ref={jarvisRef} />
+      {/* <AIGuidanceButton ref={jarvisRef} /> */}{/* AI disabled */}
       </View>
     </NavigationContainer>
   );

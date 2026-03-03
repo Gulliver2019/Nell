@@ -180,6 +180,15 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
           onLongPress={() => setIsEditing(true)}
         >
           <View style={styles.textRow}>
+            {onEdit && (
+              <TouchableOpacity
+                onPress={() => onEdit(entry)}
+                hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}
+                style={styles.editBtn}
+              >
+                <Text style={[styles.editIcon, { color: colors.textMuted }]}>✎</Text>
+              </TouchableOpacity>
+            )}
             <Text
               style={[
                 styles.text,
@@ -218,15 +227,6 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
             )}
             {onAddToDaily && entry._addedToDaily && (
               <Text style={[styles.addedBadge, { color: colors.textMuted }]}>✓</Text>
-            )}
-            {onEdit && (
-              <TouchableOpacity
-                onPress={() => onEdit(entry)}
-                hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}
-                style={styles.editBtn}
-              >
-                <Text style={[styles.editIcon, { color: colors.textMuted }]}>✎</Text>
-              </TouchableOpacity>
             )}
           </View>
         </TouchableOpacity>

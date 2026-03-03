@@ -13,7 +13,7 @@ import PomodoroTimer from './PomodoroTimer';
 const POM_IMAGE = require('../../assets/pom.png');
 
 const START_HOUR = 5;
-const END_HOUR = 22;
+const END_HOUR = 23;
 const SLOT_HEIGHT = 52;
 
 const generateSlots = () => {

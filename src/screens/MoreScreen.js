@@ -17,7 +17,7 @@ import * as Haptics from 'expo-haptics';
 const DEFAULT_SCREEN_KEY = '@default_screen';
 const SCREEN_OPTIONS = [
   { value: 'Daily', label: 'Daily Log' },
-  { value: 'Jarvis', label: 'Jarvis (AI)' },
+  // { value: 'Jarvis', label: 'Jarvis (AI)' }, // AI disabled
   { value: 'Index', label: 'Index' },
 ];
 
@@ -337,6 +337,28 @@ export default function MoreScreen({ navigation }) {
               </TouchableOpacity>
             </>
           )}
+          <TouchableOpacity
+            onPress={() => {
+              Alert.alert(
+                'Reset Paywall',
+                'The paywall will appear next time you open the app.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Reset',
+                    onPress: async () => {
+                      await AsyncStorage.removeItem('crushedit_paywall_done');
+                      Alert.alert('Done', 'Close and reopen the app to see the paywall.');
+                    },
+                  },
+                ]
+              );
+            }}
+            style={[styles.contactRow, { borderBottomColor: colors.border }]}
+          >
+            <Text style={[styles.contactLabel, { color: colors.textSecondary }]}>Reset Paywall</Text>
+            <Text style={[styles.contactValue, { color: colors.accentOrange || colors.accent }]}>Reset →</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Customer Center Modal */}

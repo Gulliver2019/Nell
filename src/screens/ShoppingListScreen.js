@@ -121,7 +121,6 @@ function ShoppingItem({ item, colors, onToggle, onDelete, onQty }) {
                   s.itemName, { color: colors.text },
                   item.checked && { textDecorationLine: 'line-through', color: colors.textMuted },
                 ]}
-                numberOfLines={3}
               >
                 {item.text}
               </Text>
@@ -670,7 +669,7 @@ const s = StyleSheet.create({
   itemBody: { flex: 1 },
   itemTopRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   itemEmoji: { fontSize: 18 },
-  itemName: { fontSize: SIZES.base, fontWeight: '600', flex: 1 },
+  itemName: { fontSize: SIZES.base, fontWeight: '600', flex: 1, flexWrap: 'wrap' },
   itemCatText: { fontSize: SIZES.xs, marginTop: 2, marginLeft: 26 },
 
   // Quantity

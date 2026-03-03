@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert,
+  View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,12 +13,27 @@ import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
 
 const HABIT_ICONS = ['💪', '📚', '🏃', '🧘', '💧', '🎨', '🎵', '✍️', '🥗', '😴', '🧹', '💊', '🚭', '📱', '🌿', '🙏'];
 
+const TIME_OPTIONS = [
+  { key: 'morning', label: '☀️ Morning' },
+  { key: 'afternoon', label: '🌤️ Afternoon' },
+  { key: 'evening', label: '🌙 Evening' },
+];
+
+const MILESTONES = [
+  { days: 7, emoji: '⭐', label: '1 Week' },
+  { days: 21, emoji: '🏅', label: '21 Days' },
+  { days: 30, emoji: '🏆', label: '30 Days' },
+  { days: 66, emoji: '💎', label: '66 Days' },
+];
+
 export default function HabitTrackerScreen() {
   const { colors } = useTheme();
   const { habits, addHabit, toggleHabitDay, deleteHabit } = useApp();
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState('');
   const [newIcon, setNewIcon] = useState('💪');
+  const [newTimeOfDay, setNewTimeOfDay] = useState('morning');
+  const [newTwoMin, setNewTwoMin] = useState('');
 
   // Generate last 7 days
   const days = useMemo(() => {
@@ -40,8 +55,14 @@ export default function HabitTrackerScreen() {
 
   const handleAdd = async () => {
     if (!newName.trim()) return;
-    await addHabit({ name: newName.trim(), icon: newIcon });
+    await addHabit({
+      name: newName.trim(),
+      icon: newIcon,
+      timeOfDay: newTimeOfDay,
+      twoMinVersion: newTwoMin.trim(),
+    });
     setNewName('');
+    setNewTwoMin('');
     setShowAdd(false);
   };
 
@@ -57,7 +78,7 @@ export default function HabitTrackerScreen() {
     ]);
   };
 
-  // Calculate streaks
+  // Calculate current streak
   const getStreak = (habit) => {
     let streak = 0;
     const today = new Date();
@@ -71,6 +92,137 @@ export default function HabitTrackerScreen() {
     return streak;
   };
 
+  // "Never Miss Twice" — how many consecutive days missed from today
+  const getMissedDays = (habit) => {
+    let missed = 0;
+    const today = new Date();
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const key = getDateKey(d);
+      if (!habit.completions?.[key]) missed++;
+      else break;
+    }
+    return missed;
+  };
+
+  // Completion rate over last 30 days
+  const getCompletionRate = (habit) => {
+    let done = 0;
+    const today = new Date();
+    const created = habit.createdAt ? new Date(habit.createdAt) : null;
+    let totalDays = 30;
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      if (created && d < created) { totalDays = i; break; }
+      const key = getDateKey(d);
+      if (habit.completions?.[key]) done++;
+    }
+    return totalDays > 0 ? Math.round((done / totalDays) * 100) : 0;
+  };
+
+  // Get next milestone
+  const getNextMilestone = (streak) => {
+    return MILESTONES.find(m => streak < m.days);
+  };
+
+  // Get achieved milestones based on best streak
+  const getAchievedMilestones = (habit) => {
+    const best = Math.max(getStreak(habit), habit.bestStreak || 0);
+    return MILESTONES.filter(m => best >= m.days);
+  };
+
+  // Group habits by time of day
+  const groupedHabits = useMemo(() => {
+    const groups = { morning: [], afternoon: [], evening: [] };
+    habits.forEach(h => {
+      const tod = h.timeOfDay || 'morning';
+      if (groups[tod]) groups[tod].push(h);
+      else groups.morning.push(h);
+    });
+    return groups;
+  }, [habits]);
+
+  const hasHabits = habits.length > 0;
+
+  const renderHabitRow = (habit) => {
+    const streak = getStreak(habit);
+    const missed = getMissedDays(habit);
+    const achieved = getAchievedMilestones(habit);
+    const bestStreak = Math.max(streak, habit.bestStreak || 0);
+
+    return (
+      <TouchableOpacity
+        key={habit.id}
+        style={[styles.habitRow, { borderBottomColor: colors.border }]}
+        onLongPress={() => handleDelete(habit)}
+      >
+        <View style={styles.habitLabel}>
+          <Text style={styles.habitIcon}>{habit.icon}</Text>
+          <View style={styles.habitInfo}>
+            <View style={styles.habitNameRow}>
+              <Text style={[styles.habitName, { color: colors.text }]} numberOfLines={1}>{habit.name}</Text>
+              {/* Milestone badges */}
+              {achieved.length > 0 && (
+                <Text style={styles.milestoneBadges}>{achieved[achieved.length - 1].emoji}</Text>
+              )}
+            </View>
+            {/* Streak + Never Miss Twice */}
+            <View style={styles.habitMeta}>
+              {streak > 0 && (
+                <Text style={[styles.streakText, { color: colors.accentOrange }]}>🔥 {streak}d</Text>
+              )}
+              {bestStreak > streak && bestStreak > 0 && (
+                <Text style={[styles.bestStreakText, { color: colors.textMuted }]}>Best: {bestStreak}d</Text>
+              )}
+              {missed === 1 && streak === 0 && (
+                <Text style={[styles.missedWarning, { color: '#F0A500' }]}>⚠️ Don't break it!</Text>
+              )}
+              {missed >= 2 && streak === 0 && (
+                <Text style={[styles.missedWarning, { color: colors.accentRed }]}>🔴 {missed}d missed</Text>
+              )}
+            </View>
+            {/* Two-minute nudge when missed today */}
+            {habit.twoMinVersion && missed >= 1 && (
+              <Text style={[styles.twoMinNudge, { color: colors.accent }]}>
+                💡 Just do: {habit.twoMinVersion}
+              </Text>
+            )}
+          </View>
+        </View>
+
+        {days.map(d => {
+          const done = habit.completions?.[d.key];
+          return (
+            <TouchableOpacity
+              key={d.key}
+              style={[
+                styles.cell,
+                { backgroundColor: colors.bgInput },
+                done && { backgroundColor: colors.accentGreen + '30' },
+                d.isToday && { borderWidth: 1, borderColor: colors.accent + '40' },
+              ]}
+              onPress={() => handleToggle(habit.id, d.key)}
+            >
+              {done && <Text style={[styles.cellCheck, { color: colors.accentGreen }]}>✓</Text>}
+            </TouchableOpacity>
+          );
+        })}
+      </TouchableOpacity>
+    );
+  };
+
+  const renderTimeGroup = (key, label, groupHabits) => {
+    if (groupHabits.length === 0) return null;
+    return (
+      <View key={key} style={styles.timeGroup}>
+        <Text style={[styles.timeGroupLabel, { color: colors.textMuted }]}>{label}</Text>
+        {groupHabits.map(renderHabitRow)}
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
@@ -82,7 +234,7 @@ export default function HabitTrackerScreen() {
           <View style={styles.headerRow}>
             <View>
               <Text style={[styles.title, { color: colors.text }]}>Habits</Text>
-              <Text style={[styles.subtitle, { color: colors.textMuted }]}>Consistency is everything</Text>
+              <Text style={[styles.subtitle, { color: colors.textMuted }]}>Never miss twice</Text>
             </View>
             <TouchableOpacity onPress={() => setShowAdd(!showAdd)} style={styles.addBtn}>
               <LinearGradient colors={[colors.accent, colors.accentLight]} style={styles.addGradient}>
@@ -102,7 +254,6 @@ export default function HabitTrackerScreen() {
                 placeholderTextColor={colors.textMuted}
                 value={newName}
                 onChangeText={setNewName}
-                onSubmitEditing={handleAdd}
                 autoFocus
                 selectionColor={colors.accent}
               />
@@ -110,6 +261,37 @@ export default function HabitTrackerScreen() {
                 <Text style={[styles.submitText, { color: colors.text }]}>Add</Text>
               </TouchableOpacity>
             </View>
+
+            {/* Two-minute version */}
+            <TextInput
+              style={[styles.twoMinInput, { backgroundColor: colors.bgInput, color: colors.text }]}
+              placeholder='2-min version (e.g. "Read 1 page")'
+              placeholderTextColor={colors.textMuted}
+              value={newTwoMin}
+              onChangeText={setNewTwoMin}
+              selectionColor={colors.accent}
+            />
+
+            {/* Time of day */}
+            <View style={styles.timeRow}>
+              {TIME_OPTIONS.map(t => (
+                <TouchableOpacity
+                  key={t.key}
+                  onPress={() => setNewTimeOfDay(t.key)}
+                  style={[
+                    styles.timeOption,
+                    { backgroundColor: colors.bgInput },
+                    newTimeOfDay === t.key && { borderColor: colors.accent, borderWidth: 2, backgroundColor: colors.accent + '15' },
+                  ]}
+                >
+                  <Text style={[styles.timeOptionText, { color: newTimeOfDay === t.key ? colors.accent : colors.textSecondary }]}>
+                    {t.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Icon picker */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.iconScroll}>
               {HABIT_ICONS.map(icon => (
                 <TouchableOpacity
@@ -137,70 +319,91 @@ export default function HabitTrackerScreen() {
             ))}
           </View>
 
-          {habits.length === 0 ? (
+          {!hasHabits ? (
             <View style={styles.empty}>
               <Text style={styles.emptyIcon}>🌱</Text>
               <Text style={[styles.emptyTitle, { color: colors.text }]}>No habits yet</Text>
               <Text style={[styles.emptyText, { color: colors.textMuted }]}>Tap + to start tracking</Text>
             </View>
           ) : (
-            habits.map(habit => {
-              const streak = getStreak(habit);
-              return (
-                <TouchableOpacity
-                  key={habit.id}
-                  style={[styles.habitRow, { borderBottomColor: colors.border }]}
-                  onLongPress={() => handleDelete(habit)}
-                >
-                  <View style={styles.habitLabel}>
-                    <Text style={styles.habitIcon}>{habit.icon}</Text>
-                    <View style={styles.habitInfo}>
-                      <Text style={[styles.habitName, { color: colors.text }]} numberOfLines={1}>{habit.name}</Text>
-                      {streak > 0 && (
-                        <Text style={[styles.streakText, { color: colors.accentOrange }]}>🔥 {streak}d</Text>
-                      )}
-                    </View>
-                  </View>
-
-                  {days.map(d => {
-                    const done = habit.completions?.[d.key];
-                    return (
-                      <TouchableOpacity
-                        key={d.key}
-                        style={[
-                          styles.cell,
-                          { backgroundColor: colors.bgInput },
-                          done && { backgroundColor: colors.accentGreen + '30' },
-                          d.isToday && { borderWidth: 1, borderColor: colors.accent + '40' },
-                        ]}
-                        onPress={() => handleToggle(habit.id, d.key)}
-                      >
-                        {done && <Text style={[styles.cellCheck, { color: colors.accentGreen }]}>✓</Text>}
-                      </TouchableOpacity>
-                    );
-                  })}
-                </TouchableOpacity>
-              );
-            })
+            <>
+              {renderTimeGroup('morning', '☀️ Morning', groupedHabits.morning)}
+              {renderTimeGroup('afternoon', '🌤️ Afternoon', groupedHabits.afternoon)}
+              {renderTimeGroup('evening', '🌙 Evening', groupedHabits.evening)}
+            </>
           )}
         </View>
 
-        {/* Stats summary */}
-        {habits.length > 0 && (
+        {/* Stats & Insights */}
+        {hasHabits && (
           <View style={[styles.statsSection, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-            <Text style={[styles.statsTitle, { color: colors.text }]}>Streaks</Text>
+            <Text style={[styles.statsTitle, { color: colors.text }]}>Insights</Text>
             {habits.map(habit => {
               const streak = getStreak(habit);
-              const totalDone = Object.values(habit.completions || {}).filter(Boolean).length;
+              const bestStreak = Math.max(streak, habit.bestStreak || 0);
+              const rate = getCompletionRate(habit);
+              const nextMilestone = getNextMilestone(bestStreak);
+              const achieved = getAchievedMilestones(habit);
+
               return (
-                <View key={habit.id} style={styles.statRow}>
-                  <Text style={styles.statIcon}>{habit.icon}</Text>
-                  <Text style={[styles.statName, { color: colors.text }]}>{habit.name}</Text>
-                  <View style={[styles.statBadge, { backgroundColor: colors.bgElevated }]}>
-                    <Text style={[styles.statBadgeText, { color: colors.textSecondary }]}>
-                      {streak > 0 ? `🔥 ${streak}` : `${totalDone} total`}
-                    </Text>
+                <View key={habit.id} style={[styles.statCard, { borderBottomColor: colors.border }]}>
+                  <View style={styles.statHeaderRow}>
+                    <Text style={styles.statIcon}>{habit.icon}</Text>
+                    <Text style={[styles.statName, { color: colors.text }]}>{habit.name}</Text>
                   </View>
+
+                  <View style={styles.statMetrics}>
+                    {/* Completion rate */}
+                    <View style={[styles.metricBox, { backgroundColor: colors.bgElevated }]}>
+                      <Text style={[styles.metricValue, { color: rate >= 80 ? colors.accentGreen : rate >= 50 ? '#F0A500' : colors.accentRed }]}>
+                        {rate}%
+                      </Text>
+                      <Text style={[styles.metricLabel, { color: colors.textMuted }]}>30d rate</Text>
+                    </View>
+
+                    {/* Current streak */}
+                    <View style={[styles.metricBox, { backgroundColor: colors.bgElevated }]}>
+                      <Text style={[styles.metricValue, { color: streak > 0 ? colors.accentOrange : colors.textMuted }]}>
+                        {streak > 0 ? `🔥 ${streak}` : '0'}
+                      </Text>
+                      <Text style={[styles.metricLabel, { color: colors.textMuted }]}>Streak</Text>
+                    </View>
+
+                    {/* Best streak */}
+                    <View style={[styles.metricBox, { backgroundColor: colors.bgElevated }]}>
+                      <Text style={[styles.metricValue, { color: colors.accent }]}>
+                        {bestStreak > 0 ? `⭐ ${bestStreak}` : '—'}
+                      </Text>
+                      <Text style={[styles.metricLabel, { color: colors.textMuted }]}>Best</Text>
+                    </View>
+                  </View>
+
+                  {/* Milestone progress */}
+                  {nextMilestone && (
+                    <View style={styles.milestoneRow}>
+                      <View style={[styles.milestoneBar, { backgroundColor: colors.bgElevated }]}>
+                        <View style={[styles.milestoneFill, {
+                          backgroundColor: colors.accent + '40',
+                          width: `${Math.min(100, (bestStreak / nextMilestone.days) * 100)}%`,
+                        }]} />
+                      </View>
+                      <Text style={[styles.milestoneLabel, { color: colors.textMuted }]}>
+                        {nextMilestone.emoji} {nextMilestone.label} ({nextMilestone.days - bestStreak}d to go)
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Achieved milestones */}
+                  {achieved.length > 0 && (
+                    <View style={styles.achievedRow}>
+                      {achieved.map(m => (
+                        <View key={m.days} style={[styles.achievedBadge, { backgroundColor: colors.accent + '15' }]}>
+                          <Text style={styles.achievedEmoji}>{m.emoji}</Text>
+                          <Text style={[styles.achievedLabel, { color: colors.accent }]}>{m.label}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
                 </View>
               );
             })}
@@ -229,6 +432,19 @@ const styles = StyleSheet.create({
     flex: 1, borderRadius: SIZES.radius,
     padding: 12, fontSize: SIZES.base,
   },
+  twoMinInput: {
+    borderRadius: SIZES.radius,
+    padding: 12, fontSize: SIZES.base, marginTop: 8,
+  },
+  timeRow: {
+    flexDirection: 'row', gap: 8, marginTop: 8,
+  },
+  timeOption: {
+    flex: 1, borderRadius: SIZES.radius,
+    paddingVertical: 8, alignItems: 'center',
+    borderWidth: 1, borderColor: 'transparent',
+  },
+  timeOptionText: { fontSize: SIZES.sm, fontWeight: '600' },
   submitBtn: {
     borderRadius: SIZES.radius,
     paddingHorizontal: 20, justifyContent: 'center',
@@ -257,14 +473,22 @@ const styles = StyleSheet.create({
   emptyIcon: { fontSize: 48, marginBottom: 8 },
   emptyTitle: { fontSize: SIZES.lg, fontWeight: '600' },
   emptyText: { fontSize: SIZES.md, marginTop: 4 },
+  timeGroup: { marginTop: 8 },
+  timeGroupLabel: { fontSize: SIZES.xs, fontWeight: '700', letterSpacing: 0.5, paddingHorizontal: 8, paddingVertical: 4, textTransform: 'uppercase' },
   habitRow: {
     flexDirection: 'row', alignItems: 'center', paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   habitIcon: { fontSize: 18 },
   habitInfo: { flex: 1 },
-  habitName: { fontSize: SIZES.sm, fontWeight: '500' },
+  habitNameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  habitName: { fontSize: SIZES.sm, fontWeight: '500', flex: 1 },
+  milestoneBadges: { fontSize: 12 },
+  habitMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 1 },
   streakText: { fontSize: SIZES.xs },
+  bestStreakText: { fontSize: SIZES.xs },
+  missedWarning: { fontSize: SIZES.xs, fontWeight: '600' },
+  twoMinNudge: { fontSize: SIZES.xs, fontStyle: 'italic', marginTop: 2 },
   cell: {
     flex: 1, aspectRatio: 1, maxHeight: 36,
     borderRadius: 8,
@@ -278,13 +502,31 @@ const styles = StyleSheet.create({
   statsTitle: {
     fontSize: SIZES.lg, fontWeight: '700', marginBottom: 12,
   },
-  statRow: {
-    flexDirection: 'row', alignItems: 'center', paddingVertical: 6, gap: 8,
+  statCard: {
+    paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  statHeaderRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8,
   },
   statIcon: { fontSize: 18 },
-  statName: { flex: 1, fontSize: SIZES.md },
-  statBadge: {
-    borderRadius: 12, paddingHorizontal: 10, paddingVertical: 3,
+  statName: { flex: 1, fontSize: SIZES.md, fontWeight: '600' },
+  statMetrics: { flexDirection: 'row', gap: 8 },
+  metricBox: {
+    flex: 1, borderRadius: 10, paddingVertical: 8, alignItems: 'center',
   },
-  statBadgeText: { fontSize: SIZES.xs, fontWeight: '600' },
+  metricValue: { fontSize: SIZES.base, fontWeight: '700' },
+  metricLabel: { fontSize: SIZES.xs, marginTop: 2 },
+  milestoneRow: { marginTop: 8 },
+  milestoneBar: {
+    height: 6, borderRadius: 3, overflow: 'hidden',
+  },
+  milestoneFill: { height: '100%', borderRadius: 3 },
+  milestoneLabel: { fontSize: SIZES.xs, marginTop: 4 },
+  achievedRow: { flexDirection: 'row', gap: 6, marginTop: 8, flexWrap: 'wrap' },
+  achievedBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12,
+  },
+  achievedEmoji: { fontSize: 12 },
+  achievedLabel: { fontSize: SIZES.xs, fontWeight: '600' },
 });

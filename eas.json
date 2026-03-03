@@ -29,7 +29,8 @@
     "production": {
       "ios": {
         "appleId": "gulliver2019@gmail.com",
-        "appleTeamId": "C44CA343J4"
+        "appleTeamId": "C44CA343J4",
+        "ascAppId": "6759218754"
       }
     }
   }

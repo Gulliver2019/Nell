@@ -211,8 +211,14 @@ function TaskCard({ task, colors, onMove, onDelete, onAddToDaily, onEdit, drag, 
 
           {/* Delete */}
           <TouchableOpacity
-            onPress={() => { Haptics.selectionAsync(); onDelete(task.id); }}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            onPress={() => {
+              Haptics.selectionAsync();
+              Alert.alert('Delete Task', 'Are you sure you want to delete this task?', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Delete', style: 'destructive', onPress: () => onDelete(task.id) },
+              ]);
+            }}
+            style={styles.taskDeleteBtn}
           >
             <Text style={[styles.taskDelete, { color: colors.textMuted }]}>✕</Text>
           </TouchableOpacity>
@@ -801,7 +807,8 @@ const styles = StyleSheet.create({
     fontSize: 22, fontWeight: '300',
   },
   taskText: { fontSize: SIZES.sm, lineHeight: 20 },
-  taskDelete: { fontSize: 12, marginLeft: 4 },
+  taskDelete: { fontSize: 16, fontWeight: '600' },
+  taskDeleteBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
 
   emptyColumn: { paddingVertical: 24, alignItems: 'center' },
   emptyColumnText: { fontSize: SIZES.sm, textAlign: 'center' },

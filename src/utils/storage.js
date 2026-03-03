@@ -231,6 +231,9 @@ export const addHabit = async (habit) => {
     icon: '✨',
     color: '#6C5CE7',
     completions: {}, // { '2024-01-15': true }
+    timeOfDay: 'morning', // 'morning' | 'afternoon' | 'evening'
+    twoMinVersion: '', // Atomic Habits: scaled-down 2-minute version
+    bestStreak: 0,
     ...habit,
   };
   habits.push(newHabit);
@@ -244,11 +247,29 @@ export const toggleHabitDay = async (habitId, dateKey) => {
   if (idx !== -1) {
     if (!habits[idx].completions) habits[idx].completions = {};
     habits[idx].completions[dateKey] = !habits[idx].completions[dateKey];
+    // Update best streak
+    const streak = calcStreak(habits[idx]);
+    if (streak > (habits[idx].bestStreak || 0)) {
+      habits[idx].bestStreak = streak;
+    }
     await saveHabits(habits);
     return habits[idx];
   }
   return null;
 };
+
+function calcStreak(habit) {
+  let streak = 0;
+  const today = new Date();
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = getDateKey(d);
+    if (habit.completions?.[key]) streak++;
+    else break;
+  }
+  return streak;
+}
 
 export const deleteHabit = async (id) => {
   const habits = await getHabits();

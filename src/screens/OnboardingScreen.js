@@ -26,14 +26,14 @@ const SLIDES = [
   {
     emoji: '📓',
     title: 'This Is Goal Digger',
-    subtitle: 'Plan with intention. Execute with precision. Review with honesty.',
-    body: 'This isn\'t another productivity app — it\'s a complete operating system for ambitious people who want momentum, not just organisation.\n\nYour daily focus stays razor-sharp as projects and monthly goals intelligently migrate into action. With AI reviewing your behaviour, you don\'t just track tasks — you improve performance.\n\nEverything moves forward. Nothing gets ignored.',
+    subtitle: 'Four proven systems. One app.',
+    body: 'Goal Digger combines the best ideas from rapid logging, time blocking, the Pomodoro technique, and habit science into one seamless system.\n\nNo fluff. No complexity. Just the methods that actually work — wired together so nothing falls through the cracks.',
   },
   {
     key: 'rapid',
     emoji: '⚡',
     title: 'Capture Everything Fast',
-    subtitle: 'Rapid logging — the core engine',
+    subtitle: 'Rapid logging — your daily engine',
     body: 'Short-form notation to log your life in seconds:\n\n•  Task — something to do\n○  Event — something happening\n—  Note — a thought to remember\n\nNo templates. No friction. Just write.',
   },
   {
@@ -65,25 +65,11 @@ const SLIDES = [
     body: 'Assign tasks to time slots. Use the built-in Pomodoro timer for 25-minute focus sprints.\n\nStop reacting. Start executing.',
   },
   {
-    key: 'ai',
-    emoji: '✨',
-    title: 'Meet Jarvis',
-    subtitle: 'Your AI-powered chief of staff',
-    body: 'Jarvis sees everything — your tasks, projects, habits, reflections. Tap the brain icon for:\n\nPlan My Day — a full execution plan\nRisk flags when you\'re overloaded\nProject coaching & next steps\n\nThis isn\'t a chatbot. It\'s your operating system.',
-  },
-  {
-    key: 'book',
-    emoji: '📖',
-    title: 'The Bullet Journal Method',
-    subtitle: 'By Ryder Carroll',
-    body: 'Goal Digger is built on the Bullet Journal method. For the full philosophy behind the system, we recommend the original book by its creator, Ryder Carroll.',
-  },
-  {
     key: 'ready',
     emoji: '💪',
-    title: 'Your System Starts Now',
-    subtitle: 'Everything you need. Nothing you don\'t.',
-    body: 'Habits. Reflections. Shopping lists. Time blocks. AI guidance. All connected through one index you can search instantly.\n\nThis is the last productivity app you\'ll ever download.',
+    title: 'Build Better Habits',
+    subtitle: 'Powered by habit science',
+    body: 'Track habits with streaks, completion rates, and "never miss twice" nudges. Set a two-minute version for low-motivation days.\n\nSmall actions, repeated daily, compound into massive results.\n\nThis is the last productivity app you\'ll ever download.',
   },
 ];
 
@@ -151,9 +137,9 @@ export default function OnboardingScreen({ onComplete }) {
             <Text style={[styles.slideSubtitle, { color: colors.accent }]}>{slide.subtitle}</Text>
             <Text style={[styles.slideBody, { color: colors.textSecondary }]}>{slide.body}</Text>
           </>
-        ) : slide.key === 'rapid' || slide.key === 'migration' || slide.key === 'project' || slide.key === 'ready' || slide.key === 'pom' || slide.key === 'cal' || slide.key === 'ai' ? (
+        ) : slide.key === 'rapid' || slide.key === 'migration' || slide.key === 'project' || slide.key === 'ready' || slide.key === 'pom' || slide.key === 'cal' ? (
           <>
-            <Image source={slide.key === 'rapid' ? RAPID_IMAGE : slide.key === 'migration' ? MIGRATION_IMAGE : slide.key === 'project' ? PROJECT_IMAGE : slide.key === 'pom' ? POM_IMAGE : slide.key === 'cal' ? CAL_IMAGE : slide.key === 'ai' ? BRAIN_IMAGE : READY_IMAGE} style={styles.slideIcon} resizeMode="contain" />
+            <Image source={slide.key === 'rapid' ? RAPID_IMAGE : slide.key === 'migration' ? MIGRATION_IMAGE : slide.key === 'project' ? PROJECT_IMAGE : slide.key === 'pom' ? POM_IMAGE : slide.key === 'cal' ? CAL_IMAGE : READY_IMAGE} style={styles.slideIcon} resizeMode="contain" />
             <Text style={[styles.slideTitle, { color: colors.text }]}>{slide.title}</Text>
             <Text style={[styles.slideSubtitle, { color: colors.accent }]}>{slide.subtitle}</Text>
             <Text style={[styles.slideBody, { color: colors.textSecondary }]}>{slide.body}</Text>
