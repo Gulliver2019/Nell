@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Linking,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Linking, Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -26,7 +26,7 @@ export default function MoreScreen({ navigation }) {
   const { isProUser, restorePurchases } = useRevenueCat();
   const [showCustomerCenter, setShowCustomerCenter] = useState(false);
   const TASK_STATES = getTaskStates(colors);
-  const { entries, migrateEntry, updateEntry } = useApp();
+  const { entries, migrateEntry, updateEntry, enabledFeatures, toggleFeature } = useApp();
   const [defaultScreen, setDefaultScreen] = useState('Daily');
 
   useEffect(() => {
@@ -118,12 +118,6 @@ export default function MoreScreen({ navigation }) {
               >
                 <Text style={[styles.helpBtnText, { color: colors.accent }]}>?</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('Debug')}
-                style={[styles.helpBtn, { backgroundColor: colors.accent + '20', borderColor: colors.accent }]}
-              >
-                <Text style={[styles.helpBtnText, { color: colors.accent }]}>🔧</Text>
-              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -151,6 +145,36 @@ export default function MoreScreen({ navigation }) {
               </TouchableOpacity>
             ))}
           </View>
+        </View>
+
+        {/* Manage Features */}
+        <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>📋 Manage Features</Text>
+          <Text style={[styles.sectionSub, { color: colors.textMuted, marginBottom: 10 }]}>Show or hide tabs from your navigation</Text>
+          {[
+            { key: 'logging', label: 'Logging', desc: 'Monthly & Future logs' },
+            { key: 'shopping', label: 'Shopping List', desc: 'Shopping list tab' },
+            { key: 'projects', label: 'Projects', desc: 'Project boards' },
+            { key: 'collections', label: 'Collections', desc: 'Custom collections' },
+            { key: 'habits', label: 'Habits', desc: 'Habit tracker' },
+            { key: 'reflections', label: 'Reflections', desc: 'Reflect tab' },
+          ].map(feature => (
+            <View key={feature.key} style={[styles.featureRow, { borderBottomColor: colors.border }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.featureLabel, { color: colors.text }]}>{feature.label}</Text>
+                <Text style={[styles.featureDesc, { color: colors.textMuted }]}>{feature.desc}</Text>
+              </View>
+              <Switch
+                value={enabledFeatures[feature.key] !== false}
+                onValueChange={() => {
+                  Haptics.selectionAsync();
+                  toggleFeature(feature.key);
+                }}
+                trackColor={{ false: colors.border, true: colors.accent + '60' }}
+                thumbColor={enabledFeatures[feature.key] !== false ? colors.accent : colors.textMuted}
+              />
+            </View>
+          ))}
         </View>
 
         {/* Overall Stats */}
@@ -497,4 +521,10 @@ const styles = StyleSheet.create({
   },
   contactLabel: { fontSize: SIZES.md },
   contactValue: { fontSize: SIZES.sm, fontWeight: '600' },
+  featureRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  featureLabel: { fontSize: SIZES.md, fontWeight: '600' },
+  featureDesc: { fontSize: SIZES.xs, marginTop: 2 },
 });

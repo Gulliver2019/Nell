@@ -1,5 +1,16 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Storage from '../utils/storage';
+
+const ENABLED_FEATURES_KEY = '@enabled_features';
+const DEFAULT_FEATURES = {
+  logging: true,
+  shopping: true,
+  projects: true,
+  collections: true,
+  habits: true,
+  reflections: true,
+};
 
 const AppContext = createContext();
 
@@ -12,6 +23,7 @@ const initialState = {
   projects: [],
   routines: [],
   wellnessTemplates: { nutrition: [], exercise: [], meditation: { enabled: true } },
+  enabledFeatures: DEFAULT_FEATURES,
   selectedDate: Storage.getDateKey(),
   loading: true,
   searchQuery: '',
@@ -43,6 +55,8 @@ function reducer(state, action) {
       return { ...state, selectedDate: action.payload };
     case 'SET_SEARCH':
       return { ...state, searchQuery: action.payload };
+    case 'SET_ENABLED_FEATURES':
+      return { ...state, enabledFeatures: action.payload };
     default:
       return state;
   }
@@ -53,7 +67,7 @@ export function AppProvider({ children }) {
 
   const loadAll = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
-    const [entries, collections, habits, reflections, futureLog, projects, routines, wellnessTemplates] = await Promise.all([
+    const [entries, collections, habits, reflections, futureLog, projects, routines, wellnessTemplates, featuresJson] = await Promise.all([
       Storage.getAllEntries(),
       Storage.getCollections(),
       Storage.getHabits(),
@@ -62,8 +76,10 @@ export function AppProvider({ children }) {
       Storage.getProjects(),
       Storage.getRoutines(),
       Storage.getWellnessTemplates(),
+      AsyncStorage.getItem(ENABLED_FEATURES_KEY),
     ]);
-    dispatch({ type: 'LOAD_ALL', payload: { entries, collections, habits, reflections, futureLog, projects, routines, wellnessTemplates } });
+    const enabledFeatures = featuresJson ? { ...DEFAULT_FEATURES, ...JSON.parse(featuresJson) } : DEFAULT_FEATURES;
+    dispatch({ type: 'LOAD_ALL', payload: { entries, collections, habits, reflections, futureLog, projects, routines, wellnessTemplates, enabledFeatures } });
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
@@ -341,6 +357,12 @@ export function AppProvider({ children }) {
     dispatch({ type: 'SET_SEARCH', payload: q });
   }, []);
 
+  const toggleFeature = useCallback(async (key) => {
+    const updated = { ...state.enabledFeatures, [key]: !state.enabledFeatures[key] };
+    dispatch({ type: 'SET_ENABLED_FEATURES', payload: updated });
+    await AsyncStorage.setItem(ENABLED_FEATURES_KEY, JSON.stringify(updated));
+  }, [state.enabledFeatures]);
+
   const value = {
     ...state,
     loadAll,
@@ -375,6 +397,7 @@ export function AppProvider({ children }) {
     saveWellnessTemplates,
     setSelectedDate,
     setSearchQuery,
+    toggleFeature,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

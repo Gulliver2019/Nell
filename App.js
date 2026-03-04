@@ -8,7 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AppProvider } from './src/context/AppContext';
+import { AppProvider, useApp } from './src/context/AppContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { RevenueCatProvider, useRevenueCat } from './src/context/RevenueCatContext';
 
@@ -26,7 +26,6 @@ import ProjectsScreen from './src/screens/ProjectsScreen';
 import ShoppingListScreen from './src/screens/ShoppingListScreen';
 import PaywallScreen from './src/screens/PaywallScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
-import DebugScreen from './src/screens/DebugScreen';
 // import AIGuidanceButton from './src/components/AIGuidanceButton'; // AI disabled
 
 const Tab = createBottomTabNavigator();
@@ -38,7 +37,6 @@ function MoreStackScreen() {
       <MoreStack.Screen name="MoreHome" component={MoreScreen} />
       <MoreStack.Screen name="Help" component={HelpScreen} />
       <MoreStack.Screen name="ThemePicker" component={ThemePickerScreen} />
-      <MoreStack.Screen name="Debug" component={DebugScreen} />
     </MoreStack.Navigator>
   );
 }
@@ -103,6 +101,7 @@ const DEFAULT_SCREEN_KEY = '@default_screen';
 function AppContent() {
   const { colors, hasChosenTheme, loading } = useTheme();
   const { isProUser, isReady: rcReady } = useRevenueCat();
+  const { enabledFeatures } = useApp();
   const [paywallDismissed, setPaywallDismissed] = useState(null);
   const [onboardingDone, setOnboardingDone] = useState(null);
   const [defaultScreen, setDefaultScreen] = useState('Daily');
@@ -186,13 +185,13 @@ function AppContent() {
         })}
       >
         <Tab.Screen name="Daily" component={DailyLogScreen} />
-        <Tab.Screen name="Monthly" component={MonthlyLogScreen} />
-        <Tab.Screen name="Future" component={FutureLogScreen} />
-        <Tab.Screen name="Projects" component={ProjectsScreen} />
-        <Tab.Screen name="Collections" component={CollectionsScreen} />
-        <Tab.Screen name="Shopping" component={ShoppingListScreen} />
-        <Tab.Screen name="Habits" component={HabitTrackerScreen} />
-        <Tab.Screen name="Reflect" component={ReflectionScreen} />
+        {enabledFeatures.logging !== false && <Tab.Screen name="Monthly" component={MonthlyLogScreen} />}
+        {enabledFeatures.logging !== false && <Tab.Screen name="Future" component={FutureLogScreen} />}
+        {enabledFeatures.projects !== false && <Tab.Screen name="Projects" component={ProjectsScreen} />}
+        {enabledFeatures.collections !== false && <Tab.Screen name="Collections" component={CollectionsScreen} />}
+        {enabledFeatures.shopping !== false && <Tab.Screen name="Shopping" component={ShoppingListScreen} />}
+        {enabledFeatures.habits !== false && <Tab.Screen name="Habits" component={HabitTrackerScreen} />}
+        {enabledFeatures.reflections !== false && <Tab.Screen name="Reflect" component={ReflectionScreen} />}
         <Tab.Screen name="Index" component={IndexScreen} />
         <Tab.Screen name="More" component={MoreStackScreen} />
       </Tab.Navigator>
