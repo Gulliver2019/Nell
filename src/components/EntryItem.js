@@ -186,7 +186,7 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
                 hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}
                 style={styles.editBtn}
               >
-                <Text style={[styles.editIcon, { color: colors.textMuted }]}>✎</Text>
+                <Text style={[styles.editIcon, { color: colors.textSecondary }]}>✎</Text>
               </TouchableOpacity>
             )}
             <Text
@@ -352,6 +352,7 @@ const styles = StyleSheet.create({
   },
   editBtn: {
     marginLeft: 6,
+    marginRight: 4,
     padding: 2,
   },
   editIcon: {
