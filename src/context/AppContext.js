@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Storage from '../utils/storage';
 
 const ENABLED_FEATURES_KEY = '@enabled_features';
+const PERSONALITY_KEY = '@personality_enabled';
 const DEFAULT_FEATURES = {
   logging: true,
   shopping: true,
@@ -24,6 +25,7 @@ const initialState = {
   routines: [],
   wellnessTemplates: { nutrition: [], exercise: [], meditation: { enabled: true } },
   enabledFeatures: DEFAULT_FEATURES,
+  personalityEnabled: true,
   selectedDate: Storage.getDateKey(),
   loading: true,
   searchQuery: '',
@@ -57,6 +59,8 @@ function reducer(state, action) {
       return { ...state, searchQuery: action.payload };
     case 'SET_ENABLED_FEATURES':
       return { ...state, enabledFeatures: action.payload };
+    case 'SET_PERSONALITY':
+      return { ...state, personalityEnabled: action.payload };
     default:
       return state;
   }
@@ -67,7 +71,7 @@ export function AppProvider({ children }) {
 
   const loadAll = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
-    const [entries, collections, habits, reflections, futureLog, projects, routines, wellnessTemplates, featuresJson] = await Promise.all([
+    const [entries, collections, habits, reflections, futureLog, projects, routines, wellnessTemplates, featuresJson, personalityJson] = await Promise.all([
       Storage.getAllEntries(),
       Storage.getCollections(),
       Storage.getHabits(),
@@ -77,9 +81,11 @@ export function AppProvider({ children }) {
       Storage.getRoutines(),
       Storage.getWellnessTemplates(),
       AsyncStorage.getItem(ENABLED_FEATURES_KEY),
+      AsyncStorage.getItem(PERSONALITY_KEY),
     ]);
     const enabledFeatures = featuresJson ? { ...DEFAULT_FEATURES, ...JSON.parse(featuresJson) } : DEFAULT_FEATURES;
-    dispatch({ type: 'LOAD_ALL', payload: { entries, collections, habits, reflections, futureLog, projects, routines, wellnessTemplates, enabledFeatures } });
+    const personalityEnabled = personalityJson !== null ? personalityJson === 'true' : true;
+    dispatch({ type: 'LOAD_ALL', payload: { entries, collections, habits, reflections, futureLog, projects, routines, wellnessTemplates, enabledFeatures, personalityEnabled } });
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
@@ -410,6 +416,12 @@ export function AppProvider({ children }) {
     await AsyncStorage.setItem(ENABLED_FEATURES_KEY, JSON.stringify(updated));
   }, [state.enabledFeatures]);
 
+  const togglePersonality = useCallback(async () => {
+    const next = !state.personalityEnabled;
+    dispatch({ type: 'SET_PERSONALITY', payload: next });
+    await AsyncStorage.setItem(PERSONALITY_KEY, String(next));
+  }, [state.personalityEnabled]);
+
   const value = {
     ...state,
     loadAll,
@@ -446,6 +458,7 @@ export function AppProvider({ children }) {
     setSelectedDate,
     setSearchQuery,
     toggleFeature,
+    togglePersonality,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

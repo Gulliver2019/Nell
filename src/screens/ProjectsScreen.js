@@ -13,6 +13,8 @@ import { useApp } from '../context/AppContext';
 import FAB from '../components/FAB';
 import EntryFormFlyout from '../components/EntryFormFlyout';
 import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
+import { Ionicons } from '@expo/vector-icons';
+import { projectTaskText, addedToDailyMessage } from '../utils/personality';
 import * as Haptics from 'expo-haptics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -136,7 +138,7 @@ function ProjectIndexBoard({ projects, onSelect, onAdd, onReorder, colors }) {
 }
 
 // Kanban task card with arrow buttons
-function TaskCard({ task, colors, onMove, onDelete, onAddToDaily, onEdit, drag, isActive }) {
+function TaskCard({ task, colors, onMove, onDelete, onEdit, drag, isActive }) {
   const colIdx = COLUMNS.findIndex(c => c.key === task.column);
   const canGoLeft = colIdx > 0;
   const canGoRight = colIdx < COLUMNS.length - 1;
@@ -193,20 +195,6 @@ function TaskCard({ task, colors, onMove, onDelete, onAddToDaily, onEdit, drag, 
             <Text style={[styles.arrowText, { color: colors.accent }]}>›</Text>
           </TouchableOpacity>
 
-          {/* Add to Daily */}
-          {task.column !== 'done' && (
-            <TouchableOpacity
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onAddToDaily?.(task); }}
-              style={[styles.addToDailyBtn, { backgroundColor: colors.accentGreen + '18' }]}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Text style={[styles.addToDailyText, { color: colors.accentGreen }]}>→ Daily</Text>
-            </TouchableOpacity>
-          )}
-          {task._addedToDaily && (
-            <Text style={[styles.addedBadge, { color: colors.textMuted }]}>✓</Text>
-          )}
-
           <View style={{ flex: 1 }} />
 
           {/* Delete */}
@@ -229,11 +217,13 @@ function TaskCard({ task, colors, onMove, onDelete, onAddToDaily, onEdit, drag, 
 }
 
 // Kanban board detail view
-function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onDeleteTask, onReorderTasks, onAddToDaily, onEditTask }) {
+function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onDeleteTask, onReorderTasks, onMakeSomeTime, onEditTask, personalityEnabled }) {
   const [flyoutVisible, setFlyoutVisible] = useState(false);
   const [addingToColumn, setAddingToColumn] = useState('todo');
-  const [convertTask, setConvertTask] = useState(null);
-  const [convertDate, setConvertDate] = useState(new Date());
+  const [makeTimeVisible, setMakeTimeVisible] = useState(false);
+  const [makeTimeTask, setMakeTimeTask] = useState(null);
+  const [makeTimeDate, setMakeTimeDate] = useState(new Date());
+  const [makeTimePomodoros, setMakeTimePomodoros] = useState(2);
   const [editingTask, setEditingTask] = useState(null);
   const [editText, setEditText] = useState('');
   const scrollRef = useRef(null);
@@ -242,27 +232,36 @@ function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onD
   const done = project.tasks.filter(t => t.column === 'done').length;
   const progress = total > 0 ? Math.round((done / total) * 100) : 0;
 
+  const incompleteTasks = useMemo(() =>
+    project.tasks.filter(t => t.column !== 'done'),
+    [project.tasks]
+  );
+
   const handleAddTask = (data) => {
     if (!data.text?.trim()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onAddTask({ text: data.text.trim(), column: addingToColumn });
   };
 
-  const handleAddToDaily = useCallback((task) => {
-    setConvertTask(task);
-    setConvertDate(new Date());
+  const openMakeTime = useCallback((task) => {
+    setMakeTimeTask(task || null);
+    setMakeTimeDate(new Date());
+    setMakeTimePomodoros(2);
+    setMakeTimeVisible(true);
   }, []);
 
-  const confirmAddToDaily = useCallback(async () => {
-    if (!convertTask) return;
-    const y = convertDate.getFullYear();
-    const m = String(convertDate.getMonth() + 1).padStart(2, '0');
-    const d = String(convertDate.getDate()).padStart(2, '0');
+  const confirmMakeTime = useCallback(async () => {
+    if (!makeTimeTask) return;
+    const y = makeTimeDate.getFullYear();
+    const m = String(makeTimeDate.getMonth() + 1).padStart(2, '0');
+    const d = String(makeTimeDate.getDate()).padStart(2, '0');
     const targetDate = `${y}-${m}-${d}`;
-    await onAddToDaily(convertTask, targetDate);
-    setConvertTask(null);
-    Alert.alert('Added', `"${convertTask.text}" added to daily for ${targetDate}`);
-  }, [convertTask, convertDate, onAddToDaily]);
+    const text = projectTaskText(makeTimeTask.text, project.title, personalityEnabled);
+    await onMakeSomeTime(makeTimeTask, targetDate, makeTimePomodoros, text);
+    setMakeTimeVisible(false);
+    const msg = addedToDailyMessage(personalityEnabled);
+    Alert.alert(msg, `${makeTimePomodoros} pomodoro${makeTimePomodoros > 1 ? 's' : ''} scheduled for ${targetDate}`);
+  }, [makeTimeTask, makeTimeDate, makeTimePomodoros, onMakeSomeTime, project.title, personalityEnabled]);
 
   const handleEditTask = useCallback((task) => {
     setEditingTask(task);
@@ -282,12 +281,11 @@ function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onD
       colors={colors}
       onMove={onMoveTask}
       onDelete={onDeleteTask}
-      onAddToDaily={handleAddToDaily}
       onEdit={handleEditTask}
       drag={drag}
       isActive={isActive}
     />
-  ), [colors, onMoveTask, onDeleteTask, handleAddToDaily, handleEditTask]);
+  ), [colors, onMoveTask, onDeleteTask, handleEditTask]);
 
   return (
     <View style={{ flex: 1 }}>
@@ -387,12 +385,23 @@ function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onD
         })}
       </ScrollView>
 
-      {/* Hint */}
+      {/* Hint + Make Some Time */}
       <View style={[styles.swipeHint, { backgroundColor: colors.bgCard, borderTopColor: colors.border }]}>
         <Text style={[styles.swipeHintText, { color: colors.textMuted }]}>
           ‹ › move between columns · hold to reorder
         </Text>
       </View>
+
+      {incompleteTasks.length > 0 && (
+        <TouchableOpacity
+          style={[styles.makeTimeBtn, { backgroundColor: colors.accent }]}
+          onPress={() => openMakeTime(null)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="time-outline" size={18} color="#fff" />
+          <Text style={styles.makeTimeBtnText}>Make Some Time</Text>
+        </TouchableOpacity>
+      )}
 
       <FAB onPress={() => { setAddingToColumn('todo'); setFlyoutVisible(true); }} />
       <EntryFormFlyout
@@ -402,41 +411,93 @@ function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onD
         visibleFields={['text']}
       />
 
-      {/* Add to Daily date picker modal */}
-      <Modal visible={!!convertTask} transparent animationType="fade">
-        <View style={styles.convertOverlay}>
+      {/* Make Some Time modal */}
+      <Modal visible={makeTimeVisible} transparent animationType="slide">
+        <KeyboardAvoidingView
+          style={styles.convertOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
           <View style={[styles.convertModal, { backgroundColor: colors.bgCard }]}>
-            <Text style={[styles.convertTitle, { color: colors.text }]}>Add to Daily</Text>
-            <Text style={[styles.convertSubtitle, { color: colors.textMuted }]} numberOfLines={2}>
-              {convertTask?.text}
-            </Text>
-            <Text style={[styles.convertLabel, { color: colors.textSecondary }]}>Pick a date:</Text>
+            <Text style={[styles.convertTitle, { color: colors.text }]}>Make Some Time ⏰</Text>
+
+            {/* Task picker */}
+            <Text style={[styles.convertLabel, { color: colors.textSecondary }]}>Pick a task:</Text>
+            <ScrollView style={styles.taskPickerScroll} nestedScrollEnabled>
+              {incompleteTasks.map(t => (
+                <TouchableOpacity
+                  key={t.id}
+                  style={[
+                    styles.taskPickerItem,
+                    { borderColor: colors.border, backgroundColor: colors.bg },
+                    makeTimeTask?.id === t.id && { borderColor: colors.accent, backgroundColor: colors.accent + '15' },
+                  ]}
+                  onPress={() => setMakeTimeTask(t)}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[styles.taskPickerText, { color: colors.text }, makeTimeTask?.id === t.id && { color: colors.accent }]}
+                    numberOfLines={2}
+                  >{t.text}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {/* Date picker */}
+            <Text style={[styles.convertLabel, { color: colors.textSecondary, marginTop: 14 }]}>What day?</Text>
             <DateTimePicker
-              value={convertDate}
+              value={makeTimeDate}
               mode="date"
               display="inline"
               themeVariant="dark"
               accentColor={colors.accent}
               onChange={(event, selected) => {
-                if (selected) setConvertDate(selected);
+                if (selected) setMakeTimeDate(selected);
               }}
             />
+
+            {/* Pomodoro picker */}
+            <Text style={[styles.convertLabel, { color: colors.textSecondary, marginTop: 14 }]}>How much time? (25 min blocks)</Text>
+            <View style={styles.pomodoroRow}>
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(n => (
+                <TouchableOpacity
+                  key={n}
+                  style={[
+                    styles.pomodoroChip,
+                    { borderColor: colors.border, backgroundColor: colors.bg },
+                    makeTimePomodoros === n && { borderColor: colors.accent, backgroundColor: colors.accent + '20' },
+                  ]}
+                  onPress={() => { setMakeTimePomodoros(n); Haptics.selectionAsync(); }}
+                >
+                  <Text style={[
+                    styles.pomodoroChipText,
+                    { color: colors.textMuted },
+                    makeTimePomodoros === n && { color: colors.accent, fontWeight: '700' },
+                  ]}>{n}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Text style={[styles.pomodoroTime, { color: colors.textMuted }]}>
+              = {makeTimePomodoros * 25} minutes
+            </Text>
+
+            {/* Actions */}
             <View style={styles.convertActions}>
               <TouchableOpacity
                 style={[styles.convertBtn, { backgroundColor: colors.bgInput || colors.border }]}
-                onPress={() => setConvertTask(null)}
+                onPress={() => setMakeTimeVisible(false)}
               >
                 <Text style={[styles.convertBtnText, { color: colors.textMuted }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.convertBtn, { backgroundColor: colors.accentGreen }]}
-                onPress={confirmAddToDaily}
+                style={[styles.convertBtn, { backgroundColor: colors.accent }, !makeTimeTask && { opacity: 0.4 }]}
+                onPress={confirmMakeTime}
+                disabled={!makeTimeTask}
               >
-                <Text style={[styles.convertBtnText, { color: '#fff' }]}>Add to Daily</Text>
+                <Text style={[styles.convertBtnText, { color: '#fff' }]}>Let's Go! 🚀</Text>
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Edit task modal */}
@@ -634,7 +695,7 @@ function NewProjectModal({ visible, onClose, onSave, colors }) {
 
 export default function ProjectsScreen({ route }) {
   const { colors } = useTheme();
-  const { projects, addProject, updateProject, deleteProject, addProjectTask, moveProjectTask, deleteProjectTask, updateProjectTask, reorderProjectTasks, reorderProjects, addEntry, updateEntry } = useApp();
+  const { projects, addProject, updateProject, deleteProject, addProjectTask, moveProjectTask, deleteProjectTask, updateProjectTask, reorderProjectTasks, reorderProjects, addEntry, updateEntry, personalityEnabled } = useApp();
   const [selectedProject, setSelectedProject] = useState(null);
   const [showNewModal, setShowNewModal] = useState(false);
 
@@ -672,8 +733,8 @@ export default function ProjectsScreen({ route }) {
     ]);
   };
 
-  const handleAddTaskToDaily = useCallback(async (task, targetDate) => {
-    await addEntry({ text: task.text, type: 'task', date: targetDate, source: 'daily', fromProject: true });
+  const handleMakeSomeTime = useCallback(async (task, targetDate, pomodoros, text) => {
+    await addEntry({ text, type: 'task', date: targetDate, source: 'daily', fromProject: true, pomodoros });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   }, [addEntry]);
 
@@ -690,8 +751,9 @@ export default function ProjectsScreen({ route }) {
           onMoveTask={(taskId, toCol) => moveProjectTask(activeProject.id, taskId, toCol)}
           onDeleteTask={(taskId) => deleteProjectTask(activeProject.id, taskId)}
           onReorderTasks={(column, orderedIds) => reorderProjectTasks(activeProject.id, column, orderedIds)}
-          onAddToDaily={handleAddTaskToDaily}
+          onMakeSomeTime={handleMakeSomeTime}
           onEditTask={(taskId, updates) => updateProjectTask(activeProject.id, taskId, updates)}
+          personalityEnabled={personalityEnabled}
         />
       ) : (
         <ProjectIndexBoard
@@ -873,20 +935,73 @@ const styles = StyleSheet.create({
   },
   modalBtnText: { fontSize: SIZES.md, fontWeight: '700' },
 
-  // Add to Daily
-  addToDailyBtn: {
-    paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 2,
+  // Make Some Time button
+  makeTimeBtn: {
+    position: 'absolute',
+    bottom: 90,
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 24,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
   },
-  addToDailyText: { fontSize: SIZES.xs, fontWeight: '700' },
-  addedBadge: { fontSize: SIZES.xs, marginLeft: 2 },
+  makeTimeBtnText: {
+    color: '#fff',
+    fontSize: SIZES.sm,
+    fontWeight: '700',
+  },
+  taskPickerScroll: {
+    maxHeight: 120,
+    marginBottom: 4,
+  },
+  taskPickerItem: {
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 6,
+  },
+  taskPickerText: {
+    fontSize: SIZES.sm,
+    fontWeight: '500',
+  },
+  pomodoroRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  pomodoroChip: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pomodoroChipText: {
+    fontSize: SIZES.base,
+    fontWeight: '500',
+  },
+  pomodoroTime: {
+    fontSize: SIZES.xs,
+    marginTop: 6,
+    textAlign: 'center',
+  },
 
-  // Convert to Daily modal
+  // Convert modal (Make Some Time)
   convertOverlay: {
     flex: 1, backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center', alignItems: 'center', padding: 24,
+    justifyContent: 'flex-end',
   },
   convertModal: {
-    borderRadius: 20, padding: 24, width: '100%', maxWidth: 360,
+    borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40, maxHeight: '90%',
   },
   convertTitle: { fontSize: SIZES.lg, fontWeight: '700', marginBottom: 8, textAlign: 'center' },
   convertSubtitle: { fontSize: SIZES.sm, textAlign: 'center', marginBottom: 16 },

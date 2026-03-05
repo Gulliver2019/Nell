@@ -26,7 +26,7 @@ export default function MoreScreen({ navigation }) {
   const { isProUser, restorePurchases } = useRevenueCat();
   const [showCustomerCenter, setShowCustomerCenter] = useState(false);
   const TASK_STATES = getTaskStates(colors);
-  const { entries, migrateEntry, updateEntry, enabledFeatures, toggleFeature } = useApp();
+  const { entries, migrateEntry, updateEntry, enabledFeatures, toggleFeature, personalityEnabled, togglePersonality } = useApp();
   const [defaultScreen, setDefaultScreen] = useState('Daily');
 
   useEffect(() => {
@@ -175,6 +175,25 @@ export default function MoreScreen({ navigation }) {
               />
             </View>
           ))}
+        </View>
+
+        {/* Personality */}
+        <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+          <View style={[styles.featureRow, { borderBottomWidth: 0 }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>🎭 Personality Mode</Text>
+              <Text style={[styles.featureDesc, { color: colors.textMuted }]}>Add fun flavour text throughout the app</Text>
+            </View>
+            <Switch
+              value={personalityEnabled}
+              onValueChange={() => {
+                Haptics.selectionAsync();
+                togglePersonality();
+              }}
+              trackColor={{ false: colors.border, true: colors.accent + '60' }}
+              thumbColor={personalityEnabled ? colors.accent : colors.textMuted}
+            />
+          </View>
         </View>
 
         {/* Overall Stats */}
