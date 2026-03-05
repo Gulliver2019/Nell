@@ -152,63 +152,69 @@ export default function HabitTrackerScreen() {
     const achieved = getAchievedMilestones(habit);
     const bestStreak = Math.max(streak, habit.bestStreak || 0);
 
+    const hasMeta = streak > 0 || (bestStreak > streak && bestStreak > 0) ||
+      (missed === 1 && streak === 0) || (missed >= 2 && streak === 0) ||
+      (habit.twoMinVersion && missed >= 1);
+
     return (
       <TouchableOpacity
         key={habit.id}
         style={[styles.habitRow, { borderBottomColor: colors.border }]}
         onLongPress={() => handleDelete(habit)}
+        activeOpacity={0.7}
       >
-        <View style={styles.habitLabel}>
+        {/* Row 1: Emoji + Name */}
+        <View style={styles.habitTitleRow}>
           <Text style={styles.habitIcon}>{habit.icon}</Text>
-          <View style={styles.habitInfo}>
-            <View style={styles.habitNameRow}>
-              <Text style={[styles.habitName, { color: colors.text }]} numberOfLines={1}>{habit.name}</Text>
-              {/* Milestone badges */}
-              {achieved.length > 0 && (
-                <Text style={styles.milestoneBadges}>{achieved[achieved.length - 1].emoji}</Text>
-              )}
-            </View>
-            {/* Streak + Never Miss Twice */}
-            <View style={styles.habitMeta}>
-              {streak > 0 && (
-                <Text style={[styles.streakText, { color: colors.accentOrange }]}>🔥 {streak}d</Text>
-              )}
-              {bestStreak > streak && bestStreak > 0 && (
-                <Text style={[styles.bestStreakText, { color: colors.textMuted }]}>Best: {bestStreak}d</Text>
-              )}
-              {missed === 1 && streak === 0 && (
-                <Text style={[styles.missedWarning, { color: '#F0A500' }]}>⚠️ Don't break it!</Text>
-              )}
-              {missed >= 2 && streak === 0 && (
-                <Text style={[styles.missedWarning, { color: colors.accentRed }]}>🔴 {missed}d missed</Text>
-              )}
-            </View>
-            {/* Two-minute nudge when missed today */}
+          <Text style={[styles.habitName, { color: colors.text }]} numberOfLines={1}>{habit.name}</Text>
+          {achieved.length > 0 && (
+            <Text style={styles.milestoneBadges}>{achieved[achieved.length - 1].emoji}</Text>
+          )}
+        </View>
+
+        {/* Row 2: Checkboxes — full width */}
+        <View style={styles.checksRow}>
+          {days.map(d => {
+            const done = habit.completions?.[d.key];
+            return (
+              <TouchableOpacity
+                key={d.key}
+                style={[
+                  styles.cell,
+                  { backgroundColor: colors.bgInput },
+                  done && { backgroundColor: colors.accentGreen + '30' },
+                  d.isToday && { borderWidth: 1, borderColor: colors.accent + '40' },
+                ]}
+                onPress={() => handleToggle(habit.id, d.key)}
+              >
+                {done && <Text style={[styles.cellCheck, { color: colors.accentGreen }]}>✓</Text>}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* Row 3: Streak / missed / nudge — full width under checkboxes */}
+        {hasMeta && (
+          <View style={styles.habitMeta}>
+            {streak > 0 && (
+              <Text style={[styles.streakText, { color: colors.accentOrange }]}>🔥 {streak}d</Text>
+            )}
+            {bestStreak > streak && bestStreak > 0 && (
+              <Text style={[styles.bestStreakText, { color: colors.textMuted }]}>Best: {bestStreak}d</Text>
+            )}
+            {missed === 1 && streak === 0 && (
+              <Text style={[styles.missedWarning, { color: '#F0A500' }]}>⚠️ Don't break it!</Text>
+            )}
+            {missed >= 2 && streak === 0 && (
+              <Text style={[styles.missedWarning, { color: colors.accentRed }]}>🔴 {missed}d missed</Text>
+            )}
             {habit.twoMinVersion && missed >= 1 && (
               <Text style={[styles.twoMinNudge, { color: colors.accent }]}>
                 💡 Just do: {habit.twoMinVersion}
               </Text>
             )}
           </View>
-        </View>
-
-        {days.map(d => {
-          const done = habit.completions?.[d.key];
-          return (
-            <TouchableOpacity
-              key={d.key}
-              style={[
-                styles.cell,
-                { backgroundColor: colors.bgInput },
-                done && { backgroundColor: colors.accentGreen + '30' },
-                d.isToday && { borderWidth: 1, borderColor: colors.accent + '40' },
-              ]}
-              onPress={() => handleToggle(habit.id, d.key)}
-            >
-              {done && <Text style={[styles.cellCheck, { color: colors.accentGreen }]}>✓</Text>}
-            </TouchableOpacity>
-          );
-        })}
+        )}
       </TouchableOpacity>
     );
   };
@@ -310,7 +316,6 @@ export default function HabitTrackerScreen() {
         <View style={styles.grid}>
           {/* Day headers */}
           <View style={[styles.gridHeader, { borderBottomColor: colors.border }]}>
-            <View style={styles.habitLabel} />
             {days.map(d => (
               <View key={d.key} style={[styles.dayHeader, d.isToday && { backgroundColor: colors.accent + '20', borderRadius: 8 }]}>
                 <Text style={[styles.dayLabel, { color: colors.textMuted }, d.isToday && { color: colors.accent }]}>{d.label}</Text>
@@ -458,13 +463,10 @@ const styles = StyleSheet.create({
   },
   iconOptionActive: { borderWidth: 2 },
   iconOptionText: { fontSize: 20 },
-  grid: { paddingHorizontal: 8 },
+  grid: { paddingHorizontal: 12 },
   gridHeader: {
     flexDirection: 'row', alignItems: 'flex-end', paddingBottom: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  habitLabel: {
-    width: 100, flexDirection: 'row', alignItems: 'center', gap: 6, paddingRight: 4,
   },
   dayHeader: { flex: 1, alignItems: 'center', paddingVertical: 4 },
   dayLabel: { fontSize: SIZES.xs, fontWeight: '500' },
@@ -474,17 +476,21 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: SIZES.lg, fontWeight: '600' },
   emptyText: { fontSize: SIZES.md, marginTop: 4 },
   timeGroup: { marginTop: 8 },
-  timeGroupLabel: { fontSize: SIZES.xs, fontWeight: '700', letterSpacing: 0.5, paddingHorizontal: 8, paddingVertical: 4, textTransform: 'uppercase' },
+  timeGroupLabel: { fontSize: SIZES.xs, fontWeight: '700', letterSpacing: 0.5, paddingHorizontal: 4, paddingVertical: 4, textTransform: 'uppercase' },
   habitRow: {
-    flexDirection: 'row', alignItems: 'center', paddingVertical: 8,
+    paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  habitTitleRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6,
+  },
   habitIcon: { fontSize: 18 },
-  habitInfo: { flex: 1 },
-  habitNameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  habitName: { fontSize: SIZES.sm, fontWeight: '500', flex: 1 },
+  habitName: { fontSize: SIZES.sm, fontWeight: '600', flex: 1 },
   milestoneBadges: { fontSize: 12 },
-  habitMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 1 },
+  checksRow: {
+    flexDirection: 'row',
+  },
+  habitMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6, flexWrap: 'wrap' },
   streakText: { fontSize: SIZES.xs },
   bestStreakText: { fontSize: SIZES.xs },
   missedWarning: { fontSize: SIZES.xs, fontWeight: '600' },
