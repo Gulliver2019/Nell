@@ -78,6 +78,13 @@ const SLIDES = [
     subtitle: 'Personality mode is on by default',
     body: 'Goal Digger has a bit of an attitude. You\'ll see things like "Smash the project" and "Scheduled for destruction 💥" instead of boring alerts.\n\nLove it? Great, we\'re a perfect match.\n\nHate it? No hard feelings. Head to More → Personality Mode and flip the switch. We\'ll be professional. Promise. Mostly.',
   },
+  {
+    key: 'voice',
+    emoji: '🗣️',
+    title: 'Voice Assistants',
+    subtitle: 'Coming soon',
+    body: '"Hey Siri, add \'call the dentist\' to my daily"\n"Alexa, what\'s next on my schedule?"\n"Hey Google, complete my day"\n\nFull voice integration with Siri, Alexa, and Google Assistant is on the way. Manage your tasks, check your schedule, and capture ideas — all hands-free.',
+  },
 ];
 
 export default function OnboardingScreen({ onComplete }) {

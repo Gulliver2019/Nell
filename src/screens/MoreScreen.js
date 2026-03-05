@@ -411,6 +411,22 @@ export default function MoreScreen({ navigation }) {
           />
         )}
 
+        {/* Coming Soon */}
+        <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>🗣️ Coming Soon</Text>
+          <Text style={[styles.sectionSub, { color: colors.textMuted, marginBottom: 12 }]}>Voice assistant integration</Text>
+          <Text style={[styles.comingSoonBody, { color: colors.textSecondary }]}>
+            {"\"Hey Siri, add 'call the dentist' to my daily\"\n\"Alexa, what's next on my schedule?\"\n\"Hey Google, how's my day going?\""}
+          </Text>
+          <View style={styles.assistantRow}>
+            {['🍎 Siri', '🔵 Alexa', '🟢 Google'].map(a => (
+              <View key={a} style={[styles.assistantChip, { backgroundColor: colors.accent + '12' }]}>
+                <Text style={[styles.assistantChipText, { color: colors.accent }]}>{a}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
         {/* Contact & Support */}
         <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>📬 Contact & Support</Text>
@@ -546,4 +562,8 @@ const styles = StyleSheet.create({
   },
   featureLabel: { fontSize: SIZES.md, fontWeight: '600' },
   featureDesc: { fontSize: SIZES.xs, marginTop: 2 },
+  comingSoonBody: { fontSize: SIZES.sm, lineHeight: 22, fontStyle: 'italic' },
+  assistantRow: { flexDirection: 'row', gap: 8, marginTop: 12, flexWrap: 'wrap' },
+  assistantChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
+  assistantChipText: { fontSize: SIZES.sm, fontWeight: '600' },
 });
