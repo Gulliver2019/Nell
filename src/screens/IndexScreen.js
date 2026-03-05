@@ -46,7 +46,7 @@ export default function IndexScreen({ navigation }) {
     projects.forEach(project => {
       (project.tasks || []).forEach(task => {
         if (task.text?.toLowerCase().includes(q)) {
-          results.push({ ...task, _source: 'project', _projectName: project.title, _projectEmoji: project.emoji });
+          results.push({ ...task, _source: 'project', _projectName: project.title, _projectEmoji: project.emoji, _projectId: project.id });
         }
       });
     });
@@ -87,9 +87,9 @@ export default function IndexScreen({ navigation }) {
     if (item._source === 'future') {
       navigation.navigate('FutureLog');
     } else if (item._source === 'project') {
-      navigation.navigate('Projects');
+      navigation.navigate('Projects', { projectId: item._projectId });
     } else if (item.collection) {
-      navigation.navigate('Collections');
+      navigation.navigate('Collections', { collectionId: item.collection });
     } else if (item.date) {
       setSelectedDate(item.date);
       navigation.navigate('Daily');
@@ -267,7 +267,7 @@ export default function IndexScreen({ navigation }) {
                       <TouchableOpacity
                         key={project.id}
                         style={[styles.itemRow, { borderBottomColor: colors.border }]}
-                        onPress={() => navigation.navigate('Projects')}
+                        onPress={() => navigation.navigate('Projects', { projectId: project.id })}
                         activeOpacity={0.7}
                       >
                         <View style={[styles.accentDot, { backgroundColor: project.color }]} />
@@ -305,7 +305,7 @@ export default function IndexScreen({ navigation }) {
                   <TouchableOpacity
                     key={col.id}
                     style={[styles.itemRow, { borderBottomColor: colors.border }]}
-                    onPress={() => navigation.navigate('Collections')}
+                    onPress={() => navigation.navigate('Collections', { collectionId: col.id })}
                     activeOpacity={0.7}
                   >
                     <Text style={[styles.itemText, { color: colors.text }]} numberOfLines={1}>{col.title}</Text>
@@ -341,7 +341,7 @@ export default function IndexScreen({ navigation }) {
                       <TouchableOpacity
                         key={m.key}
                         style={[styles.itemRow, { borderBottomColor: colors.border }]}
-                        onPress={() => navigation.navigate('Monthly')}
+                        onPress={() => navigation.navigate('Monthly', { monthKey: m.key })}
                         activeOpacity={0.7}
                       >
                         <Text style={[styles.itemText, { color: colors.text }]}>{label}</Text>

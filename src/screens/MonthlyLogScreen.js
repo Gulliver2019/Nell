@@ -15,7 +15,7 @@ import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-export default function MonthlyLogScreen() {
+export default function MonthlyLogScreen({ route }) {
   const { colors } = useTheme();
   const TASK_STATES = getTaskStates(colors);
   const BULLET_TYPES = getBulletTypes(colors);
@@ -24,9 +24,16 @@ export default function MonthlyLogScreen() {
   const [currentMonth, setCurrentMonth] = useState(getMonthKey());
   const [flyoutVisible, setFlyoutVisible] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
-  const [addingToDay, setAddingToDay] = useState(null); // dateKey for FAB per-day add
-  const [convertEntry, setConvertEntry] = useState(null); // entry being converted to daily
+  const [addingToDay, setAddingToDay] = useState(null);
+  const [convertEntry, setConvertEntry] = useState(null);
   const [convertDate, setConvertDate] = useState(new Date());
+
+  // Deep-link: jump to specific month from route params
+  React.useEffect(() => {
+    if (route?.params?.monthKey) {
+      setCurrentMonth(route.params.monthKey);
+    }
+  }, [route?.params?.monthKey]);
 
   const goMonth = (offset) => {
     const [y, m] = currentMonth.split('-').map(Number);

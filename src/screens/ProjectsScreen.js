@@ -632,11 +632,19 @@ function NewProjectModal({ visible, onClose, onSave, colors }) {
   );
 }
 
-export default function ProjectsScreen() {
+export default function ProjectsScreen({ route }) {
   const { colors } = useTheme();
   const { projects, addProject, updateProject, deleteProject, addProjectTask, moveProjectTask, deleteProjectTask, updateProjectTask, reorderProjectTasks, reorderProjects, addEntry, updateEntry } = useApp();
   const [selectedProject, setSelectedProject] = useState(null);
   const [showNewModal, setShowNewModal] = useState(false);
+
+  // Deep-link: auto-select project from route params
+  React.useEffect(() => {
+    if (route?.params?.projectId && projects.length > 0) {
+      const target = projects.find(p => p.id === route.params.projectId);
+      if (target) setSelectedProject(target);
+    }
+  }, [route?.params?.projectId, projects]);
 
   // Keep selected project in sync with state
   const activeProject = useMemo(() => {

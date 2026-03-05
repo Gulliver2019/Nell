@@ -20,7 +20,7 @@ import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
 const ICONS = ['📋', '🎯', '📚', '💡', '🏃', '🎨', '🛒', '✈️', '💰', '🎵', '🍽️', '🧘', '💼', '🌱', '❤️', '⭐'];
 const ACCENT_COLORS = ['#6C5CE7', '#00CEC9', '#FD79A8', '#FDCB6E', '#00B894', '#E17055', '#FF6B6B', '#74B9FF'];
 
-export default function CollectionsScreen() {
+export default function CollectionsScreen({ route }) {
   const { colors } = useTheme();
   const {
     collections, entries, addCollection, deleteCollection,
@@ -29,6 +29,14 @@ export default function CollectionsScreen() {
   } = useApp();
 
   const [selectedCollection, setSelectedCollection] = useState(null);
+
+  // Deep-link: auto-select collection from route params
+  React.useEffect(() => {
+    if (route?.params?.collectionId && collections.length > 0) {
+      const target = collections.find(c => c.id === route.params.collectionId);
+      if (target) setSelectedCollection(target);
+    }
+  }, [route?.params?.collectionId, collections]);
   const [showNewModal, setShowNewModal] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newIcon, setNewIcon] = useState('📋');
