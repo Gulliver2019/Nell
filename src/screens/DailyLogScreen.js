@@ -18,6 +18,7 @@ import EntryItem from '../components/EntryItem';
 import FAB from '../components/FAB';
 import EntryFormFlyout from '../components/EntryFormFlyout';
 import TimeBlockView from '../components/TimeBlockView';
+import CompleteDayModal from '../components/CompleteDayModal';
 import * as Haptics from 'expo-haptics';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -29,6 +30,7 @@ export default function DailyLogScreen() {
   const {
     entries, selectedDate, setSelectedDate, addEntry, updateEntry,
     deleteEntry, migrateEntry, scheduleEntry, reorderEntries, migratePastEntries,
+    completeDayAndMigrate, saveReflection,
   } = useApp();
 
   const today = getDateKey();
@@ -38,8 +40,12 @@ export default function DailyLogScreen() {
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'timeblock'
   const [flyoutVisible, setFlyoutVisible] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
+  const [completeDayVisible, setCompleteDayVisible] = useState(false);
+  const [dayCompleted, setDayCompleted] = useState(false);
   const listRef = useRef(null);
   const shouldScrollRef = useRef(false);
+
+  const completedDayKey = `crushedit_day_completed_${today}`;
 
   // Daily intention
   const [intention, setIntention] = useState('');
@@ -88,6 +94,26 @@ export default function DailyLogScreen() {
     Haptics.selectionAsync();
     try { await AsyncStorage.removeItem(intentionKey); } catch (e) {}
   }, [intentionKey]);
+
+  // Load day-completed status for today
+  useEffect(() => {
+    (async () => {
+      try {
+        const done = await AsyncStorage.getItem(completedDayKey);
+        setDayCompleted(done === 'true');
+      } catch (e) { setDayCompleted(false); }
+    })();
+  }, [completedDayKey]);
+
+  const handleCompleteDay = useCallback(async (reflection) => {
+    const count = await completeDayAndMigrate(reflection);
+    await AsyncStorage.setItem(completedDayKey, 'true').catch(() => {});
+    setDayCompleted(true);
+    setCompleteDayVisible(false);
+    if (count > 0) {
+      Alert.alert('Day Complete', `${count} open task${count > 1 ? 's' : ''} migrated to tomorrow.`);
+    }
+  }, [completeDayAndMigrate, completedDayKey]);
 
   const glowOpacity = glowAnim.interpolate({
     inputRange: [0, 1],
@@ -259,7 +285,7 @@ export default function DailyLogScreen() {
             <Text style={[styles.intentionLabel, { color: colors.accent }]}>TODAY'S INTENTION</Text>
             <View style={styles.intentionHeaderActions}>
               <TouchableOpacity onPress={() => { setIntentionExpanded(!intentionExpanded); setIntentionDraft(intention); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Ionicons name="pencil-outline" size={16} color={colors.textMuted} />
+                <Ionicons name="pencil-outline" size={16} color={colors.textSecondary} />
               </TouchableOpacity>
               <TouchableOpacity onPress={clearIntention} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <Ionicons name="trash-outline" size={16} color={colors.accentRed} />
@@ -336,6 +362,30 @@ export default function DailyLogScreen() {
             </View>
           )}
         </View>
+      )}
+
+      {/* Complete Day button — only for today */}
+      {isToday && (
+        dayCompleted ? (
+          <View style={[styles.completeDayDone, { backgroundColor: colors.accentGreen + '12' }]}>
+            <Ionicons name="checkmark-circle" size={16} color={colors.accentGreen} />
+            <Text style={[styles.completeDayDoneText, { color: colors.accentGreen }]}>Day completed</Text>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={[styles.completeDayBtn, { backgroundColor: colors.bgCard, borderColor: colors.accent + '30' }]}
+            onPress={() => setCompleteDayVisible(true)}
+            activeOpacity={0.7}
+          >
+            <LinearGradient
+              colors={[colors.accent + '10', 'transparent']}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFillObject}
+            />
+            <Ionicons name="checkmark-done-outline" size={18} color={colors.accent} />
+            <Text style={[styles.completeDayBtnText, { color: colors.accent }]}>Complete Day</Text>
+          </TouchableOpacity>
+        )
       )}
 
       {/* Stats bar */}
@@ -478,6 +528,13 @@ export default function DailyLogScreen() {
           onChange={handleDatePicked}
         />
       )}
+      <CompleteDayModal
+        visible={completeDayVisible}
+        onClose={() => setCompleteDayVisible(false)}
+        onComplete={handleCompleteDay}
+        stats={stats}
+        colors={colors}
+      />
       </KeyboardAvoidingView>
       <KnowledgeBaseButton sectionId="daily-log" />
     </SafeAreaView>
@@ -629,6 +686,41 @@ const styles = StyleSheet.create({
   datePickerCancel: {
     fontSize: SIZES.md,
     fontWeight: '600',
+  },
+
+  // Complete Day
+  completeDayBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  completeDayBtnText: {
+    fontSize: SIZES.sm,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  completeDayDone: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingVertical: 10,
+    borderRadius: 14,
+  },
+  completeDayDoneText: {
+    fontSize: SIZES.sm,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
 
   // Intention panel

@@ -198,6 +198,53 @@ export function AppProvider({ children }) {
     return count;
   }, []);
 
+  // Complete day: migrate today's open tasks to tomorrow and save a reflection
+  const completeDayAndMigrate = useCallback(async (reflection) => {
+    const today = Storage.getDateKey();
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowKey = Storage.getDateKey(tomorrow);
+
+    const allEntries = await Storage.getAllEntries();
+    const openTasks = allEntries.filter(
+      e => e.type === 'task'
+        && e.state === 'open'
+        && e.date === today
+        && !e.collection
+    );
+
+    let count = 0;
+    for (const entry of openTasks) {
+      const alreadyCopied = allEntries.some(
+        e => e.migratedFrom === entry.id && e.date === tomorrowKey
+      );
+      if (!alreadyCopied) {
+        await Storage.addEntry({
+          text: entry.text,
+          type: entry.type,
+          signifier: entry.signifier || null,
+          pomodoros: entry.pomodoros || 0,
+          date: tomorrowKey,
+          state: 'open',
+          migratedFrom: entry.id,
+        });
+        count++;
+      }
+      await Storage.deleteEntry(entry.id);
+    }
+
+    // Save the reflection if provided
+    if (reflection) {
+      await Storage.saveReflection(reflection);
+      const reflections = await Storage.getReflections();
+      dispatch({ type: 'SET_REFLECTIONS', payload: reflections });
+    }
+
+    const entries = await Storage.getAllEntries();
+    dispatch({ type: 'SET_ENTRIES', payload: entries });
+    return count;
+  }, []);
+
   const scheduleEntry = useCallback(async (id, date) => {
     await Storage.scheduleEntry(id, date);
     const entries = await Storage.getAllEntries();
@@ -395,6 +442,7 @@ export function AppProvider({ children }) {
     deleteRoutine,
     generateRoutineEntries,
     saveWellnessTemplates,
+    completeDayAndMigrate,
     setSelectedDate,
     setSearchQuery,
     toggleFeature,
