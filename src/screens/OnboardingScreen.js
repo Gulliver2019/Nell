@@ -69,7 +69,14 @@ const SLIDES = [
     emoji: '💪',
     title: 'Build Better Habits',
     subtitle: 'Powered by habit science',
-    body: 'Track habits with streaks, completion rates, and "never miss twice" nudges. Set a two-minute version for low-motivation days.\n\nSmall actions, repeated daily, compound into massive results.\n\nThis is the last productivity app you\'ll ever download.',
+    body: 'Track habits with streaks, completion rates, and "never miss twice" nudges. Set a two-minute version for low-motivation days.\n\nSmall actions, repeated daily, compound into massive results.',
+  },
+  {
+    key: 'personality',
+    emoji: '🎭',
+    title: 'We Like to Have Fun Here',
+    subtitle: 'Personality mode is on by default',
+    body: 'Goal Digger has a bit of an attitude. You\'ll see things like "Smash the project" and "Scheduled for destruction 💥" instead of boring alerts.\n\nLove it? Great, we\'re a perfect match.\n\nHate it? No hard feelings. Head to More → Personality Mode and flip the switch. We\'ll be professional. Promise. Mostly.',
   },
 ];
 
