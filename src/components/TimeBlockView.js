@@ -236,7 +236,7 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
   const meetingSlideAnim = useRef(new Animated.Value(-SCREEN_HEIGHT)).current;
   const meetingInputRef = useRef(null);
 
-  const meetingStorageKey = `crushedit_meetings_${dateKey || 'default'}`;
+  const meetingStorageKey = `nell_meetings_${dateKey || 'default'}`;
 
   // Update current time every minute
   useEffect(() => {

@@ -11,7 +11,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useRevenueCat } from '../context/RevenueCatContext';
 import { useApp } from '../context/AppContext';
 import { getDateKey, formatDateShort } from '../utils/storage';
-import GoalDiggerLogo from '../components/GoalDiggerLogo';
+import NellLogo from '../components/NellLogo';
 import * as Haptics from 'expo-haptics';
 
 const DEFAULT_SCREEN_KEY = '@default_screen';
@@ -102,7 +102,7 @@ export default function MoreScreen({ navigation }) {
           />
           <View style={styles.headerRow}>
             <View style={{ flex: 1 }}>
-              <GoalDiggerLogo color={colors.accent} height={30} style={{ marginBottom: 4 }} />
+              <NellLogo color={colors.accent} accentColor={colors.accent} height={30} style={{ marginBottom: 4 }} />
               <Text style={[styles.subtitle, { color: colors.textMuted }]}>Your bullet journal, digitised</Text>
             </View>
             <View style={styles.headerBtns}>
@@ -344,7 +344,7 @@ export default function MoreScreen({ navigation }) {
           <View style={[styles.subscriptionStatus, { borderBottomColor: colors.border }]}>
             <Text style={[styles.contactLabel, { color: colors.textSecondary }]}>Status</Text>
             <Text style={[styles.contactValue, { color: isProUser ? colors.accentGreen : colors.textMuted }]}>
-              {isProUser ? 'GoalDigger Pro ✓' : 'Free'}
+              {isProUser ? 'Nell Pro ✓' : 'Free'}
             </Text>
           </View>
           {isProUser ? (
@@ -368,7 +368,7 @@ export default function MoreScreen({ navigation }) {
                 onPress={async () => {
                   const result = await restorePurchases();
                   if (result.success && result.customerInfo?.entitlements?.active?.['GoalDigger Pro']) {
-                    Alert.alert('Restored!', 'Your GoalDigger Pro subscription has been restored.');
+                    Alert.alert('Restored!', 'Your Nell Pro subscription has been restored.');
                   } else {
                     Alert.alert('No Purchases Found', 'We couldn\'t find any previous purchases to restore.');
                   }
@@ -390,7 +390,7 @@ export default function MoreScreen({ navigation }) {
                   {
                     text: 'Reset',
                     onPress: async () => {
-                      await AsyncStorage.removeItem('crushedit_paywall_done');
+                      await AsyncStorage.removeItem('nell_paywall_done');
                       Alert.alert('Done', 'Close and reopen the app to see the paywall.');
                     },
                   },

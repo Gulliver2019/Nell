@@ -1,4 +1,4 @@
-// Goal Digger Theme Collection
+// Nell Theme Collection
 // 6 themes: 2 modern, 1 retro, 1 quirky, 2 pretty
 
 const THEMES = {

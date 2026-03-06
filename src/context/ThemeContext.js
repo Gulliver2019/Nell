@@ -2,8 +2,8 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import THEMES from '../utils/themes';
 
-const THEME_KEY = 'crushedit_theme';
-const HAS_CHOSEN_THEME_KEY = 'crushedit_has_chosen_theme';
+const THEME_KEY = 'nell_theme';
+const HAS_CHOSEN_THEME_KEY = 'nell_has_chosen_theme';
 
 const ThemeContext = createContext();
 

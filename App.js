@@ -11,6 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppProvider, useApp } from './src/context/AppContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { RevenueCatProvider, useRevenueCat } from './src/context/RevenueCatContext';
+import { migrateStorageKeys } from './src/utils/storage';
 
 import DailyLogScreen from './src/screens/DailyLogScreen';
 import MonthlyLogScreen from './src/screens/MonthlyLogScreen';
@@ -94,8 +95,8 @@ function ScrollableTabBar({ state, descriptors, navigation, colors }) {
   );
 }
 
-const ONBOARDING_KEY = 'crushedit_onboarding_done';
-const PAYWALL_KEY = 'crushedit_paywall_done';
+const ONBOARDING_KEY = 'nell_onboarding_done';
+const PAYWALL_KEY = 'nell_paywall_done';
 const DEFAULT_SCREEN_KEY = '@default_screen';
 
 function AppContent() {
@@ -111,6 +112,7 @@ function AppContent() {
   useEffect(() => {
     (async () => {
       try {
+        await migrateStorageKeys();
         const [pw, ob, ds] = await Promise.all([
           AsyncStorage.getItem(PAYWALL_KEY),
           AsyncStorage.getItem(ONBOARDING_KEY),

@@ -25,9 +25,9 @@ const BRAIN_IMAGE = require('../../assets/brain.png');
 const SLIDES = [
   {
     emoji: '📓',
-    title: 'This Is Goal Digger',
+    title: 'This Is Nell',
     subtitle: 'Four proven systems. One app.',
-    body: 'Goal Digger combines the best ideas from rapid logging, time blocking, the Pomodoro technique, and habit science into one seamless system.\n\nNo fluff. No complexity. Just the methods that actually work — wired together so nothing falls through the cracks.',
+    body: 'Nell combines the best ideas from rapid logging, time blocking, the Pomodoro technique, and habit science into one seamless system.\n\nNo fluff. No complexity. Just the methods that actually work — wired together so nothing falls through the cracks.',
   },
   {
     key: 'rapid',
@@ -76,7 +76,7 @@ const SLIDES = [
     emoji: '🎭',
     title: 'We Like to Have Fun Here',
     subtitle: 'Personality mode is on by default',
-    body: 'Goal Digger has a bit of an attitude. You\'ll see things like "Smash the project" and "Scheduled for destruction 💥" instead of boring alerts.\n\nLove it? Great, we\'re a perfect match.\n\nHate it? No hard feelings. Head to More → Personality Mode and flip the switch. We\'ll be professional. Promise. Mostly.',
+    body: 'Nell has a bit of an attitude. You\'ll see things like "Smash the project" and "Scheduled for destruction 💥" instead of boring alerts.\n\nLove it? Great, we\'re a perfect match.\n\nHate it? No hard feelings. Head to More → Personality Mode and flip the switch. We\'ll be professional. Promise. Mostly.',
   },
   {
     key: 'voice',

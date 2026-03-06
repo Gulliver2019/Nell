@@ -19,8 +19,8 @@ const SECTIONS = [
     icon: '🚀',
     items: [
       {
-        q: 'What is Goal Digger?',
-        a: 'Goal Digger is a digital bullet journal — a beautifully simple system for organising your tasks, events, notes, habits and reflections. The approach we use in this app follows the popular bullet journaling technique, built for your phone.',
+        q: 'What is Nell?',
+        a: 'Nell is a digital bullet journal — a beautifully simple system for organising your tasks, events, notes, habits and reflections. The approach we use in this app follows the popular bullet journaling technique, built for your phone.',
       },
       {
         q: 'What is a bullet journal?',
@@ -233,7 +233,7 @@ const SECTIONS = [
     items: [
       {
         q: 'How does the Shopping List work?',
-        a: 'Just type an item name and tap +. GoalDigger automatically sorts it into the right aisle — milk goes to Dairy, bread to Bakery, chicken to Meat, and so on. No need to pick a category yourself.',
+        a: 'Just type an item name and tap +. Nell automatically sorts it into the right aisle — milk goes to Dairy, bread to Bakery, chicken to Meat, and so on. No need to pick a category yourself.',
       },
       {
         q: 'How do I edit an item?',
