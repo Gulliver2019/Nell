@@ -69,7 +69,7 @@ const SLIDES = [
     emoji: '💪',
     title: 'Build Better Habits',
     subtitle: 'Powered by habit science',
-    body: 'Track habits with streaks, completion rates, and "never miss twice" nudges. Missed days show a red ✕ to keep you honest. Set a two-minute version for low-motivation days.\n\nSmall actions, repeated daily, compound into massive results.',
+    body: 'Track habits with streaks, completion rates, and "never miss twice" nudges. Set a two-minute version for low-motivation days.\n\nSmall actions, repeated daily, compound into massive results.',
   },
   {
     key: 'personality',
