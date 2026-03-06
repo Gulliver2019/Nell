@@ -150,7 +150,7 @@ export default function DailyLogScreen() {
   const nextUpId = useMemo(() => {
     if (!isToday) return null;
     const timeBlocked = dayEntries
-      .filter(e => e.timeBlock && e.state !== 'complete' && e.state !== 'cancelled')
+      .filter(e => e.timeBlock && e.state !== 'complete' && e.state !== 'cancelled' && e.state !== 'migrated')
       .sort((a, b) => {
         const [ah, am] = a.timeBlock.split(':').map(Number);
         const [bh, bm] = b.timeBlock.split(':').map(Number);
