@@ -176,6 +176,8 @@ export default function HabitTrackerScreen() {
         <View style={styles.checksRow}>
           {days.map(d => {
             const done = habit.completions?.[d.key];
+            const isPast = !d.isToday && d.key < getDateKey();
+            const failed = isPast && !done && d.key >= (habit.createdAt ? getDateKey(new Date(habit.createdAt)) : '');
             return (
               <TouchableOpacity
                 key={d.key}
@@ -183,11 +185,13 @@ export default function HabitTrackerScreen() {
                   styles.cell,
                   { backgroundColor: colors.bgInput },
                   done && { backgroundColor: colors.accentGreen + '30' },
+                  failed && { backgroundColor: colors.accentRed + '15' },
                   d.isToday && { borderWidth: 1, borderColor: colors.accent + '40' },
                 ]}
                 onPress={() => handleToggle(habit.id, d.key)}
               >
                 {done && <Text style={[styles.cellCheck, { color: colors.accentGreen }]}>✓</Text>}
+                {failed && <Text style={[styles.cellCheck, { color: colors.accentRed }]}>✕</Text>}
               </TouchableOpacity>
             );
           })}
@@ -203,7 +207,7 @@ export default function HabitTrackerScreen() {
               <Text style={[styles.bestStreakText, { color: colors.textMuted }]}>Best: {bestStreak}d</Text>
             )}
             {missed === 1 && streak === 0 && (
-              <Text style={[styles.missedWarning, { color: '#F0A500' }]}>⚠️ Don't break it!</Text>
+              <Text style={[styles.missedWarning, { color: '#F0A500' }]}>⚠️ Don't miss two days running!</Text>
             )}
             {missed >= 2 && streak === 0 && (
               <Text style={[styles.missedWarning, { color: colors.accentRed }]}>🔴 {missed}d missed</Text>
