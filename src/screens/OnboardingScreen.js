@@ -62,14 +62,14 @@ const SLIDES = [
     emoji: '🍅',
     title: 'Time Blocking & Pomodoro',
     subtitle: 'Protect your deep work',
-    body: 'Assign tasks to time slots. Use the built-in Pomodoro timer for 25-minute focus sprints.\n\nStop reacting. Start executing.',
+    body: 'Assign tasks to time slots. Drag blocks to rearrange your day as plans change. Resize them by pulling the bottom edge. Use the built-in Pomodoro timer for 25-minute focus sprints.\n\nStop reacting. Start executing.',
   },
   {
     key: 'ready',
     emoji: '💪',
     title: 'Build Better Habits',
     subtitle: 'Powered by habit science',
-    body: 'Track habits with streaks, completion rates, and "never miss twice" nudges. Set a two-minute version for low-motivation days.\n\nSmall actions, repeated daily, compound into massive results.',
+    body: 'Track habits with streaks, completion rates, and "never miss twice" nudges. Missed days show a red ✕ to keep you honest. Set a two-minute version for low-motivation days.\n\nSmall actions, repeated daily, compound into massive results.',
   },
   {
     key: 'personality',
