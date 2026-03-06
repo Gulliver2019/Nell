@@ -481,6 +481,7 @@ export default function DailyLogScreen() {
           colors={colors}
           dateKey={selectedDate}
           onAddPress={() => { setEditingEntry(null); setFlyoutVisible(true); }}
+          onAddEntry={({ text, timeBlock, pomodoros }) => addEntry({ text, date: selectedDate, timeBlock, pomodoros })}
         />
       )}
 
