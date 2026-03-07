@@ -32,6 +32,7 @@ const STORAGE_KEYS = {
   COLLECTIONS: 'nell_collections',
   HABITS: 'nell_habits',
   REFLECTIONS: 'nell_reflections',
+  HABIT_REFLECTIONS: 'nell_habit_reflections',
   SETTINGS: 'nell_settings',
   FUTURE_LOG: 'nell_future_log',
   PROJECTS: 'nell_projects',
@@ -332,6 +333,33 @@ export const saveReflection = async (reflection) => {
   return newRef;
 };
 
+// Habit Reflections (end-of-day habit review)
+export const getHabitReflections = async () => {
+  try {
+    const data = await AsyncStorage.getItem(STORAGE_KEYS.HABIT_REFLECTIONS);
+    return data ? JSON.parse(data) : [];
+  } catch (e) {
+    return [];
+  }
+};
+
+export const saveHabitReflection = async (reflection) => {
+  const reflections = await getHabitReflections();
+  const newRef = {
+    id: generateId(),
+    createdAt: new Date().toISOString(),
+    date: getDateKey(),
+    missedHabits: [],   // [{ habitId, habitName, habitIcon, reason }]
+    completedCount: 0,
+    totalCount: 0,
+    commitments: [],    // [{ habitId, habitName, habitIcon, commitment }]
+    ...reflection,
+  };
+  reflections.push(newRef);
+  await AsyncStorage.setItem(STORAGE_KEYS.HABIT_REFLECTIONS, JSON.stringify(reflections));
+  return newRef;
+};
+
 // Future Log
 export const getFutureLog = async () => {
   try {
@@ -387,8 +415,9 @@ export const exportAllData = async () => {
   const collections = await getCollections();
   const habits = await getHabits();
   const reflections = await getReflections();
+  const habitReflections = await getHabitReflections();
   const futureLog = await getFutureLog();
-  return { entries, collections, habits, reflections, futureLog, exportedAt: new Date().toISOString() };
+  return { entries, collections, habits, reflections, habitReflections, futureLog, exportedAt: new Date().toISOString() };
 };
 
 // Import all data (for restore)

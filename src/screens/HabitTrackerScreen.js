@@ -10,6 +10,7 @@ import { useApp } from '../context/AppContext';
 import { getDateKey } from '../utils/storage';
 import * as Haptics from 'expo-haptics';
 import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
+import EndOfDayReflection, { YesterdayNudge } from '../components/EndOfDayReflection';
 
 const HABIT_ICONS = ['💪', '📚', '🏃', '🧘', '💧', '🎨', '🎵', '✍️', '🥗', '😴', '🧹', '💊', '🚭', '📱', '🌿', '🙏'];
 
@@ -28,12 +29,18 @@ const MILESTONES = [
 
 export default function HabitTrackerScreen() {
   const { colors } = useTheme();
-  const { habits, addHabit, toggleHabitDay, deleteHabit } = useApp();
+  const { habits, addHabit, toggleHabitDay, deleteHabit, habitReflections } = useApp();
   const [showAdd, setShowAdd] = useState(false);
+  const [showEndOfDay, setShowEndOfDay] = useState(false);
   const [newName, setNewName] = useState('');
   const [newIcon, setNewIcon] = useState('💪');
   const [newTimeOfDay, setNewTimeOfDay] = useState('morning');
   const [newTwoMin, setNewTwoMin] = useState('');
+
+  const todayKey = getDateKey();
+  const alreadyReflected = useMemo(() => {
+    return habitReflections.some(r => r.date === todayKey);
+  }, [habitReflections, todayKey]);
 
   // Generate last 7 days
   const days = useMemo(() => {
@@ -316,6 +323,9 @@ export default function HabitTrackerScreen() {
           </View>
         )}
 
+        {/* Yesterday's gaps nudge */}
+        <YesterdayNudge colors={colors} />
+
         {/* Habit grid */}
         <View style={styles.grid}>
           {/* Day headers */}
@@ -418,7 +428,25 @@ export default function HabitTrackerScreen() {
             })}
           </View>
         )}
+        {/* End of Day button */}
+        {hasHabits && (
+          <TouchableOpacity
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setShowEndOfDay(true); }}
+            style={[styles.eodBtn, alreadyReflected && { opacity: 0.5 }]}
+          >
+            <LinearGradient
+              colors={alreadyReflected ? [colors.bgInput, colors.bgInput] : [colors.accent + '20', colors.accentWarm + '20']}
+              style={styles.eodGradient}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+            >
+              <Text style={[styles.eodText, { color: alreadyReflected ? colors.textMuted : colors.accent }]}>
+                {alreadyReflected ? '✅ Day reflected' : '🌙 End of Day Check-in'}
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
       </ScrollView>
+      <EndOfDayReflection visible={showEndOfDay} onClose={() => setShowEndOfDay(false)} />
       <KnowledgeBaseButton sectionId="habit-tracker" />
     </SafeAreaView>
   );
@@ -539,4 +567,7 @@ const styles = StyleSheet.create({
   },
   achievedEmoji: { fontSize: 12 },
   achievedLabel: { fontSize: SIZES.xs, fontWeight: '600' },
+  eodBtn: { marginHorizontal: 16, marginTop: 16, borderRadius: SIZES.radius, overflow: 'hidden' },
+  eodGradient: { padding: 16, alignItems: 'center', borderRadius: SIZES.radius },
+  eodText: { fontSize: SIZES.base, fontWeight: '700' },
 });
