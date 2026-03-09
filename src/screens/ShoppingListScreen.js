@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, Modal,
   Alert, Animated, Keyboard, ScrollView, Share, LayoutAnimation, UIManager, Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -652,8 +653,12 @@ export default function ShoppingListScreen() {
 
       {/* ── Edit Modal ── */}
       <Modal visible={!!editItem} animationType="slide" transparent>
-        <View style={s.modalOverlay}>
+        <KeyboardAvoidingView
+          style={s.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
           <View style={[s.modalCard, { backgroundColor: colors.bgCard }]}>
+            <ScrollView showsVerticalScrollIndicator={false} bounces={false} keyboardShouldPersistTaps="handled">
             <Text style={[s.modalTitle, { color: colors.text }]}>Edit Item</Text>
 
             {/* Name */}
@@ -737,8 +742,9 @@ export default function ShoppingListScreen() {
                 <Text style={[s.modalBtnText, { color: '#fff' }]}>Save</Text>
               </TouchableOpacity>
             </View>
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <KnowledgeBaseButton sectionId="shopping-list" />
