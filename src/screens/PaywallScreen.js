@@ -24,10 +24,10 @@ export default function PaywallScreen({ onComplete }) {
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
 
-  if (isProUser) {
-    onComplete();
-    return null;
-  }
+  // Auto-dismiss if already pro
+  React.useEffect(() => {
+    if (isProUser) onComplete();
+  }, [isProUser]);
 
   if (!isReady) {
     return (
@@ -37,6 +37,8 @@ export default function PaywallScreen({ onComplete }) {
     );
   }
 
+  if (isProUser) return null;
+
   const packages = offerings?.current?.availablePackages || [];
   const annual = packages.find(p => p.packageType === 'ANNUAL');
   const monthly = packages.find(p => p.packageType === 'MONTHLY');
@@ -44,7 +46,7 @@ export default function PaywallScreen({ onComplete }) {
 
   // Auto-select annual (best value) or first available
   if (!selectedPkg && displayPackages.length > 0) {
-    setSelectedPkg(annual || displayPackages[0]);
+    setTimeout(() => setSelectedPkg(annual || displayPackages[0]), 0);
   }
 
   // Calculate savings
@@ -197,6 +199,12 @@ export default function PaywallScreen({ onComplete }) {
             <Text style={[styles.noPackagesText, { color: colors.textSecondary }]}>
               Subscription options are loading...
             </Text>
+            <TouchableOpacity
+              onPress={onComplete}
+              style={{ marginTop: 16, padding: 10 }}
+            >
+              <Text style={[styles.linkText, { color: colors.accent }]}>Continue for free →</Text>
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>

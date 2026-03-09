@@ -106,13 +106,15 @@ export default function OnboardingScreen({ onComplete }) {
     if (currentSlide < SLIDES.length - 1) {
       goToSlide(currentSlide + 1);
     } else {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      fadeAnim.stopAnimation();
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (e) {}
       onComplete();
     }
   };
 
   const handleSkip = () => {
-    Haptics.selectionAsync();
+    fadeAnim.stopAnimation();
+    try { Haptics.selectionAsync(); } catch (e) {}
     onComplete();
   };
 
