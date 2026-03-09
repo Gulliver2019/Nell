@@ -17,7 +17,7 @@ export function RevenueCatProvider({ children }) {
     let listener;
     const init = async () => {
       try {
-        Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+        Purchases.setLogLevel(LOG_LEVEL.ERROR);
         await Purchases.configure({ apiKey: API_KEY });
 
         const info = await Purchases.getCustomerInfo();

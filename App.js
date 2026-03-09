@@ -119,7 +119,7 @@ function AppContent() {
           AsyncStorage.getItem(DEFAULT_SCREEN_KEY),
         ]);
         setPaywallDismissed(pw === 'true');
-        setOnboardingDone(false); // TEMP: force onboarding for review
+        setOnboardingDone(ob === 'true');
         if (ds) setDefaultScreen(ds);
       } catch (e) {
         setPaywallDismissed(false);
