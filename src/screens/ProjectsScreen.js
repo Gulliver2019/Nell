@@ -320,6 +320,24 @@ function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onD
         </View>
       )}
 
+      {/* Make Some Time banner — top of page like Complete Day */}
+      {incompleteTasks.length > 0 && (
+        <TouchableOpacity
+          style={[styles.makeTimeBanner, { backgroundColor: colors.bgCard, borderColor: colors.accent + '30' }]}
+          onPress={() => onOpenMakeTime(project.id)}
+          activeOpacity={0.7}
+        >
+          <LinearGradient
+            colors={[colors.accent + '10', 'transparent']}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+            style={[StyleSheet.absoluteFillObject, { borderRadius: 14 }]}
+          />
+          <Ionicons name="time-outline" size={18} color={colors.accent} />
+          <Text style={[styles.makeTimeBannerText, { color: colors.accent }]}>Make Some Time</Text>
+          <Text style={[styles.makeTimeBannerCount, { color: colors.textMuted }]}>{incompleteTasks.length} tasks to schedule</Text>
+        </TouchableOpacity>
+      )}
+
       {/* Kanban columns — horizontal scroll */}
       <ScrollView
         ref={scrollRef}
@@ -380,23 +398,12 @@ function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onD
         })}
       </ScrollView>
 
-      {/* Hint + Make Some Time */}
+      {/* Hint */}
       <View style={[styles.swipeHint, { backgroundColor: colors.bgCard, borderTopColor: colors.border }]}>
         <Text style={[styles.swipeHintText, { color: colors.textMuted }]}>
           ‹ › move between columns · hold to reorder
         </Text>
       </View>
-
-      {incompleteTasks.length > 0 && (
-        <TouchableOpacity
-          style={[styles.makeTimeBtn, { backgroundColor: colors.accent }]}
-          onPress={() => onOpenMakeTime(project.id)}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="time-outline" size={18} color="#fff" />
-          <Text style={styles.makeTimeBtnText}>Make Some Time</Text>
-        </TouchableOpacity>
-      )}
 
       <FAB onPress={() => { setAddingToColumn('todo'); setFlyoutVisible(true); }} />
       <EntryFormFlyout

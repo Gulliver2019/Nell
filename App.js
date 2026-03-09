@@ -38,6 +38,12 @@ function MoreStackScreen() {
       <MoreStack.Screen name="MoreHome" component={MoreScreen} />
       <MoreStack.Screen name="Help" component={HelpScreen} />
       <MoreStack.Screen name="ThemePicker" component={ThemePickerScreen} />
+      <MoreStack.Screen name="PreviewOnboarding">
+        {({ navigation }) => <OnboardingScreen onComplete={() => navigation.goBack()} />}
+      </MoreStack.Screen>
+      <MoreStack.Screen name="PreviewPaywall">
+        {({ navigation }) => <PaywallScreen onComplete={() => navigation.goBack()} />}
+      </MoreStack.Screen>
     </MoreStack.Navigator>
   );
 }
