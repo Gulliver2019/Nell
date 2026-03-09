@@ -45,13 +45,13 @@ export default function DailyLogScreen() {
   const listRef = useRef(null);
   const shouldScrollRef = useRef(false);
 
-  const completedDayKey = `crushedit_day_completed_${today}`;
+  const completedDayKey = `nell_day_completed_${today}`;
 
   // Daily intention
   const [intention, setIntention] = useState('');
   const [intentionDraft, setIntentionDraft] = useState('');
   const [intentionExpanded, setIntentionExpanded] = useState(false);
-  const intentionKey = `crushedit_intention_${selectedDate}`;
+  const intentionKey = `nell_intention_${selectedDate}`;
   const glowAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -150,7 +150,7 @@ export default function DailyLogScreen() {
   const nextUpId = useMemo(() => {
     if (!isToday) return null;
     const timeBlocked = dayEntries
-      .filter(e => e.timeBlock && e.state !== 'complete' && e.state !== 'cancelled')
+      .filter(e => e.timeBlock && e.state !== 'complete' && e.state !== 'cancelled' && e.state !== 'migrated')
       .sort((a, b) => {
         const [ah, am] = a.timeBlock.split(':').map(Number);
         const [bh, bm] = b.timeBlock.split(':').map(Number);
@@ -481,6 +481,7 @@ export default function DailyLogScreen() {
           colors={colors}
           dateKey={selectedDate}
           onAddPress={() => { setEditingEntry(null); setFlyoutVisible(true); }}
+          onAddEntry={({ text, timeBlock, pomodoros }) => addEntry({ text, date: selectedDate, timeBlock, pomodoros })}
         />
       )}
 

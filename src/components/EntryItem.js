@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, Animated, Dimensions, Alert,
 } from 'react-native';
@@ -18,7 +18,21 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(entry.text);
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const pulseAnim = useRef(new Animated.Value(0)).current;
+  const wasNextUp = useRef(isNextUp);
   const swipeableRef = useRef(null);
+
+  // Pulse when this item becomes the new NEXT UP
+  useEffect(() => {
+    if (isNextUp && !wasNextUp.current) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1, duration: 200, useNativeDriver: false }),
+        Animated.timing(pulseAnim, { toValue: 0, duration: 600, useNativeDriver: false }),
+      ]).start();
+    }
+    wasNextUp.current = isNextUp;
+  }, [isNextUp]);
 
   const bulletConfig = entry.type === 'task'
     ? TASK_STATES[entry.state] || TASK_STATES.open
@@ -123,12 +137,17 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
   const isCancelled = entry.state === 'cancelled';
   const isInactive = isMigrated || isCancelled;
 
+  const pulseBackground = pulseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [colors.accentGreen + '12', colors.accentGreen + '40'],
+  });
+
   const entryContent = (
-    <View
+    <Animated.View
       style={[
         styles.entry,
         { backgroundColor: colors.bg },
-        isNextUp && { backgroundColor: colors.accentGreen + '12', borderLeftWidth: 3, borderLeftColor: colors.accentGreen, borderRadius: 6 },
+        isNextUp && { backgroundColor: pulseBackground, borderLeftWidth: 3, borderLeftColor: colors.accentGreen, borderRadius: 6 },
         isInactive && styles.entryInactive,
         isActive && { backgroundColor: colors.bgElevated, opacity: 0.9 },
       ]}
@@ -231,7 +250,7 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
           </View>
         </TouchableOpacity>
       )}
-    </View>
+    </Animated.View>
   );
 
   if (!canSwipe) {

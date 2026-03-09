@@ -1,0 +1,32 @@
+name: iOS Production Build
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: EAS Build (iOS Production)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build iOS production
+        run: eas build --platform ios --profile production --non-interactive

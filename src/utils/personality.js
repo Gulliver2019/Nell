@@ -1,4 +1,4 @@
-// Fun flavour text generators for CrushedIT personality mode
+// Fun flavour text generators for Nell personality mode
 
 const PROJECT_VERBS = [
   'Smash', 'Crush', 'Tackle', 'Power through', 'Nail',

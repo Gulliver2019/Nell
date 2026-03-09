@@ -19,8 +19,8 @@ const SECTIONS = [
     icon: '🚀',
     items: [
       {
-        q: 'What is Goal Digger?',
-        a: 'Goal Digger is a digital bullet journal — a beautifully simple system for organising your tasks, events, notes, habits and reflections. The approach we use in this app follows the popular bullet journaling technique, built for your phone.',
+        q: 'What is Nell?',
+        a: 'Nell is a digital bullet journal — a beautifully simple system for organising your tasks, events, notes, habits and reflections. The approach we use in this app follows the popular bullet journaling technique, built for your phone.',
       },
       {
         q: 'What is a bullet journal?',
@@ -108,7 +108,7 @@ const SECTIONS = [
       },
       {
         q: 'What does the NEXT badge mean?',
-        a: 'In the time block view, the first incomplete time-blocked task is highlighted with a green NEXT badge. It stays on that task until you complete it or remove it from the time block — it won\'t skip ahead.',
+        a: 'In the time block view, the first incomplete time-blocked task is highlighted with a green NEXT badge. When you complete or migrate that task, NEXT automatically advances to the next item with a pulse highlight so you always know what\'s up next.',
       },
     ],
   },
@@ -195,15 +195,23 @@ const SECTIONS = [
     items: [
       {
         q: 'What is time blocking?',
-        a: 'Time blocking assigns your tasks to specific time slots in your day. Switch to the time block view on the Daily Log to see a visual timeline from 5am to 10pm.',
+        a: 'Time blocking assigns your tasks to specific time slots in your day. Switch to the time block view on the Daily Log to see a visual timeline from 5am to 11pm. A red line shows the current time.',
       },
       {
         q: 'How do I assign a task?',
-        a: 'Tap an unscheduled task chip at the top, then tap the time slot where you want to place it. Tasks auto-fill based on their pomodoro count (1 pomodoro = 30 minutes).',
+        a: 'Tap an unscheduled task chip at the top, then tap the time slot where you want to place it. You can also long-press and drag any block to move it to a different time slot.',
+      },
+      {
+        q: 'How do I resize a block?',
+        a: 'Drag the handle at the bottom edge of any block to make it longer or shorter in 30-minute increments.',
+      },
+      {
+        q: 'How do I add a quick task to the timeline?',
+        a: 'Tap any empty time slot to create a new entry right there. Type a name and press return — it\'ll be added at that time.',
       },
       {
         q: 'How do I remove a time block?',
-        a: 'Long-press on a scheduled block to unassign it from the timeline.',
+        a: 'Tap the ✕ button on a scheduled block, or long-press to unassign it from the timeline.',
       },
     ],
   },
@@ -233,7 +241,7 @@ const SECTIONS = [
     items: [
       {
         q: 'How does the Shopping List work?',
-        a: 'Just type an item name and tap +. GoalDigger automatically sorts it into the right aisle — milk goes to Dairy, bread to Bakery, chicken to Meat, and so on. No need to pick a category yourself.',
+        a: 'Just type an item name and tap +. Nell automatically sorts it into the right aisle — milk goes to Dairy, bread to Bakery, chicken to Meat, and so on. No need to pick a category yourself.',
       },
       {
         q: 'How do I edit an item?',
@@ -260,11 +268,11 @@ const SECTIONS = [
     items: [
       {
         q: 'How does the habit tracker work?',
-        a: 'Add habits you want to build (exercise, reading, water, etc). Each day, tap the cell to mark it done. The tracker shows the last 7 days and counts your current streak.',
+        a: 'Add habits you want to build (exercise, reading, water, etc). Each day, tap the cell to mark it done. The tracker shows the last 7 days — completed days show a green ✓, missed days show a red ✕.',
       },
       {
         q: 'What are streaks?',
-        a: 'A streak counts how many consecutive days you\'ve completed a habit. The 🔥 icon shows your current streak. Don\'t break the chain!',
+        a: 'A streak counts how many consecutive days you\'ve completed a habit. The 🔥 icon shows your current streak. If you miss a day, you\'ll see a "Don\'t miss two days running!" warning to help you bounce back.',
       },
       {
         q: 'How do I remove a habit?',

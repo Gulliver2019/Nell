@@ -20,6 +20,7 @@ const initialState = {
   collections: [],
   habits: [],
   reflections: [],
+  habitReflections: [],
   futureLog: {},
   projects: [],
   routines: [],
@@ -45,6 +46,8 @@ function reducer(state, action) {
       return { ...state, habits: action.payload };
     case 'SET_REFLECTIONS':
       return { ...state, reflections: action.payload };
+    case 'SET_HABIT_REFLECTIONS':
+      return { ...state, habitReflections: action.payload };
     case 'SET_FUTURE_LOG':
       return { ...state, futureLog: action.payload };
     case 'SET_PROJECTS':
@@ -71,11 +74,12 @@ export function AppProvider({ children }) {
 
   const loadAll = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
-    const [entries, collections, habits, reflections, futureLog, projects, routines, wellnessTemplates, featuresJson, personalityJson] = await Promise.all([
+    const [entries, collections, habits, reflections, habitReflections, futureLog, projects, routines, wellnessTemplates, featuresJson, personalityJson] = await Promise.all([
       Storage.getAllEntries(),
       Storage.getCollections(),
       Storage.getHabits(),
       Storage.getReflections(),
+      Storage.getHabitReflections(),
       Storage.getFutureLog(),
       Storage.getProjects(),
       Storage.getRoutines(),
@@ -85,7 +89,7 @@ export function AppProvider({ children }) {
     ]);
     const enabledFeatures = featuresJson ? { ...DEFAULT_FEATURES, ...JSON.parse(featuresJson) } : DEFAULT_FEATURES;
     const personalityEnabled = personalityJson !== null ? personalityJson === 'true' : true;
-    dispatch({ type: 'LOAD_ALL', payload: { entries, collections, habits, reflections, futureLog, projects, routines, wellnessTemplates, enabledFeatures, personalityEnabled } });
+    dispatch({ type: 'LOAD_ALL', payload: { entries, collections, habits, reflections, habitReflections, futureLog, projects, routines, wellnessTemplates, enabledFeatures, personalityEnabled } });
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
@@ -300,6 +304,12 @@ export function AppProvider({ children }) {
     dispatch({ type: 'SET_REFLECTIONS', payload: reflections });
   }, []);
 
+  const saveHabitReflection = useCallback(async (ref) => {
+    await Storage.saveHabitReflection(ref);
+    const habitReflections = await Storage.getHabitReflections();
+    dispatch({ type: 'SET_HABIT_REFLECTIONS', payload: habitReflections });
+  }, []);
+
   // Future Log
   const addFutureLogEntry = useCallback(async (monthKey, entry) => {
     await Storage.addFutureLogEntry(monthKey, entry);
@@ -438,6 +448,7 @@ export function AppProvider({ children }) {
     toggleHabitDay,
     deleteHabit,
     saveReflection,
+    saveHabitReflection,
     addFutureLogEntry,
     removeFutureLogEntry,
     addProject,

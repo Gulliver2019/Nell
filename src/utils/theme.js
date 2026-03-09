@@ -1,4 +1,4 @@
-// Goal Digger Theme Utilities
+// Nell Theme Utilities
 // Screens should use useTheme().colors for dynamic theming
 import THEMES from './themes';
 

@@ -1,15 +1,43 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const LEGACY_PREFIX = 'crushedit_';
+const CURRENT_PREFIX = 'nell_';
+const MIGRATION_KEY = 'nell_migrated_from_crushedit';
+
+export const migrateStorageKeys = async () => {
+  try {
+    const alreadyMigrated = await AsyncStorage.getItem(MIGRATION_KEY);
+    if (alreadyMigrated) return;
+    
+    const allKeys = await AsyncStorage.getAllKeys();
+    const legacyKeys = allKeys.filter(k => k.startsWith(LEGACY_PREFIX));
+    
+    for (const oldKey of legacyKeys) {
+      const newKey = oldKey.replace(LEGACY_PREFIX, CURRENT_PREFIX);
+      const existing = await AsyncStorage.getItem(newKey);
+      if (!existing) {
+        const value = await AsyncStorage.getItem(oldKey);
+        if (value) await AsyncStorage.setItem(newKey, value);
+      }
+    }
+    
+    await AsyncStorage.setItem(MIGRATION_KEY, 'true');
+  } catch (e) {
+    console.warn('Storage migration error:', e);
+  }
+};
+
 const STORAGE_KEYS = {
-  ENTRIES: 'crushedit_entries',
-  COLLECTIONS: 'crushedit_collections',
-  HABITS: 'crushedit_habits',
-  REFLECTIONS: 'crushedit_reflections',
-  SETTINGS: 'crushedit_settings',
-  FUTURE_LOG: 'crushedit_future_log',
-  PROJECTS: 'crushedit_projects',
-  ROUTINES: 'crushedit_routines',
-  WELLNESS_TEMPLATES: 'crushedit_wellness_templates',
+  ENTRIES: 'nell_entries',
+  COLLECTIONS: 'nell_collections',
+  HABITS: 'nell_habits',
+  REFLECTIONS: 'nell_reflections',
+  HABIT_REFLECTIONS: 'nell_habit_reflections',
+  SETTINGS: 'nell_settings',
+  FUTURE_LOG: 'nell_future_log',
+  PROJECTS: 'nell_projects',
+  ROUTINES: 'nell_routines',
+  WELLNESS_TEMPLATES: 'nell_wellness_templates',
 };
 
 // Generate unique ID
@@ -305,6 +333,33 @@ export const saveReflection = async (reflection) => {
   return newRef;
 };
 
+// Habit Reflections (end-of-day habit review)
+export const getHabitReflections = async () => {
+  try {
+    const data = await AsyncStorage.getItem(STORAGE_KEYS.HABIT_REFLECTIONS);
+    return data ? JSON.parse(data) : [];
+  } catch (e) {
+    return [];
+  }
+};
+
+export const saveHabitReflection = async (reflection) => {
+  const reflections = await getHabitReflections();
+  const newRef = {
+    id: generateId(),
+    createdAt: new Date().toISOString(),
+    date: getDateKey(),
+    missedHabits: [],   // [{ habitId, habitName, habitIcon, reason }]
+    completedCount: 0,
+    totalCount: 0,
+    commitments: [],    // [{ habitId, habitName, habitIcon, commitment }]
+    ...reflection,
+  };
+  reflections.push(newRef);
+  await AsyncStorage.setItem(STORAGE_KEYS.HABIT_REFLECTIONS, JSON.stringify(reflections));
+  return newRef;
+};
+
 // Future Log
 export const getFutureLog = async () => {
   try {
@@ -360,8 +415,9 @@ export const exportAllData = async () => {
   const collections = await getCollections();
   const habits = await getHabits();
   const reflections = await getReflections();
+  const habitReflections = await getHabitReflections();
   const futureLog = await getFutureLog();
-  return { entries, collections, habits, reflections, futureLog, exportedAt: new Date().toISOString() };
+  return { entries, collections, habits, reflections, habitReflections, futureLog, exportedAt: new Date().toISOString() };
 };
 
 // Import all data (for restore)
@@ -593,7 +649,7 @@ export const saveWellnessTemplates = async (templates) => {
   await AsyncStorage.setItem(STORAGE_KEYS.WELLNESS_TEMPLATES, JSON.stringify(templates));
 };
 
-const wellnessDayKey = (dateKey) => `crushedit_wellness_day_${dateKey}`;
+const wellnessDayKey = (dateKey) => `nell_wellness_day_${dateKey}`;
 
 export const getWellnessDay = async (dateKey) => {
   try {
@@ -624,7 +680,7 @@ export const saveWellnessDay = async (dateKey, dayData) => {
 };
 
 // Track which wellness items the user has added to a specific day's Daily Log
-const dailyWellnessSelKey = (dateKey) => `crushedit_daily_wellness_sel_${dateKey}`;
+const dailyWellnessSelKey = (dateKey) => `nell_daily_wellness_sel_${dateKey}`;
 
 export const getDailyWellnessSelection = async (dateKey) => {
   try {

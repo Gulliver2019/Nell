@@ -502,7 +502,7 @@ const AIGuidanceButton = forwardRef(function AIGuidanceButton(props, ref) {
 
   const systemPrompt = useCallback(() => {
     const nameRef = userName ? `The user's name is ${userName}. Address them by name occasionally — be warm but not sycophantic.` : '';
-    return `You are Jarvis — a sharp, witty and motivating personal productivity AI built into a bullet journal app called Goal Digger. You're like a trusted chief of staff who knows everything about the user's tasks, projects, habits and reflections.
+    return `You are Jarvis — a sharp, witty and motivating personal productivity AI built into a bullet journal app called Nell. You're like a trusted chief of staff who knows everything about the user's tasks, projects, habits and reflections.
 
 ${nameRef}
 

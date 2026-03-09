@@ -5,10 +5,21 @@ import {
   Image,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import ReanimatedModule, {
+  useSharedValue, useAnimatedStyle, withSpring, withTiming,
+  runOnJS,
+} from 'react-native-reanimated';
 import { SIZES } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import * as Haptics from 'expo-haptics';
 import PomodoroTimer from './PomodoroTimer';
+
+const AnimatedView = ReanimatedModule.default?.createAnimatedComponent
+  ? ReanimatedModule.default.createAnimatedComponent(View)
+  : ReanimatedModule.createAnimatedComponent
+    ? ReanimatedModule.createAnimatedComponent(View)
+    : View;
 
 const POM_IMAGE = require('../../assets/pom.png');
 
@@ -35,25 +46,215 @@ const formatSlotLabel = (slot) => {
   return `${h12}:${String(m).padStart(2, '0')}${ampm}`;
 };
 
-export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAddPress }) {
+// ─── Draggable Block wrapper ────────────────────────────────────────────────
+function DraggableBlock({
+  slot, entry, totalSlots, isMeeting, isComplete, colors,
+  slotIndex: slotStartIdx, onDragStart, onDragEnd, onResizeEnd,
+  onTap, onUnschedule, allSlots, slotMap,
+}) {
+  const translateY = useSharedValue(0);
+  const scale = useSharedValue(1);
+  const zIdx = useSharedValue(1);
+  const isDragging = useSharedValue(false);
+  const startSlotIdx = allSlots.indexOf(slot);
+
+  // Resize shared values
+  const resizeTranslateY = useSharedValue(0);
+  const isResizing = useSharedValue(false);
+
+  const blockHeight = SLOT_HEIGHT * totalSlots - 2;
+
+  // -- Drag gesture (long-press + pan) --
+  const longPress = Gesture.LongPress()
+    .minDuration(300)
+    .onStart(() => {
+      isDragging.value = true;
+      scale.value = withSpring(1.03, { damping: 15 });
+      zIdx.value = 100;
+      runOnJS(onDragStart)();
+    });
+
+  const pan = Gesture.Pan()
+    .manualActivation(true)
+    .onTouchesMove((_evt, state) => {
+      if (isDragging.value) state.activate();
+      else state.fail();
+    })
+    .onUpdate((e) => {
+      translateY.value = e.translationY;
+    })
+    .onEnd(() => {
+      const slotDelta = Math.round(translateY.value / SLOT_HEIGHT);
+      const newIdx = startSlotIdx + slotDelta;
+      isDragging.value = false;
+
+      runOnJS(onDragEnd)(newIdx, totalSlots, entry, isMeeting);
+      translateY.value = withSpring(0, { damping: 20 });
+      scale.value = withSpring(1, { damping: 15 });
+      zIdx.value = 1;
+    })
+    .onFinalize(() => {
+      if (isDragging.value) {
+        isDragging.value = false;
+        translateY.value = withSpring(0, { damping: 20 });
+        scale.value = withSpring(1, { damping: 15 });
+        zIdx.value = 1;
+        runOnJS(onDragEnd)(-1, totalSlots, entry, isMeeting); // cancel
+      }
+    });
+
+  const dragGesture = Gesture.Simultaneous(longPress, pan);
+
+  const animatedBlockStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: translateY.value },
+      { scale: scale.value },
+    ],
+    zIndex: zIdx.value,
+    shadowOpacity: isDragging.value ? 0.35 : 0,
+    elevation: isDragging.value ? 12 : 0,
+  }));
+
+  // -- Resize gesture (bottom handle) --
+  const resizePan = Gesture.Pan()
+    .onStart(() => {
+      isResizing.value = true;
+      runOnJS(onDragStart)();
+    })
+    .onUpdate((e) => {
+      resizeTranslateY.value = e.translationY;
+    })
+    .onEnd(() => {
+      const slotDelta = Math.round(resizeTranslateY.value / SLOT_HEIGHT);
+      isResizing.value = false;
+      runOnJS(onResizeEnd)(startSlotIdx, totalSlots, slotDelta, entry, isMeeting);
+      resizeTranslateY.value = withTiming(0, { duration: 150 });
+    })
+    .onFinalize(() => {
+      if (isResizing.value) {
+        isResizing.value = false;
+        resizeTranslateY.value = withTiming(0, { duration: 150 });
+        runOnJS(onResizeEnd)(startSlotIdx, totalSlots, 0, entry, isMeeting);
+      }
+    });
+
+  const animatedResizeStyle = useAnimatedStyle(() => ({
+    height: Math.max(SLOT_HEIGHT - 2, blockHeight + resizeTranslateY.value),
+  }));
+
+  return (
+    <GestureDetector gesture={dragGesture}>
+      <AnimatedView style={[
+        styles.slotBlockOuter,
+        animatedBlockStyle,
+      ]}>
+        <AnimatedView style={[
+          styles.slotBlock,
+          {
+            backgroundColor: isMeeting ? colors.accentSecondary + '18' : colors.accent + '18',
+            borderLeftColor: isMeeting ? colors.accentSecondary : (isComplete ? colors.accentGreen : colors.accent),
+          },
+          animatedResizeStyle,
+        ]}>
+          <TouchableOpacity
+            style={styles.blockTouchable}
+            onPress={onTap}
+            activeOpacity={0.7}
+          >
+            <View style={styles.blockContent}>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={[
+                    styles.blockText,
+                    { color: colors.text },
+                    isComplete && { textDecorationLine: 'line-through', color: colors.textSecondary },
+                  ]}
+                  numberOfLines={2}
+                >
+                  {isMeeting
+                    ? `📅 ${entry.meetingTime ? formatSlotLabel(entry.meetingTime) : formatSlotLabel(entry.timeBlock)} ${entry.text}`
+                    : entry.text}
+                </Text>
+              </View>
+              {!isMeeting && (
+                <TouchableOpacity
+                  onPress={onUnschedule}
+                  style={[styles.unscheduleBtn, { backgroundColor: colors.textMuted + '20' }]}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                >
+                  <Text style={[styles.unscheduleBtnText, { color: colors.textMuted }]}>✕</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </TouchableOpacity>
+
+          {/* Resize handle at bottom */}
+          <GestureDetector gesture={resizePan}>
+            <AnimatedView style={[styles.resizeHandle, { backgroundColor: colors.textMuted + '30' }]}>
+              <View style={[styles.resizeHandleDot, { backgroundColor: colors.textMuted }]} />
+              <View style={[styles.resizeHandleDot, { backgroundColor: colors.textMuted }]} />
+              <View style={[styles.resizeHandleDot, { backgroundColor: colors.textMuted }]} />
+            </AnimatedView>
+          </GestureDetector>
+        </AnimatedView>
+      </AnimatedView>
+    </GestureDetector>
+  );
+}
+
+// ─── Main component ─────────────────────────────────────────────────────────
+export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAddPress, onAddEntry }) {
   const [assignModalVisible, setAssignModalVisible] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [showTimer, setShowTimer] = useState(false);
   const [timerEntry, setTimerEntry] = useState(null);
 
+  // Inline creation
+  const [inlineSlot, setInlineSlot] = useState(null);
+  const [inlineText, setInlineText] = useState('');
+  const inlineInputRef = useRef(null);
+
+  // Current time indicator
+  const [currentMinute, setCurrentMinute] = useState(() => {
+    const now = new Date();
+    return now.getHours() * 60 + now.getMinutes();
+  });
+
+  // Scroll ref + disable scroll during drag
+  const scrollRef = useRef(null);
+  const [scrollEnabled, setScrollEnabled] = useState(true);
+
   // Meetings: time-block-only items stored separately
   const [meetings, setMeetings] = useState([]);
   const [showMeetingModal, setShowMeetingModal] = useState(false);
   const [meetingText, setMeetingText] = useState('');
-  const [meetingDuration, setMeetingDuration] = useState(30); // minutes, 5-min steps
+  const [meetingDuration, setMeetingDuration] = useState(30);
   const [meetingHour, setMeetingHour] = useState(9);
   const [meetingMinute, setMeetingMinute] = useState(0);
 
   const meetingSlideAnim = useRef(new Animated.Value(-SCREEN_HEIGHT)).current;
   const meetingInputRef = useRef(null);
 
-  const meetingStorageKey = `crushedit_meetings_${dateKey || 'default'}`;
+  const meetingStorageKey = `nell_meetings_${dateKey || 'default'}`;
+
+  // Update current time every minute
+  useEffect(() => {
+    const update = () => {
+      const now = new Date();
+      setCurrentMinute(now.getHours() * 60 + now.getMinutes());
+    };
+    const id = setInterval(update, 60000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Auto-scroll to current time on mount
+  useEffect(() => {
+    const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+    const startMin = START_HOUR * 60;
+    const offset = Math.max(0, ((nowMin - startMin) / 30) * SLOT_HEIGHT - SCREEN_HEIGHT / 3);
+    setTimeout(() => scrollRef.current?.scrollTo({ y: offset, animated: false }), 100);
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -118,7 +319,6 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
   // Build a map: slot → entry or meeting (accounting for multi-slot blocks)
   const slotMap = useMemo(() => {
     const map = {};
-    // Entries
     entries.forEach(entry => {
       if (!entry.timeBlock) return;
       const startIdx = ALL_SLOTS.indexOf(entry.timeBlock);
@@ -134,7 +334,6 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
         };
       }
     });
-    // Meetings
     meetings.forEach(mtg => {
       if (!mtg.timeBlock) return;
       const startIdx = ALL_SLOTS.indexOf(mtg.timeBlock);
@@ -160,15 +359,15 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
     [entries]
   );
 
-  // Check if a range of slots is available
-  const canAssignAt = useCallback((startIndex, slotsNeeded) => {
+  // Check if a range of slots is available (optionally ignoring a specific entry)
+  const canAssignAt = useCallback((startIndex, slotsNeeded, ignoreId) => {
     for (let i = 0; i < slotsNeeded && (startIndex + i) < ALL_SLOTS.length; i++) {
       const existing = slotMap[ALL_SLOTS[startIndex + i]];
-      if (existing) {
+      if (existing && existing.entry.id !== ignoreId) {
         return false;
       }
     }
-    return startIndex + slotsNeeded <= ALL_SLOTS.length;
+    return startIndex >= 0 && startIndex + slotsNeeded <= ALL_SLOTS.length;
   }, [slotMap]);
 
   // Compute which slots would be highlighted for the selected entry
@@ -177,7 +376,7 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
     const slotsNeeded = Math.max(1, selectedEntry.pomodoros || 1);
     const highlights = {};
     ALL_SLOTS.forEach((slot, idx) => {
-      if (canAssignAt(idx, slotsNeeded)) {
+      if (canAssignAt(idx, slotsNeeded, undefined)) {
         highlights[slot] = true;
       }
     });
@@ -187,11 +386,70 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
   const handleChipPress = (entry) => {
     Haptics.selectionAsync();
     if (selectedEntry?.id === entry.id) {
-      setSelectedEntry(null); // deselect
+      setSelectedEntry(null);
     } else {
       setSelectedEntry(entry);
     }
   };
+
+  // -- Drag start/end handlers (disable/enable scroll) --
+  const handleDragStart = useCallback(() => {
+    setScrollEnabled(false);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  }, []);
+
+  const handleDragEnd = useCallback((newStartIdx, totalSlots, entry, isMeeting) => {
+    setScrollEnabled(true);
+    if (newStartIdx < 0 || newStartIdx >= ALL_SLOTS.length) return; // cancelled
+    const newSlot = ALL_SLOTS[newStartIdx];
+    if (!newSlot) return;
+    if (newSlot === entry.timeBlock) return; // same position
+
+    if (!canAssignAt(newStartIdx, totalSlots, entry.id)) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    if (isMeeting) {
+      const updated = meetings.map(m =>
+        m.id === entry.id ? { ...m, timeBlock: newSlot } : m
+      );
+      persistMeetings(updated);
+    } else {
+      onUpdate?.(entry.id, { timeBlock: newSlot });
+    }
+  }, [canAssignAt, meetings, persistMeetings, onUpdate]);
+
+  // -- Resize end handler --
+  const handleResizeEnd = useCallback((startIdx, currentSlots, slotDelta, entry, isMeeting) => {
+    setScrollEnabled(true);
+    const newSlots = Math.max(1, currentSlots + slotDelta);
+    if (newSlots === currentSlots) return;
+
+    // Check new slots don't overlap
+    if (newSlots > currentSlots) {
+      for (let i = currentSlots; i < newSlots; i++) {
+        const checkIdx = startIdx + i;
+        if (checkIdx >= ALL_SLOTS.length) return;
+        const existing = slotMap[ALL_SLOTS[checkIdx]];
+        if (existing && existing.entry.id !== entry.id) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          return;
+        }
+      }
+    }
+
+    Haptics.selectionAsync();
+    if (isMeeting) {
+      const updated = meetings.map(m =>
+        m.id === entry.id ? { ...m, slots: newSlots, durationMin: newSlots * 30 } : m
+      );
+      persistMeetings(updated);
+    } else {
+      onUpdate?.(entry.id, { pomodoros: newSlots });
+    }
+  }, [slotMap, meetings, persistMeetings, onUpdate]);
 
   const handleSlotPress = (slot, slotIndex) => {
     const existing = slotMap[slot];
@@ -199,13 +457,19 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
 
     if (selectedEntry) {
       const slotsNeeded = Math.max(1, selectedEntry.pomodoros || 1);
-      if (canAssignAt(slotIndex, slotsNeeded)) {
+      if (canAssignAt(slotIndex, slotsNeeded, undefined)) {
         onUpdate?.(selectedEntry.id, { timeBlock: slot });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setSelectedEntry(null);
       }
+    } else if (onAddEntry) {
+      // Inline creation: show TextInput in this slot
+      Haptics.selectionAsync();
+      setInlineSlot(slot);
+      setInlineText('');
+      setTimeout(() => inlineInputRef.current?.focus(), 50);
     } else {
-      // Open meeting modal pre-filled with this slot's time
+      // Fallback: open meeting modal pre-filled with this slot's time
       Haptics.selectionAsync();
       const [h, m] = slot.split(':').map(Number);
       setMeetingHour(h);
@@ -213,6 +477,20 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
       setShowMeetingModal(true);
     }
   };
+
+  const handleInlineSubmit = useCallback(() => {
+    const text = inlineText.trim();
+    if (!text || !inlineSlot) {
+      setInlineSlot(null);
+      setInlineText('');
+      return;
+    }
+    onAddEntry?.({ text, timeBlock: inlineSlot, pomodoros: 1 });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setInlineSlot(null);
+    setInlineText('');
+    Keyboard.dismiss();
+  }, [inlineText, inlineSlot, onAddEntry]);
 
   const assignEntry = (entryId) => {
     if (selectedSlot) {
@@ -222,6 +500,14 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
     setAssignModalVisible(false);
     setSelectedSlot(null);
   };
+
+  // -- Current time position --
+  const currentTimeTop = useMemo(() => {
+    const startMin = START_HOUR * 60;
+    const endMin = END_HOUR * 60;
+    if (currentMinute < startMin || currentMinute > endMin) return null;
+    return ((currentMinute - startMin) / 30) * SLOT_HEIGHT;
+  }, [currentMinute]);
 
   const renderSlot = (slot, index) => {
     const block = slotMap[slot];
@@ -234,7 +520,6 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
 
     if (block && block.isStart) {
       const { entry, totalSlots, isMeeting } = block;
-      const pomodoroText = !isMeeting && entry.pomodoros > 0 ? `[${entry.pomodoros}]` : '';
       const isComplete = entry.state === 'complete';
 
       return (
@@ -242,58 +527,60 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
           <Text style={[styles.timeLabel, { color: colors.textMuted }, isHour && styles.timeLabelHour]}>
             {isHour ? formatSlotLabel(slot) : ''}
           </Text>
-          <TouchableOpacity
-            style={[
-              styles.slotBlock,
-              {
-                backgroundColor: isMeeting ? colors.accentSecondary + '18' : colors.accent + '18',
-                borderLeftColor: isMeeting ? colors.accentSecondary : (isComplete ? colors.accentGreen : colors.accent),
-                height: SLOT_HEIGHT * totalSlots - 2,
-              },
-            ]}
-            onLongPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          <DraggableBlock
+            slot={slot}
+            entry={entry}
+            totalSlots={totalSlots}
+            isMeeting={!!isMeeting}
+            isComplete={isComplete}
+            colors={colors}
+            slotIndex={block.slotIndex}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onResizeEnd={handleResizeEnd}
+            allSlots={ALL_SLOTS}
+            slotMap={slotMap}
+            onTap={() => {
+              if (!isMeeting) {
+                setTimerEntry(entry);
+                setShowTimer(true);
+              }
+            }}
+            onUnschedule={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               if (isMeeting) {
                 deleteMeeting(entry.id);
               } else {
                 onUpdate?.(entry.id, { timeBlock: null });
               }
             }}
-            onPress={() => {
-              if (!isMeeting) {
-                setTimerEntry(entry);
-                setShowTimer(true);
-              }
-            }}
-            activeOpacity={0.7}
-          >
-            <View style={styles.blockContent}>
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={[
-                    styles.blockText,
-                    { color: colors.text },
-                    isComplete && { textDecorationLine: 'line-through', color: colors.textSecondary },
-                  ]}
-                  numberOfLines={2}
-                >
-                  {isMeeting ? `📅 ${entry.meetingTime ? formatSlotLabel(entry.meetingTime) : formatSlotLabel(entry.timeBlock)} ${entry.text}` : entry.text}
-                </Text>
-              </View>
-              {!isMeeting && (
-                <TouchableOpacity
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    onUpdate?.(entry.id, { timeBlock: null });
-                  }}
-                  style={[styles.unscheduleBtn, { backgroundColor: colors.textMuted + '20' }]}
-                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                >
-                  <Text style={[styles.unscheduleBtnText, { color: colors.textMuted }]}>✕</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </TouchableOpacity>
+          />
+        </View>
+      );
+    }
+
+    // Inline creation slot
+    if (inlineSlot === slot) {
+      return (
+        <View key={slot} style={styles.slotRow}>
+          <Text style={[styles.timeLabel, { color: colors.textMuted }, isHour && styles.timeLabelHour]}>
+            {isHour ? formatSlotLabel(slot) : ''}
+          </Text>
+          <View style={[styles.inlineInputWrap, { borderColor: colors.accent, backgroundColor: colors.accent + '10' }]}>
+            <TextInput
+              ref={inlineInputRef}
+              style={[styles.inlineInput, { color: colors.text }]}
+              placeholder="Task name..."
+              placeholderTextColor={colors.textMuted}
+              value={inlineText}
+              onChangeText={setInlineText}
+              onSubmitEditing={handleInlineSubmit}
+              onBlur={() => { if (!inlineText.trim()) { setInlineSlot(null); setInlineText(''); } }}
+              returnKeyType="done"
+              autoFocus
+              selectionColor={colors.accent}
+            />
+          </View>
         </View>
       );
     }
@@ -372,11 +659,24 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
 
       {/* Timeline */}
       <ScrollView
+        ref={scrollRef}
         style={styles.timeline}
         showsVerticalScrollIndicator={false}
+        scrollEnabled={scrollEnabled}
+        keyboardShouldPersistTaps="handled"
       >
-        {ALL_SLOTS.map((slot, index) => renderSlot(slot, index))}
-        <View style={{ height: 120 }} />
+        <View style={styles.timelineInner}>
+          {ALL_SLOTS.map((slot, index) => renderSlot(slot, index))}
+          <View style={{ height: 120 }} />
+
+          {/* Current time indicator */}
+          {currentTimeTop != null && (
+            <View style={[styles.currentTimeLine, { top: currentTimeTop }]} pointerEvents="none">
+              <View style={styles.currentTimeDot} />
+              <View style={styles.currentTimeBar} />
+            </View>
+          )}
+        </View>
       </ScrollView>
 
       {/* Assign entry modal (tap fallback when no chip selected) */}
@@ -688,20 +988,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginHorizontal: 2,
   },
-  meetingTimeRow: {
-    gap: 6,
-    paddingBottom: 16,
-  },
-  meetingTimeChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  meetingTimeText: {
-    fontSize: SIZES.xs,
-    fontWeight: '600',
-  },
   meetingAddBtn: {
     paddingVertical: 14,
     borderRadius: SIZES.radius,
@@ -767,6 +1053,9 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 4,
   },
+  timelineInner: {
+    position: 'relative',
+  },
   slotRow: {
     flexDirection: 'row',
     minHeight: SLOT_HEIGHT,
@@ -802,23 +1091,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     opacity: 0.7,
   },
+  slotBlockOuter: {
+    flex: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 8,
+  },
   slotBlock: {
     flex: 1,
     borderLeftWidth: 3,
     borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
     marginVertical: 1,
     marginRight: 8,
+    overflow: 'hidden',
+  },
+  blockTouchable: {
+    flex: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     justifyContent: 'center',
   },
   blockText: {
     fontSize: SIZES.sm,
     fontWeight: '600',
-  },
-  blockPomo: {
-    fontSize: SIZES.xs,
-    marginTop: 2,
   },
   blockContent: {
     flexDirection: 'row',
@@ -836,8 +1131,57 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
   },
-  blockPlay: {
-    fontSize: 16,
+  // Resize handle
+  resizeHandle: {
+    height: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3,
+    borderBottomLeftRadius: 6,
+    borderBottomRightRadius: 6,
+  },
+  resizeHandleDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+  },
+  // Inline creation
+  inlineInputWrap: {
+    flex: 1,
+    height: SLOT_HEIGHT,
+    borderWidth: 1,
+    borderRadius: 6,
+    marginVertical: 1,
+    marginRight: 8,
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  inlineInput: {
+    fontSize: SIZES.sm,
+    fontWeight: '500',
+    padding: 0,
+  },
+  // Current time indicator
+  currentTimeLine: {
+    position: 'absolute',
+    left: 52,
+    right: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    zIndex: 50,
+  },
+  currentTimeDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+    marginLeft: -4,
+  },
+  currentTimeBar: {
+    flex: 1,
+    height: 2,
+    backgroundColor: '#EF4444',
   },
   // Modal
   modalOverlay: {

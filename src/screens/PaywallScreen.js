@@ -121,7 +121,7 @@ export default function PaywallScreen({ onComplete }) {
             style={styles.icon}
           />
           <Text style={[styles.title, { color: colors.text }]}>
-            Unlock GoalDigger Pro
+            Unlock Nell Pro
           </Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             Supercharge your productivity

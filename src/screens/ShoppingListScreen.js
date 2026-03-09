@@ -17,8 +17,8 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const STORAGE_KEY = 'crushedit_shopping';
-const CATEGORY_ORDER_KEY = 'crushedit_shopping_cat_order';
+const STORAGE_KEY = 'nell_shopping';
+const CATEGORY_ORDER_KEY = 'nell_shopping_cat_order';
 
 const CATEGORIES = [
   { key: 'all', label: 'All', icon: '🛒' },
