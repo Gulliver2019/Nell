@@ -431,11 +431,11 @@ export default function MoreScreen({ navigation }) {
         <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>📬 Contact & Support</Text>
           <TouchableOpacity
-            onPress={() => Linking.openURL('mailto:goaldigger@sr6labs.co.uk')}
+            onPress={() => Linking.openURL('mailto:nell@sr6labs.co.uk')}
             style={[styles.contactRow, { borderBottomColor: colors.border }]}
           >
             <Text style={[styles.contactLabel, { color: colors.textSecondary }]}>Email us</Text>
-            <Text style={[styles.contactValue, { color: colors.accent }]}>goaldigger@sr6labs.co.uk</Text>
+            <Text style={[styles.contactValue, { color: colors.accent }]}>nell@sr6labs.co.uk</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => Linking.openURL('https://sr6labs.co.uk/privacy.html')}

@@ -61,7 +61,7 @@ export default function PaywallScreen({ onComplete }) {
     const result = await purchasePackage(selectedPkg);
     setIsPurchasing(false);
     if (result.success) {
-      const has = result.customerInfo?.entitlements?.active?.['GoalDigger Pro'];
+      const has = result.customerInfo?.entitlements?.active?.['Nell Pro'];
       if (has) onComplete();
     } else if (!result.userCancelled) {
       Alert.alert('Purchase Failed', 'Something went wrong. Please try again.');
@@ -73,7 +73,7 @@ export default function PaywallScreen({ onComplete }) {
     const result = await restorePurchases();
     setIsRestoring(false);
     if (result.success) {
-      if (result.customerInfo?.entitlements?.active?.['GoalDigger Pro']) {
+      if (result.customerInfo?.entitlements?.active?.['Nell Pro']) {
         onComplete();
       } else {
         Alert.alert('No Purchases Found', "We couldn't find any previous purchases to restore.");

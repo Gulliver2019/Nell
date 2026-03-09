@@ -5,7 +5,7 @@ import Purchases, { LOG_LEVEL } from 'react-native-purchases';
 const RevenueCatContext = createContext();
 
 const API_KEY = 'appl_DAxZGGbcBkxcpJbYKzIeqeGvufz';
-const ENTITLEMENT_ID = 'GoalDigger Pro';
+const ENTITLEMENT_ID = 'Nell Pro';
 
 export function RevenueCatProvider({ children }) {
   const [isProUser, setIsProUser] = useState(false);
