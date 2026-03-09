@@ -11,7 +11,7 @@ import { useTheme } from '../context/ThemeContext';
 import * as Haptics from 'expo-haptics';
 import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { Swipeable, GestureHandlerRootView } from 'react-native-gesture-handler';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -97,94 +97,127 @@ function ProgressRing({ progress, size, accent, bg }) {
   );
 }
 
-/* ── Swipeable item row ── */
-function ShoppingItem({ item, colors, onToggle, onDelete, onQty, onEdit }) {
+/* ── Item row ── */
+function ShoppingItem({ item, colors, onToggle, onQty, onEdit }) {
   const cat = CATEGORY_MAP[item.category] || CATEGORY_MAP.produce;
-  const pan = useRef(new Animated.Value(0)).current;
-  const opacity = useRef(new Animated.Value(1)).current;
-
-  const handleDelete = useCallback(() => {
-    Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
-      animateLayout();
-      onDelete(item.id);
-    });
-  }, [item.id, onDelete, opacity]);
 
   return (
-    <Animated.View style={{ opacity, transform: [{ translateX: pan }] }}>
-      <View style={[
-        s.itemCard,
-        { backgroundColor: colors.bgCard },
-        item.checked && s.itemCardChecked,
-        !item.checked && SHADOWS.card(colors.accent),
-      ]}>
-        {/* Left accent stripe */}
-        <View style={[s.itemStripe, { backgroundColor: item.checked ? colors.accentGreen : colors.accent + '40' }]} />
+    <View style={[
+      s.itemCard,
+      { backgroundColor: colors.bgCard },
+      item.checked && s.itemCardChecked,
+      !item.checked && SHADOWS.card(colors.accent),
+    ]}>
+      {/* Left accent stripe */}
+      <View style={[s.itemStripe, { backgroundColor: item.checked ? colors.accentGreen : colors.accent + '40' }]} />
 
-        <View style={s.itemInner}>
-          {/* Checkbox */}
-          <TouchableOpacity
-            style={[
-              s.checkbox,
-              { borderColor: colors.borderLight },
-              item.checked && { backgroundColor: colors.accentGreen, borderColor: colors.accentGreen },
-            ]}
-            onPress={() => onToggle(item.id)}
-            activeOpacity={0.7}
-          >
-            {item.checked && <Text style={s.checkIcon}>✓</Text>}
-          </TouchableOpacity>
+      <View style={s.itemInner}>
+        {/* Checkbox */}
+        <TouchableOpacity
+          style={[
+            s.checkbox,
+            { borderColor: colors.borderLight },
+            item.checked && { backgroundColor: colors.accentGreen, borderColor: colors.accentGreen },
+          ]}
+          onPress={() => onToggle(item.id)}
+          activeOpacity={0.7}
+        >
+          {item.checked && <Text style={s.checkIcon}>✓</Text>}
+        </TouchableOpacity>
 
-          {/* Main content */}
-          <TouchableOpacity
-            style={s.itemBody}
-            onPress={() => onEdit(item)}
-            onLongPress={() => {
-              Alert.alert('Delete', `Remove "${item.text}"?`, [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Delete', style: 'destructive', onPress: handleDelete },
-              ]);
-            }}
-            activeOpacity={0.7}
-          >
-            <View style={s.itemTopRow}>
-              <Text style={s.itemEmoji}>{cat.icon}</Text>
-              <Text
-                style={[
-                  s.itemName, { color: colors.text },
-                  item.checked && { textDecorationLine: 'line-through', color: colors.textMuted },
-                ]}
-              >
-                {item.text}
-              </Text>
-            </View>
-            <Text style={[s.itemCatText, { color: colors.textMuted }]}>{cat.label}</Text>
-            {item.notes ? (
-              <Text style={[s.itemNotes, { color: colors.textMuted }]} numberOfLines={2}>{item.notes}</Text>
-            ) : null}
-          </TouchableOpacity>
-
-          {/* Quantity */}
-          <View style={s.qtyWrap}>
-            <TouchableOpacity
-              style={[s.qtyBtn, { backgroundColor: colors.bgInput }]}
-              onPress={() => onQty(item.id, -1)}
+        {/* Main content */}
+        <TouchableOpacity
+          style={s.itemBody}
+          onPress={() => onEdit(item)}
+          activeOpacity={0.7}
+        >
+          <View style={s.itemTopRow}>
+            <Text style={s.itemEmoji}>{cat.icon}</Text>
+            <Text
+              style={[
+                s.itemName, { color: colors.text },
+                item.checked && { textDecorationLine: 'line-through', color: colors.textMuted },
+              ]}
             >
-              <Text style={[s.qtyBtnTxt, { color: colors.textSecondary }]}>−</Text>
-            </TouchableOpacity>
-            <View style={[s.qtyBadge, { backgroundColor: colors.accent + '18' }]}>
-              <Text style={[s.qtyVal, { color: colors.accent }]}>{item.quantity || 1}</Text>
-            </View>
-            <TouchableOpacity
-              style={[s.qtyBtn, { backgroundColor: colors.bgInput }]}
-              onPress={() => onQty(item.id, 1)}
-            >
-              <Text style={[s.qtyBtnTxt, { color: colors.textSecondary }]}>+</Text>
-            </TouchableOpacity>
+              {item.text}
+            </Text>
           </View>
+          <Text style={[s.itemCatText, { color: colors.textMuted }]}>{cat.label}</Text>
+          {item.notes ? (
+            <Text style={[s.itemNotes, { color: colors.textMuted }]} numberOfLines={2}>{item.notes}</Text>
+          ) : null}
+        </TouchableOpacity>
+
+        {/* Quantity */}
+        <View style={s.qtyWrap}>
+          <TouchableOpacity
+            style={[s.qtyBtn, { backgroundColor: colors.bgInput }]}
+            onPress={() => onQty(item.id, -1)}
+          >
+            <Text style={[s.qtyBtnTxt, { color: colors.textSecondary }]}>−</Text>
+          </TouchableOpacity>
+          <View style={[s.qtyBadge, { backgroundColor: colors.accent + '18' }]}>
+            <Text style={[s.qtyVal, { color: colors.accent }]}>{item.quantity || 1}</Text>
+          </View>
+          <TouchableOpacity
+            style={[s.qtyBtn, { backgroundColor: colors.bgInput }]}
+            onPress={() => onQty(item.id, 1)}
+          >
+            <Text style={[s.qtyBtnTxt, { color: colors.textSecondary }]}>+</Text>
+          </TouchableOpacity>
         </View>
       </View>
-    </Animated.View>
+    </View>
+  );
+}
+
+/* ── Swipe-to-delete wrapper ── */
+function SwipeableShoppingItem({ item, colors, onToggle, onDelete, onQty, onEdit }) {
+  const swipeRef = useRef(null);
+
+  const handleSwipeDelete = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    swipeRef.current?.close();
+    animateLayout();
+    onDelete(item.id);
+  }, [item.id, onDelete]);
+
+  const renderRightActions = useCallback((progress, dragX) => {
+    const scale = dragX.interpolate({
+      inputRange: [-80, 0],
+      outputRange: [1, 0.5],
+      extrapolate: 'clamp',
+    });
+    return (
+      <TouchableOpacity
+        style={[s.swipeDeleteBtn, { backgroundColor: colors.accentRed }]}
+        onPress={handleSwipeDelete}
+        activeOpacity={0.8}
+      >
+        <Animated.View style={{ transform: [{ scale }], alignItems: 'center' }}>
+          <Text style={s.swipeDeleteIcon}>🗑</Text>
+          <Text style={s.swipeDeleteLabel}>Delete</Text>
+        </Animated.View>
+      </TouchableOpacity>
+    );
+  }, [colors, handleSwipeDelete]);
+
+  return (
+    <Swipeable
+      ref={swipeRef}
+      renderRightActions={renderRightActions}
+      overshootRight={false}
+      friction={2}
+      rightThreshold={40}
+    >
+      <ShoppingItem
+        item={item}
+        colors={colors}
+        onToggle={onToggle}
+        onQty={onQty}
+        onEdit={onEdit}
+      />
+    </Swipeable>
   );
 }
 
@@ -200,6 +233,7 @@ export default function ShoppingListScreen() {
   const [editQuantity, setEditQuantity] = useState(1);
   const [editNotes, setEditNotes] = useState('');
   const [showEditCatPicker, setShowEditCatPicker] = useState(false);
+  const [reorderSection, setReorderSection] = useState(null);
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -387,6 +421,11 @@ export default function ShoppingListScreen() {
     setEditItem(null);
   }, []);
 
+  const toggleReorder = useCallback((catKey) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setReorderSection(prev => prev === catKey ? null : catKey);
+  }, []);
+
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       {/* ── Header ── */}
@@ -483,6 +522,15 @@ export default function ShoppingListScreen() {
                     <View style={[s.sectionLine, { backgroundColor: colors.border }]} />
                     <Text style={[s.sectionCount, { color: colors.textMuted }]}>{sectionItems.length}</Text>
                     <TouchableOpacity
+                      onPress={() => toggleReorder(category.key)}
+                      style={s.sectionEditBtn}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Text style={[s.sectionEditIcon, { color: reorderSection === category.key ? colors.accent : colors.textMuted }]}>
+                        {reorderSection === category.key ? '✓' : '✏️'}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
                       onPress={() => moveSectionUp(category.key)}
                       style={[s.sectionArrow, sIdx === 0 && { opacity: 0.2 }]}
                       disabled={sIdx === 0}
@@ -504,24 +552,44 @@ export default function ShoppingListScreen() {
                     keyExtractor={item => item.id}
                     scrollEnabled={false}
                     onDragEnd={(data) => handleDragEnd(category.key, data)}
-                    renderItem={({ item, drag, isActive }) => (
-                      <ScaleDecorator>
-                        <TouchableOpacity
-                          onLongPress={drag}
-                          disabled={isActive}
-                          activeOpacity={0.7}
-                        >
-                          <ShoppingItem
-                            item={item}
-                            colors={colors}
-                            onToggle={toggleCheck}
-                            onDelete={deleteItem}
-                            onQty={updateQuantity}
-                            onEdit={openEdit}
-                          />
-                        </TouchableOpacity>
-                      </ScaleDecorator>
-                    )}
+                    renderItem={({ item, drag, isActive }) => {
+                      if (reorderSection === category.key) {
+                        return (
+                          <ScaleDecorator>
+                            <View style={[s.reorderRow, isActive && { backgroundColor: colors.bgElevated, borderRadius: SIZES.radius }]}>
+                              <TouchableOpacity
+                                onLongPress={drag}
+                                delayLongPress={100}
+                                disabled={isActive}
+                                style={s.dragHandle}
+                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                              >
+                                <Text style={[s.dragHandleIcon, { color: isActive ? colors.accent : colors.textMuted }]}>☰</Text>
+                              </TouchableOpacity>
+                              <View style={{ flex: 1 }}>
+                                <ShoppingItem
+                                  item={item}
+                                  colors={colors}
+                                  onToggle={toggleCheck}
+                                  onQty={updateQuantity}
+                                  onEdit={openEdit}
+                                />
+                              </View>
+                            </View>
+                          </ScaleDecorator>
+                        );
+                      }
+                      return (
+                        <SwipeableShoppingItem
+                          item={item}
+                          colors={colors}
+                          onToggle={toggleCheck}
+                          onDelete={deleteItem}
+                          onQty={updateQuantity}
+                          onEdit={openEdit}
+                        />
+                      );
+                    }}
                   />
                 </View>
               ))}
@@ -534,7 +602,7 @@ export default function ShoppingListScreen() {
                     <Text style={[s.sectionCount, { color: colors.textMuted }]}>{sections.checked.length}</Text>
                   </View>
                   {sections.checked.map(item => (
-                    <ShoppingItem
+                    <SwipeableShoppingItem
                       key={item.id}
                       item={item}
                       colors={colors}
@@ -693,6 +761,21 @@ const s = StyleSheet.create({
   sectionCount: { fontSize: SIZES.xs, fontWeight: '700' },
   sectionArrow: { padding: 2 },
   sectionArrowText: { fontSize: 10 },
+  sectionEditBtn: { padding: 4, marginLeft: 2 },
+  sectionEditIcon: { fontSize: 14 },
+
+  // Reorder mode
+  reorderRow: { flexDirection: 'row', alignItems: 'center' },
+  dragHandle: { width: 32, alignItems: 'center', justifyContent: 'center', paddingVertical: 16 },
+  dragHandleIcon: { fontSize: 20, fontWeight: '700' },
+
+  // Swipe-to-delete
+  swipeDeleteBtn: {
+    justifyContent: 'center', alignItems: 'center', width: 80,
+    borderRadius: SIZES.radius, marginBottom: 8, marginLeft: 4,
+  },
+  swipeDeleteIcon: { fontSize: 20 },
+  swipeDeleteLabel: { color: '#fff', fontSize: 10, fontWeight: '700', marginTop: 2, textTransform: 'uppercase' },
 
   // Item card
   itemCard: {
