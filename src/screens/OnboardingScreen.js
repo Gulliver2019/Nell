@@ -9,6 +9,7 @@ import { SIZES } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import * as Haptics from 'expo-haptics';
 import HelpScreen from './HelpScreen';
+import NellLogo from '../components/NellLogo';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -24,7 +25,7 @@ const BRAIN_IMAGE = require('../../assets/brain.png');
 
 const SLIDES = [
   {
-    emoji: '📓',
+    key: 'nell-logo',
     title: 'This Is Nell',
     subtitle: 'Four proven systems. One app.',
     body: 'Nell combines the best ideas from rapid logging, time blocking, the Pomodoro technique, and habit science into one seamless system.\n\nNo fluff. No complexity. Just the methods that actually work — wired together so nothing falls through the cracks.',
@@ -140,7 +141,14 @@ export default function OnboardingScreen({ onComplete }) {
 
       {/* Slide content */}
       <Animated.View style={[styles.slideContent, { opacity: fadeAnim }]}>
-        {slide.key === 'book' ? (
+        {slide.key === 'nell-logo' ? (
+          <>
+            <NellLogo color={colors.text} height={56} style={{ marginBottom: 20 }} />
+            <Text style={[styles.slideTitle, { color: colors.text }]}>{slide.title}</Text>
+            <Text style={[styles.slideSubtitle, { color: colors.accent }]}>{slide.subtitle}</Text>
+            <Text style={[styles.slideBody, { color: colors.textSecondary }]}>{slide.body}</Text>
+          </>
+        ) : slide.key === 'book' ? (
           <>
             <View style={styles.bookCover}>
               <Image

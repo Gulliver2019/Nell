@@ -11,7 +11,7 @@ const PRIVACY_URL = 'https://sr6labs.co.uk/privacy';
 const TERMS_URL = 'https://sr6labs.co.uk/terms';
 
 const FEATURES = [
-  { icon: '🧠', title: 'AI Brain Dump', desc: 'Thoughts into tasks instantly' },
+  { icon: '🧠', title: 'AI Rapid Logging', desc: 'Thoughts into tasks instantly' },
   { icon: '🍅', title: 'Pomodoro Timer', desc: 'Smart focus sessions' },
   { icon: '📊', title: 'Project Boards', desc: 'Kanban boards & calendar sync' },
   { icon: '⚡', title: 'Unlimited Everything', desc: 'No limits on tasks or projects' },

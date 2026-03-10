@@ -30,13 +30,13 @@ const COLUMNS = [
 ];
 
 // Project index board — shows all projects
-function ProjectIndexBoard({ projects, onSelect, onAdd, onDelete, onMakeSomeTime, colors }) {
+function ProjectIndexBoard({ projects, onSelect, onAdd, onDelete, onReorder, onMakeSomeTime, colors }) {
   const totalIncomplete = useMemo(() =>
     projects.reduce((sum, p) => sum + p.tasks.filter(t => t.column !== 'done').length, 0),
     [projects]
   );
 
-  const renderProject = useCallback(({ item: project }) => {
+  const renderProject = useCallback(({ item: project, drag, isActive }) => {
     const total = project.tasks.length;
     const done = project.tasks.filter(t => t.column === 'done').length;
     const progress = total > 0 ? (done / total) * 100 : 0;
@@ -45,63 +45,74 @@ function ProjectIndexBoard({ projects, onSelect, onAdd, onDelete, onMakeSomeTime
       : null;
 
     return (
-      <TouchableOpacity
-        style={[styles.projectCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
-        onPress={() => onSelect(project)}
-        onLongPress={() => onDelete(project)}
-        delayLongPress={300}
-        activeOpacity={0.7}
-      >
-        {/* Colour accent bar */}
-        <View style={[styles.projectAccent, { backgroundColor: project.color }]} />
+      <ScaleDecorator>
+        <TouchableOpacity
+          style={[styles.projectCard, { backgroundColor: colors.bgCard, borderColor: colors.border }, isActive && { shadowOpacity: 0.3, elevation: 8 }]}
+          onPress={() => onSelect(project)}
+          onLongPress={drag}
+          delayLongPress={200}
+          activeOpacity={0.7}
+        >
+          {/* Colour accent bar */}
+          <View style={[styles.projectAccent, { backgroundColor: project.color }]} />
 
-        <View style={styles.projectCardBody}>
-          <View style={styles.projectCardHeader}>
-            <Text style={styles.projectEmoji}>{project.emoji}</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.projectName, { color: colors.text }]} numberOfLines={1}>
-                {project.title}
-              </Text>
-              {project.endDate && (
-                <Text style={[styles.projectDates, { color: colors.textMuted }]}>
-                  {daysLeft === 0 ? 'Due today' : daysLeft === 1 ? '1 day left' : `${daysLeft} days left`}
+          {/* Delete X button */}
+          <TouchableOpacity
+            style={styles.projectDeleteBtn}
+            onPress={() => onDelete(project)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="close-circle" size={22} color={colors.textMuted + '80'} />
+          </TouchableOpacity>
+
+          <View style={styles.projectCardBody}>
+            <View style={styles.projectCardHeader}>
+              <Text style={styles.projectEmoji}>{project.emoji}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.projectName, { color: colors.text }]} numberOfLines={1}>
+                  {project.title}
                 </Text>
-              )}
+                {project.endDate && (
+                  <Text style={[styles.projectDates, { color: colors.textMuted }]}>
+                    {daysLeft === 0 ? 'Due today' : daysLeft === 1 ? '1 day left' : `${daysLeft} days left`}
+                  </Text>
+                )}
+              </View>
             </View>
-          </View>
 
-          {/* Mini stats */}
-          <View style={styles.projectStats}>
-            {COLUMNS.map(col => {
-              const count = project.tasks.filter(t => t.column === col.key).length;
-              return (
-                <View key={col.key} style={styles.miniStat}>
-                  <Text style={[styles.miniStatIcon, {
-                    color: col.key === 'done' ? colors.accentGreen
-                      : col.key === 'progress' ? colors.accentOrange
-                      : colors.textMuted
-                  }]}>{col.icon}</Text>
-                  <Text style={[styles.miniStatVal, { color: colors.text }]}>{count}</Text>
-                </View>
-              );
-            })}
-          </View>
-
-          {/* Progress bar */}
-          {total > 0 && (
-            <View style={[styles.projectProgress, { backgroundColor: colors.border }]}>
-              <View style={[styles.projectProgressFill, {
-                width: `${progress}%`,
-                backgroundColor: progress === 100 ? colors.accentGreen : project.color,
-              }]} />
+            {/* Mini stats */}
+            <View style={styles.projectStats}>
+              {COLUMNS.map(col => {
+                const count = project.tasks.filter(t => t.column === col.key).length;
+                return (
+                  <View key={col.key} style={styles.miniStat}>
+                    <Text style={[styles.miniStatIcon, {
+                      color: col.key === 'done' ? colors.accentGreen
+                        : col.key === 'progress' ? colors.accentOrange
+                        : colors.textMuted
+                    }]}>{col.icon}</Text>
+                    <Text style={[styles.miniStatVal, { color: colors.text }]}>{count}</Text>
+                  </View>
+                );
+              })}
             </View>
-          )}
 
-          <Text style={[styles.projectTaskCount, { color: colors.textMuted }]}>
-            {total === 0 ? 'No tasks yet' : `${done}/${total} complete`}
-          </Text>
-        </View>
-      </TouchableOpacity>
+            {/* Progress bar */}
+            {total > 0 && (
+              <View style={[styles.projectProgress, { backgroundColor: colors.border }]}>
+                <View style={[styles.projectProgressFill, {
+                  width: `${progress}%`,
+                  backgroundColor: progress === 100 ? colors.accentGreen : project.color,
+                }]} />
+              </View>
+            )}
+
+            <Text style={[styles.projectTaskCount, { color: colors.textMuted }]}>
+              {total === 0 ? 'No tasks yet' : `${done}/${total} complete`}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </ScaleDecorator>
     );
   }, [colors, onSelect, onDelete]);
 
@@ -114,7 +125,7 @@ function ProjectIndexBoard({ projects, onSelect, onAdd, onDelete, onMakeSomeTime
           style={StyleSheet.absoluteFillObject}
         />
         <Text style={[styles.indexTitle, { color: colors.text }]}>Projects</Text>
-        <Text style={[styles.indexSub, { color: colors.textMuted }]}>Your Kanban boards · hold to delete</Text>
+        <Text style={[styles.indexSub, { color: colors.textMuted }]}>Your Kanban boards · hold to reorder</Text>
       </View>
 
       {/* Make Some Time banner */}
@@ -135,10 +146,11 @@ function ProjectIndexBoard({ projects, onSelect, onAdd, onDelete, onMakeSomeTime
         </TouchableOpacity>
       )}
 
-      <FlatList
+      <DraggableFlatList
         data={projects}
         renderItem={renderProject}
         keyExtractor={item => item.id}
+        onDragEnd={({ data }) => onReorder(data.map(p => p.id))}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.indexContent}
         ListFooterComponent={
@@ -614,7 +626,7 @@ export default function ProjectsScreen({ route }) {
 
   // Make Some Time state
   const [makeTimeVisible, setMakeTimeVisible] = useState(false);
-  const [makeTimeSelectedIds, setMakeTimeSelectedIds] = useState(new Set());
+  const [makeTimeSelectedProjects, setMakeTimeSelectedProjects] = useState(new Set());
   const [makeTimeDate, setMakeTimeDate] = useState(new Date());
   const [makeTimePomodoros, setMakeTimePomodoros] = useState(2);
   const [makeTimeProjectFilter, setMakeTimeProjectFilter] = useState(null);
@@ -694,43 +706,45 @@ export default function ProjectsScreen({ route }) {
   // Make Some Time handlers
   const openMakeTime = useCallback((projectId = null) => {
     setMakeTimeProjectFilter(projectId);
-    setMakeTimeSelectedIds(new Set());
+    setMakeTimeSelectedProjects(projectId ? new Set([projectId]) : new Set());
     setMakeTimeDate(new Date());
     setMakeTimePomodoros(2);
     setMakeTimeVisible(true);
   }, []);
 
-  const toggleMakeTimeTask = useCallback((taskId) => {
-    setMakeTimeSelectedIds(prev => {
+  const toggleMakeTimeProject = useCallback((projectId) => {
+    setMakeTimeSelectedProjects(prev => {
       const next = new Set(prev);
-      if (next.has(taskId)) next.delete(taskId);
-      else next.add(taskId);
+      if (next.has(projectId)) next.delete(projectId);
+      else next.add(projectId);
       return next;
     });
   }, []);
 
   const confirmMakeTime = useCallback(async () => {
-    if (makeTimeSelectedIds.size === 0) return;
+    if (makeTimeSelectedProjects.size === 0) return;
     const y = makeTimeDate.getFullYear();
     const m = String(makeTimeDate.getMonth() + 1).padStart(2, '0');
     const d = String(makeTimeDate.getDate()).padStart(2, '0');
     const targetDate = `${y}-${m}-${d}`;
 
-    for (const taskId of makeTimeSelectedIds) {
-      const task = allIncompleteTasks.find(t => t.id === taskId);
-      if (!task) continue;
-      const text = projectTaskText(task.text, task.projectTitle, personalityEnabled);
-      await addEntry({ text, type: 'task', date: targetDate, source: 'daily', fromProject: true, pomodoros: makeTimePomodoros });
+    for (const projectId of makeTimeSelectedProjects) {
+      const project = projects.find(p => p.id === projectId);
+      if (!project) continue;
+      const text = personalityEnabled
+        ? `Smash ${project.emoji} ${project.title}`
+        : `Work on ${project.emoji} ${project.title}`;
+      await addEntry({ text, type: 'task', date: targetDate, source: 'daily', fromProject: true, projectId: project.id, pomodoros: makeTimePomodoros });
     }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setMakeTimeVisible(false);
-    const count = makeTimeSelectedIds.size;
+    const count = makeTimeSelectedProjects.size;
     Alert.alert(
       addedToDailyMessage(personalityEnabled),
-      `${count} task${count > 1 ? 's' : ''} scheduled with ${makeTimePomodoros} pomodoro${makeTimePomodoros > 1 ? 's' : ''} each for ${targetDate}`
+      `${count} project${count > 1 ? 's' : ''} scheduled with ${makeTimePomodoros} pomodoro${makeTimePomodoros > 1 ? 's' : ''} for ${targetDate}`
     );
-  }, [makeTimeSelectedIds, makeTimeDate, makeTimePomodoros, allIncompleteTasks, addEntry, personalityEnabled]);
+  }, [makeTimeSelectedProjects, makeTimeDate, makeTimePomodoros, projects, addEntry, personalityEnabled]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
@@ -756,6 +770,7 @@ export default function ProjectsScreen({ route }) {
           onSelect={setSelectedProject}
           onAdd={() => setShowNewModal(true)}
           onDelete={handleDeleteProjectFromIndex}
+          onReorder={reorderProjects}
           onMakeSomeTime={() => openMakeTime()}
         />
       )}
@@ -767,7 +782,7 @@ export default function ProjectsScreen({ route }) {
         colors={colors}
       />
 
-      {/* Make Some Time modal — multi-select, cross-project */}
+      {/* Make Some Time modal — select projects to schedule */}
       <Modal visible={makeTimeVisible} transparent animationType="slide">
         <KeyboardAvoidingView
           style={styles.convertOverlay}
@@ -776,40 +791,37 @@ export default function ProjectsScreen({ route }) {
           <View style={[styles.convertModal, { backgroundColor: colors.bgCard }]}>
             <Text style={[styles.convertTitle, { color: colors.text }]}>Make Some Time ⏰</Text>
 
-            {/* Task picker — multi-select, grouped by project */}
-            <Text style={[styles.convertLabel, { color: colors.textSecondary }]}>Pick tasks:</Text>
+            {/* Project picker — select which projects to work on */}
+            <Text style={[styles.convertLabel, { color: colors.textSecondary }]}>Which projects?</Text>
             <ScrollView style={styles.taskPickerScroll} nestedScrollEnabled>
-              {makeTimeGroups.map(([projectId, group]) => (
-                <View key={projectId}>
-                  <View style={styles.makeTimeGroupHeader}>
-                    <Text style={styles.makeTimeGroupEmoji}>{group.emoji}</Text>
-                    <Text style={[styles.makeTimeGroupTitle, { color: colors.textSecondary }]}>{group.title}</Text>
-                  </View>
-                  {group.tasks.map(t => {
-                    const isSelected = makeTimeSelectedIds.has(t.id);
-                    return (
-                      <TouchableOpacity
-                        key={t.id}
-                        style={[
-                          styles.taskPickerItem,
-                          { borderColor: colors.border, backgroundColor: colors.bg },
-                          isSelected && { borderColor: colors.accent, backgroundColor: colors.accent + '15' },
-                        ]}
-                        onPress={() => toggleMakeTimeTask(t.id)}
-                        activeOpacity={0.7}
-                      >
-                        <View style={[styles.makeTimeCheckbox, { borderColor: isSelected ? colors.accent : colors.border }, isSelected && { backgroundColor: colors.accent }]}>
-                          {isSelected && <Text style={styles.makeTimeCheckIcon}>✓</Text>}
-                        </View>
-                        <Text
-                          style={[styles.taskPickerText, { color: colors.text }, isSelected && { color: colors.accent }]}
-                          numberOfLines={2}
-                        >{t.text}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              ))}
+              {projects.filter(p => p.tasks.some(t => t.column !== 'done')).map(project => {
+                const isSelected = makeTimeSelectedProjects.has(project.id);
+                const incomplete = project.tasks.filter(t => t.column !== 'done').length;
+                return (
+                  <TouchableOpacity
+                    key={project.id}
+                    style={[
+                      styles.taskPickerItem,
+                      { borderColor: colors.border, backgroundColor: colors.bg },
+                      isSelected && { borderColor: colors.accent, backgroundColor: colors.accent + '15' },
+                    ]}
+                    onPress={() => toggleMakeTimeProject(project.id)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.makeTimeCheckbox, { borderColor: isSelected ? colors.accent : colors.border }, isSelected && { backgroundColor: colors.accent }]}>
+                      {isSelected && <Text style={styles.makeTimeCheckIcon}>✓</Text>}
+                    </View>
+                    <Text style={styles.makeTimeGroupEmoji}>{project.emoji}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[styles.taskPickerText, { color: colors.text }, isSelected && { color: colors.accent }]}
+                        numberOfLines={1}
+                      >{project.title}</Text>
+                      <Text style={[{ fontSize: SIZES.xs, color: colors.textMuted }]}>{incomplete} task{incomplete !== 1 ? 's' : ''} remaining</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </ScrollView>
 
             {/* Date picker */}
@@ -826,7 +838,7 @@ export default function ProjectsScreen({ route }) {
             />
 
             {/* Pomodoro picker */}
-            <Text style={[styles.convertLabel, { color: colors.textSecondary, marginTop: 14 }]}>How much time per task? (25 min blocks)</Text>
+            <Text style={[styles.convertLabel, { color: colors.textSecondary, marginTop: 14 }]}>How many pomodoros? (25 min blocks)</Text>
             <View style={styles.pomodoroRow}>
               {[1, 2, 3, 4, 5, 6, 7, 8].map(n => (
                 <TouchableOpacity
@@ -847,9 +859,9 @@ export default function ProjectsScreen({ route }) {
               ))}
             </View>
             <Text style={[styles.pomodoroTime, { color: colors.textMuted }]}>
-              {makeTimeSelectedIds.size > 0
-                ? `= ${makeTimeSelectedIds.size} task${makeTimeSelectedIds.size > 1 ? 's' : ''} × ${makeTimePomodoros * 25} min = ${makeTimeSelectedIds.size * makeTimePomodoros * 25} minutes`
-                : `= ${makeTimePomodoros * 25} minutes per task`}
+              {makeTimeSelectedProjects.size > 0
+                ? `= ${makeTimeSelectedProjects.size} project${makeTimeSelectedProjects.size > 1 ? 's' : ''} × ${makeTimePomodoros * 25} min = ${makeTimeSelectedProjects.size * makeTimePomodoros * 25} minutes`
+                : `= ${makeTimePomodoros * 25} minutes per project`}
             </Text>
 
             {/* Actions */}
@@ -861,9 +873,9 @@ export default function ProjectsScreen({ route }) {
                 <Text style={[styles.convertBtnText, { color: colors.textMuted }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.convertBtn, { backgroundColor: colors.accent }, makeTimeSelectedIds.size === 0 && { opacity: 0.4 }]}
+                style={[styles.convertBtn, { backgroundColor: colors.accent }, makeTimeSelectedProjects.size === 0 && { opacity: 0.4 }]}
                 onPress={confirmMakeTime}
-                disabled={makeTimeSelectedIds.size === 0}
+                disabled={makeTimeSelectedProjects.size === 0}
               >
                 <Text style={[styles.convertBtnText, { color: '#fff' }]}>Let's Go! 🚀</Text>
               </TouchableOpacity>
@@ -892,7 +904,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, gap: 12,
   },
   projectCard: {
-    borderRadius: 16, borderWidth: 1, overflow: 'hidden',
+    borderRadius: 16, borderWidth: 1, overflow: 'hidden', position: 'relative',
+  },
+  projectDeleteBtn: {
+    position: 'absolute', top: 10, right: 10, zIndex: 10,
   },
   projectAccent: { height: 4 },
   projectCardBody: { padding: 16 },
