@@ -195,7 +195,7 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
       ) : (
         <TouchableOpacity
           style={styles.textArea}
-          onPress={handleTap}
+          onPress={() => {}}
           onLongPress={() => setIsEditing(true)}
         >
           <View style={styles.textRow}>

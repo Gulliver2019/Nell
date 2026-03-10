@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Linking, Switch,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Linking, Switch, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,7 +10,6 @@ import { SIZES, getTaskStates } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import { useRevenueCat } from '../context/RevenueCatContext';
 import { useApp } from '../context/AppContext';
-import { getDateKey, formatDateShort } from '../utils/storage';
 import NellLogo from '../components/NellLogo';
 import * as Haptics from 'expo-haptics';
 
@@ -26,7 +25,7 @@ export default function MoreScreen({ navigation }) {
   const { isProUser, restorePurchases } = useRevenueCat();
   const [showCustomerCenter, setShowCustomerCenter] = useState(false);
   const TASK_STATES = getTaskStates(colors);
-  const { entries, migrateEntry, updateEntry, enabledFeatures, toggleFeature, personalityEnabled, togglePersonality } = useApp();
+  const { entries, enabledFeatures, toggleFeature, personalityEnabled, togglePersonality } = useApp();
   const [defaultScreen, setDefaultScreen] = useState('Daily');
 
   useEffect(() => {
@@ -38,14 +37,6 @@ export default function MoreScreen({ navigation }) {
     setDefaultScreen(value);
     await AsyncStorage.setItem(DEFAULT_SCREEN_KEY, value);
   };
-
-  // Open tasks from past days (migration candidates)
-  const migrationCandidates = useMemo(() => {
-    const today = getDateKey();
-    return entries
-      .filter(e => e.type === 'task' && e.state === 'open' && e.date < today)
-      .sort((a, b) => a.date.localeCompare(b.date));
-  }, [entries]);
 
   // Stats
   const stats = useMemo(() => {
@@ -63,33 +54,6 @@ export default function MoreScreen({ navigation }) {
   const completionRate = stats.totalTasks > 0
     ? Math.round((stats.completed / stats.totalTasks) * 100)
     : 0;
-
-  const handleMigrate = (id) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    migrateEntry(id);
-  };
-
-  const handleCancel = (id) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    updateEntry(id, { state: 'cancelled' });
-  };
-
-  const handleMigrateAll = () => {
-    Alert.alert(
-      'Migrate All',
-      `Move ${migrationCandidates.length} open tasks to today?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Migrate All',
-          onPress: () => {
-            migrationCandidates.forEach(e => migrateEntry(e.id));
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          },
-        },
-      ]
-    );
-  };
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
@@ -181,7 +145,10 @@ export default function MoreScreen({ navigation }) {
         <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           <View style={[styles.featureRow, { borderBottomWidth: 0 }]}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>🎭 Personality Mode</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Image source={require('../../assets/personality.png')} style={{ width: 24, height: 24 }} />
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Personality Mode</Text>
+              </View>
               <Text style={[styles.featureDesc, { color: colors.textMuted }]}>Add fun flavour text throughout the app</Text>
             </View>
             <Switch
@@ -221,55 +188,6 @@ export default function MoreScreen({ navigation }) {
               ))}
             </View>
           </LinearGradient>
-        </View>
-
-        {/* Migration Review */}
-        <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-          <View style={styles.sectionHeader}>
-            <View>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>⚡ Migration Review</Text>
-              <Text style={[styles.sectionSub, { color: colors.textMuted }]}>
-                {migrationCandidates.length > 0
-                  ? `${migrationCandidates.length} tasks need attention`
-                  : 'All caught up!'}
-              </Text>
-            </View>
-            {migrationCandidates.length > 1 && (
-              <TouchableOpacity onPress={handleMigrateAll} style={[styles.migrateAllBtn, { backgroundColor: colors.accent + '20' }]}>
-                <Text style={[styles.migrateAllText, { color: colors.accent }]}>Move All →</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {migrationCandidates.length === 0 ? (
-            <View style={styles.emptyMigration}>
-              <Text style={styles.emptyIcon}>✨</Text>
-              <Text style={[styles.emptyText, { color: colors.textMuted }]}>No overdue tasks</Text>
-            </View>
-          ) : (
-            migrationCandidates.map(entry => (
-              <View key={entry.id} style={[styles.migrationCard, { borderBottomColor: colors.border }]}>
-                <View style={styles.migrationInfo}>
-                  <Text style={[styles.migrationDate, { color: colors.textMuted }]}>{formatDateShort(entry.date)}</Text>
-                  <Text style={[styles.migrationText, { color: colors.text }]} numberOfLines={2}>{entry.text}</Text>
-                </View>
-                <View style={styles.migrationActions}>
-                  <TouchableOpacity
-                    onPress={() => handleMigrate(entry.id)}
-                    style={[styles.migrateBtn, { backgroundColor: colors.accentOrange + '20' }]}
-                  >
-                    <Text style={[styles.migrateBtnText, { color: colors.accentOrange }]}>{'>'}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => handleCancel(entry.id)}
-                    style={[styles.cancelBtn, { backgroundColor: colors.accentRed + '15' }]}
-                  >
-                    <Text style={[styles.cancelBtnText, { color: colors.accentRed }]}>✕</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))
-          )}
         </View>
 
         {/* Legend */}
@@ -413,7 +331,10 @@ export default function MoreScreen({ navigation }) {
 
         {/* Coming Soon */}
         <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>🗣️ Coming Soon</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Image source={require('../../assets/alexa.png')} style={{ width: 24, height: 24 }} />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Coming Soon</Text>
+          </View>
           <Text style={[styles.sectionSub, { color: colors.textMuted, marginBottom: 12 }]}>Voice assistant integration</Text>
           <Text style={[styles.comingSoonBody, { color: colors.textSecondary }]}>
             {"\"Hey Siri, add 'call the dentist' to my daily\"\n\"Alexa, what's next on my schedule?\"\n\"Hey Google, how's my day going?\""}

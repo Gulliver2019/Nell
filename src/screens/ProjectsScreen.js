@@ -142,7 +142,6 @@ function ProjectIndexBoard({ projects, onSelect, onAdd, onDelete, onReorder, onM
           />
           <Ionicons name="time-outline" size={18} color={colors.accent} />
           <Text style={[styles.makeTimeBannerText, { color: colors.accent }]}>Make Some Time</Text>
-          <Text style={[styles.makeTimeBannerCount, { color: colors.textMuted }]}>{totalIncomplete} tasks to schedule</Text>
         </TouchableOpacity>
       )}
 
@@ -346,7 +345,6 @@ function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onD
           />
           <Ionicons name="time-outline" size={18} color={colors.accent} />
           <Text style={[styles.makeTimeBannerText, { color: colors.accent }]}>Make Some Time</Text>
-          <Text style={[styles.makeTimeBannerCount, { color: colors.textMuted }]}>{incompleteTasks.length} tasks to schedule</Text>
         </TouchableOpacity>
       )}
 
@@ -791,38 +789,42 @@ export default function ProjectsScreen({ route }) {
           <View style={[styles.convertModal, { backgroundColor: colors.bgCard }]}>
             <Text style={[styles.convertTitle, { color: colors.text }]}>Make Some Time ⏰</Text>
 
-            {/* Project picker — select which projects to work on */}
-            <Text style={[styles.convertLabel, { color: colors.textSecondary }]}>Which projects?</Text>
-            <ScrollView style={styles.taskPickerScroll} nestedScrollEnabled>
-              {projects.filter(p => p.tasks.some(t => t.column !== 'done')).map(project => {
-                const isSelected = makeTimeSelectedProjects.has(project.id);
-                const incomplete = project.tasks.filter(t => t.column !== 'done').length;
-                return (
-                  <TouchableOpacity
-                    key={project.id}
-                    style={[
-                      styles.taskPickerItem,
-                      { borderColor: colors.border, backgroundColor: colors.bg },
-                      isSelected && { borderColor: colors.accent, backgroundColor: colors.accent + '15' },
-                    ]}
-                    onPress={() => toggleMakeTimeProject(project.id)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={[styles.makeTimeCheckbox, { borderColor: isSelected ? colors.accent : colors.border }, isSelected && { backgroundColor: colors.accent }]}>
-                      {isSelected && <Text style={styles.makeTimeCheckIcon}>✓</Text>}
-                    </View>
-                    <Text style={styles.makeTimeGroupEmoji}>{project.emoji}</Text>
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        style={[styles.taskPickerText, { color: colors.text }, isSelected && { color: colors.accent }]}
-                        numberOfLines={1}
-                      >{project.title}</Text>
-                      <Text style={[{ fontSize: SIZES.xs, color: colors.textMuted }]}>{incomplete} task{incomplete !== 1 ? 's' : ''} remaining</Text>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+            {/* Project picker — only show when opened from index (no filter) */}
+            {!makeTimeProjectFilter && (
+              <>
+                <Text style={[styles.convertLabel, { color: colors.textSecondary }]}>Which projects?</Text>
+                <ScrollView style={styles.taskPickerScroll} nestedScrollEnabled>
+                  {projects.filter(p => p.tasks.some(t => t.column !== 'done')).map(project => {
+                    const isSelected = makeTimeSelectedProjects.has(project.id);
+                    const incomplete = project.tasks.filter(t => t.column !== 'done').length;
+                    return (
+                      <TouchableOpacity
+                        key={project.id}
+                        style={[
+                          styles.taskPickerItem,
+                          { borderColor: colors.border, backgroundColor: colors.bg },
+                          isSelected && { borderColor: colors.accent, backgroundColor: colors.accent + '15' },
+                        ]}
+                        onPress={() => toggleMakeTimeProject(project.id)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={[styles.makeTimeCheckbox, { borderColor: isSelected ? colors.accent : colors.border }, isSelected && { backgroundColor: colors.accent }]}>
+                          {isSelected && <Text style={styles.makeTimeCheckIcon}>✓</Text>}
+                        </View>
+                        <Text style={styles.makeTimeGroupEmoji}>{project.emoji}</Text>
+                        <View style={{ flex: 1 }}>
+                          <Text
+                            style={[styles.taskPickerText, { color: colors.text }, isSelected && { color: colors.accent }]}
+                            numberOfLines={1}
+                          >{project.title}</Text>
+                          <Text style={[{ fontSize: SIZES.xs, color: colors.textMuted }]}>{incomplete} task{incomplete !== 1 ? 's' : ''} remaining</Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </>
+            )}
 
             {/* Date picker */}
             <Text style={[styles.convertLabel, { color: colors.textSecondary, marginTop: 14 }]}>What day?</Text>
