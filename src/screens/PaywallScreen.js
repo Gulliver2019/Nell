@@ -11,10 +11,10 @@ const PRIVACY_URL = 'https://sr6labs.co.uk/privacy';
 const TERMS_URL = 'https://sr6labs.co.uk/terms';
 
 const FEATURES = [
-  { icon: '🧠', title: 'AI Rapid Logging', desc: 'Thoughts into tasks instantly' },
-  { icon: '🍅', title: 'Pomodoro Timer', desc: 'Smart focus sessions' },
-  { icon: '📊', title: 'Project Boards', desc: 'Kanban boards & calendar sync' },
-  { icon: '⚡', title: 'Unlimited Everything', desc: 'No limits on tasks or projects' },
+  { image: require('../assets/rapid.png'), title: 'Rapid Logging', desc: 'Thoughts into tasks instantly' },
+  { image: require('../assets/pom.png'), title: 'Pomodoro Timer', desc: 'Smart focus sessions' },
+  { image: require('../assets/project.png'), title: 'Project Boards', desc: 'Kanban boards & calendar sync' },
+  { image: require('../assets/refresh.png'), title: 'Unlimited Everything', desc: 'No limits on tasks or projects' },
 ];
 
 export default function PaywallScreen({ onComplete }) {
@@ -134,7 +134,7 @@ export default function PaywallScreen({ onComplete }) {
         <View style={[styles.featuresCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           {FEATURES.map((f, i) => (
             <View key={i} style={[styles.featureRow, i < FEATURES.length - 1 && { borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth }]}>
-              <Text style={styles.featureIcon}>{f.icon}</Text>
+              <Image source={f.image} style={styles.featureIcon} resizeMode="contain" />
               <View style={styles.featureText}>
                 <Text style={[styles.featureTitle, { color: colors.text }]}>{f.title}</Text>
                 <Text style={[styles.featureDesc, { color: colors.textSecondary }]}>{f.desc}</Text>
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
 
   featuresCard: { borderRadius: 16, borderWidth: 1, overflow: 'hidden', marginBottom: 20 },
   featureRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16 },
-  featureIcon: { fontSize: 22, width: 36 },
+  featureIcon: { width: 28, height: 28, marginRight: 12 },
   featureText: { flex: 1 },
   featureTitle: { fontSize: 15, fontWeight: '700', marginBottom: 2 },
   featureDesc: { fontSize: 13 },
