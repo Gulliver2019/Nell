@@ -234,7 +234,6 @@ export default function ShoppingListScreen() {
   const [editQuantity, setEditQuantity] = useState(1);
   const [editNotes, setEditNotes] = useState('');
   const [showEditCatPicker, setShowEditCatPicker] = useState(false);
-  const [reorderMode, setReorderMode] = useState(false);
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -333,16 +332,16 @@ export default function ShoppingListScreen() {
     return { sections: sectionList, checked };
   }, [items, categoryOrder]);
 
-  // Flat list for reorder mode: interleave section headers with items
+  // Flat list for drag-and-drop: interleave section headers with items
   const reorderFlatData = useMemo(() => {
-    if (!reorderMode || !sections) return [];
+    if (!sections) return [];
     const flat = [];
     sections.sections.forEach(({ category, items: sectionItems }) => {
       flat.push({ _type: 'header', _id: `hdr_${category.key}`, category });
       sectionItems.forEach(item => flat.push({ ...item, _type: 'item' }));
     });
     return flat;
-  }, [reorderMode, sections]);
+  }, [sections]);
 
   const handleShare = useCallback(async () => {
     const unchecked = items.filter(i => !i.checked);
@@ -441,11 +440,6 @@ export default function ShoppingListScreen() {
     setEditItem(null);
   }, []);
 
-  const toggleReorder = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setReorderMode(prev => !prev);
-  }, []);
-
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       {/* ── Header ── */}
@@ -478,14 +472,11 @@ export default function ShoppingListScreen() {
             <Text style={[s.actionPillText, { color: colors.accent }]}>📤 Share</Text>
           </TouchableOpacity>
           {remaining > 0 && (
-            <TouchableOpacity
-              style={[s.actionPill, { backgroundColor: reorderMode ? colors.accent + '30' : colors.accent + '14' }]}
-              onPress={toggleReorder}
+            <View
+              style={[s.actionPill, { backgroundColor: colors.accent + '14' }]}
             >
-              <Text style={[s.actionPillText, { color: colors.accent }]}>
-                {reorderMode ? '✓ Done' : '☰ Reorder'}
-              </Text>
-            </TouchableOpacity>
+              <Text style={[s.actionPillText, { color: colors.accent }]}>☰ Hold to reorder</Text>
+            </View>
           )}
           {checkedCount > 0 && (
             <TouchableOpacity
@@ -537,95 +528,16 @@ export default function ShoppingListScreen() {
               Type an item and it will be auto-sorted into the right aisle
             </Text>
           </View>
-        ) : reorderMode && reorderFlatData.length > 0 ? (
-          /* ── Reorder mode: single flat list, drag across sections ── */
+        ) : reorderFlatData.length > 0 ? (
+          /* ── Always-on drag & drop list ── */
           <DraggableFlatList
             data={reorderFlatData}
             keyExtractor={entry => entry._type === 'header' ? entry._id : entry.id}
             onDragEnd={handleDragEnd}
             contentContainerStyle={[s.listContent, { paddingBottom: 100 }]}
             showsVerticalScrollIndicator={false}
-            renderItem={({ item: entry, drag, isActive }) => {
-              if (entry._type === 'header') {
-                return (
-                  <View style={s.reorderSectionHeader}>
-                    <Text style={s.sectionEmoji}>{entry.category.icon}</Text>
-                    <Text style={[s.sectionTitle, { color: colors.textSecondary }]}>{entry.category.label}</Text>
-                    <View style={[s.sectionLine, { backgroundColor: colors.border }]} />
-                  </View>
-                );
-              }
-              return (
-                <ScaleDecorator>
-                  <View style={[s.reorderRow, isActive && { backgroundColor: colors.bgElevated, borderRadius: SIZES.radius }]}>
-                    <TouchableOpacity
-                      onLongPress={drag}
-                      delayLongPress={100}
-                      disabled={isActive}
-                      style={s.dragHandle}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    >
-                      <Text style={[s.dragHandleIcon, { color: isActive ? colors.accent : colors.textMuted }]}>☰</Text>
-                    </TouchableOpacity>
-                    <View style={{ flex: 1 }}>
-                      <ShoppingItem
-                        item={entry}
-                        colors={colors}
-                        onToggle={toggleCheck}
-                        onQty={updateQuantity}
-                        onEdit={openEdit}
-                      />
-                    </View>
-                  </View>
-                </ScaleDecorator>
-              );
-            }}
-          />
-        ) : sections ? (
-          /* ── Normal mode: per-section with swipe-to-delete ── */
-          <ScrollView
-            contentContainerStyle={s.listContent}
-            showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
-          >
-            {sections.sections.map(({ category, items: sectionItems }, sIdx) => (
-              <View key={category.key} style={s.section}>
-                <View style={s.sectionHeader}>
-                  <Text style={s.sectionEmoji}>{category.icon}</Text>
-                  <Text style={[s.sectionTitle, { color: colors.textSecondary }]}>{category.label}</Text>
-                  <View style={[s.sectionLine, { backgroundColor: colors.border }]} />
-                  <Text style={[s.sectionCount, { color: colors.textMuted }]}>{sectionItems.length}</Text>
-                  <TouchableOpacity
-                    onPress={() => moveSectionUp(category.key)}
-                    style={[s.sectionArrow, sIdx === 0 && { opacity: 0.2 }]}
-                    disabled={sIdx === 0}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Text style={[s.sectionArrowText, { color: colors.textMuted }]}>▲</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => moveSectionDown(category.key)}
-                    style={[s.sectionArrow, sIdx === sections.sections.length - 1 && { opacity: 0.2 }]}
-                    disabled={sIdx === sections.sections.length - 1}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Text style={[s.sectionArrowText, { color: colors.textMuted }]}>▼</Text>
-                  </TouchableOpacity>
-                </View>
-                {sectionItems.map(item => (
-                  <SwipeableShoppingItem
-                    key={item.id}
-                    item={item}
-                    colors={colors}
-                    onToggle={toggleCheck}
-                    onDelete={deleteItem}
-                    onQty={updateQuantity}
-                    onEdit={openEdit}
-                  />
-                ))}
-              </View>
-            ))}
-            {sections.checked.length > 0 && (
+            ListFooterComponent={sections && sections.checked.length > 0 ? (
               <View style={s.section}>
                 <View style={s.sectionHeader}>
                   <Text style={s.sectionEmoji}>✅</Text>
@@ -645,9 +557,64 @@ export default function ShoppingListScreen() {
                   />
                 ))}
               </View>
-            )}
-            <View style={{ height: 100 }} />
-          </ScrollView>
+            ) : null}
+            renderItem={({ item: entry, drag, isActive }) => {
+              if (entry._type === 'header') {
+                const sIdx = sections.sections.findIndex(sec => sec.category.key === entry.category.key);
+                return (
+                  <View style={s.sectionHeader}>
+                    <Text style={s.sectionEmoji}>{entry.category.icon}</Text>
+                    <Text style={[s.sectionTitle, { color: colors.textSecondary }]}>{entry.category.label}</Text>
+                    <View style={[s.sectionLine, { backgroundColor: colors.border }]} />
+                    <Text style={[s.sectionCount, { color: colors.textMuted }]}>
+                      {sections.sections[sIdx]?.items.length || 0}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => moveSectionUp(entry.category.key)}
+                      style={[s.sectionArrow, sIdx === 0 && { opacity: 0.2 }]}
+                      disabled={sIdx === 0}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Text style={[s.sectionArrowText, { color: colors.textMuted }]}>▲</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => moveSectionDown(entry.category.key)}
+                      style={[s.sectionArrow, sIdx === sections.sections.length - 1 && { opacity: 0.2 }]}
+                      disabled={sIdx === sections.sections.length - 1}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Text style={[s.sectionArrowText, { color: colors.textMuted }]}>▼</Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              }
+              return (
+                <ScaleDecorator>
+                  <View style={[s.reorderRow, isActive && { backgroundColor: colors.bgElevated, borderRadius: SIZES.radius }]}>
+                    <TouchableOpacity
+                      onLongPress={drag}
+                      delayLongPress={100}
+                      disabled={isActive}
+                      style={s.dragHandle}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Text style={[s.dragHandleIcon, { color: isActive ? colors.accent : colors.textMuted }]}>☰</Text>
+                    </TouchableOpacity>
+                    <View style={{ flex: 1 }}>
+                      <SwipeableShoppingItem
+                        item={entry}
+                        colors={colors}
+                        onToggle={toggleCheck}
+                        onDelete={deleteItem}
+                        onQty={updateQuantity}
+                        onEdit={openEdit}
+                      />
+                    </View>
+                  </View>
+                </ScaleDecorator>
+              );
+            }}
+          />
         ) : null}
       </GestureHandlerRootView>
 

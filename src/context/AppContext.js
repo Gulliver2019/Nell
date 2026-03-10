@@ -216,15 +216,15 @@ export function AppProvider({ children }) {
     const tomorrowKey = Storage.getDateKey(tomorrow);
 
     const allEntries = await Storage.getAllEntries();
-    const openTasks = allEntries.filter(
+    const tasksToMigrate = allEntries.filter(
       e => e.type === 'task'
-        && e.state === 'open'
+        && (e.state === 'open' || e.state === 'migrated')
         && e.date === today
         && !e.collection
     );
 
     let count = 0;
-    for (const entry of openTasks) {
+    for (const entry of tasksToMigrate) {
       const alreadyCopied = allEntries.some(
         e => e.migratedFrom === entry.id && e.date === tomorrowKey
       );
@@ -240,6 +240,7 @@ export function AppProvider({ children }) {
         });
         count++;
       }
+      // Mark the original as migrated (if it was open) then remove
       await Storage.deleteEntry(entry.id);
     }
 

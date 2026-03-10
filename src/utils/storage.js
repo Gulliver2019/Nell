@@ -274,7 +274,15 @@ export const toggleHabitDay = async (habitId, dateKey) => {
   const idx = habits.findIndex(h => h.id === habitId);
   if (idx !== -1) {
     if (!habits[idx].completions) habits[idx].completions = {};
-    habits[idx].completions[dateKey] = !habits[idx].completions[dateKey];
+    const current = habits[idx].completions[dateKey];
+    // Cycle: empty → done → missed → empty
+    if (!current) {
+      habits[idx].completions[dateKey] = 'done';
+    } else if (current === 'done' || current === true) {
+      habits[idx].completions[dateKey] = 'missed';
+    } else {
+      delete habits[idx].completions[dateKey];
+    }
     // Update best streak
     const streak = calcStreak(habits[idx]);
     if (streak > (habits[idx].bestStreak || 0)) {
@@ -293,7 +301,8 @@ function calcStreak(habit) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
     const key = getDateKey(d);
-    if (habit.completions?.[key]) streak++;
+    const val = habit.completions?.[key];
+    if (val === 'done' || val === true) streak++;
     else break;
   }
   return streak;

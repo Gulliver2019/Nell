@@ -93,7 +93,8 @@ export default function HabitTrackerScreen() {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
       const key = getDateKey(d);
-      if (habit.completions?.[key]) streak++;
+      const val = habit.completions?.[key];
+      if (val === 'done' || val === true) streak++;
       else break;
     }
     return streak;
@@ -107,8 +108,9 @@ export default function HabitTrackerScreen() {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
       const key = getDateKey(d);
-      if (!habit.completions?.[key]) missed++;
-      else break;
+      const val = habit.completions?.[key];
+      if (val === 'done' || val === true) break;
+      missed++;
     }
     return missed;
   };
@@ -124,7 +126,8 @@ export default function HabitTrackerScreen() {
       d.setDate(d.getDate() - i);
       if (created && d < created) { totalDays = i; break; }
       const key = getDateKey(d);
-      if (habit.completions?.[key]) done++;
+      const val = habit.completions?.[key];
+      if (val === 'done' || val === true) done++;
     }
     return totalDays > 0 ? Math.round((done / totalDays) * 100) : 0;
   };
@@ -182,9 +185,12 @@ export default function HabitTrackerScreen() {
         {/* Row 2: Checkboxes — full width */}
         <View style={styles.checksRow}>
           {days.map(d => {
-            const done = habit.completions?.[d.key];
+            const val = habit.completions?.[d.key];
+            const done = val === 'done' || val === true;
+            const manualMissed = val === 'missed';
             const isPast = !d.isToday && d.key < getDateKey();
-            const failed = isPast && !done && d.key >= (habit.createdAt ? getDateKey(new Date(habit.createdAt)) : '');
+            const autoFailed = isPast && !done && !manualMissed && d.key >= (habit.createdAt ? getDateKey(new Date(habit.createdAt)) : '');
+            const failed = manualMissed || autoFailed;
             return (
               <TouchableOpacity
                 key={d.key}
