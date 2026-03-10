@@ -298,28 +298,6 @@ export default function MoreScreen({ navigation }) {
               </TouchableOpacity>
             </>
           )}
-          <TouchableOpacity
-            onPress={() => {
-              Alert.alert(
-                'Reset Paywall',
-                'The paywall will appear next time you open the app.',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  {
-                    text: 'Reset',
-                    onPress: async () => {
-                      await AsyncStorage.removeItem('nell_paywall_done');
-                      Alert.alert('Done', 'Close and reopen the app to see the paywall.');
-                    },
-                  },
-                ]
-              );
-            }}
-            style={[styles.contactRow, { borderBottomColor: colors.border }]}
-          >
-            <Text style={[styles.contactLabel, { color: colors.textSecondary }]}>Reset Paywall</Text>
-            <Text style={[styles.contactValue, { color: colors.accentOrange || colors.accent }]}>Reset →</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Customer Center Modal */}
@@ -346,25 +324,6 @@ export default function MoreScreen({ navigation }) {
               </View>
             ))}
           </View>
-        </View>
-
-        {/* Preview Screens */}
-        <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>👀 Preview</Text>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('PreviewOnboarding')}
-            style={[styles.contactRow, { borderBottomColor: colors.border }]}
-          >
-            <Text style={[styles.contactLabel, { color: colors.textSecondary }]}>Onboarding</Text>
-            <Text style={[styles.contactValue, { color: colors.accent }]}>View →</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('PreviewPaywall')}
-            style={styles.contactRow}
-          >
-            <Text style={[styles.contactLabel, { color: colors.textSecondary }]}>Paywall</Text>
-            <Text style={[styles.contactValue, { color: colors.accent }]}>View →</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Contact & Support */}

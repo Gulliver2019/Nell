@@ -85,7 +85,7 @@ const SECTIONS = [
       },
       {
         q: 'Where can I review overdue tasks?',
-        a: 'Go to the More tab — the Migration Review section shows all open tasks from past days. You can migrate or cancel them in bulk.',
+        a: 'When you complete your day, any open or migrated tasks are automatically moved to the next day. You can also swipe tasks to schedule them for a specific date.',
       },
     ],
   },
