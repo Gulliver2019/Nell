@@ -11,10 +11,10 @@ const PRIVACY_URL = 'https://sr6labs.co.uk/privacy';
 const TERMS_URL = 'https://sr6labs.co.uk/terms';
 
 const FEATURES = [
-  { image: require('../assets/rapid.png'), title: 'Rapid Logging', desc: 'Thoughts into tasks instantly' },
-  { image: require('../assets/pom.png'), title: 'Pomodoro Timer', desc: 'Smart focus sessions' },
-  { image: require('../assets/project.png'), title: 'Project Boards', desc: 'Kanban boards & calendar sync' },
-  { image: require('../assets/refresh.png'), title: 'Unlimited Everything', desc: 'No limits on tasks or projects' },
+  { image: require('../../assets/rapid.png'), title: 'Rapid Logging', desc: 'Thoughts into tasks instantly' },
+  { image: require('../../assets/pom.png'), title: 'Pomodoro Timer', desc: 'Smart focus sessions' },
+  { image: require('../../assets/project.png'), title: 'Project Boards', desc: 'Kanban boards & calendar sync' },
+  { image: require('../../assets/refresh.png'), title: 'Unlimited Everything', desc: 'No limits on tasks or projects' },
 ];
 
 export default function PaywallScreen({ onComplete }) {
