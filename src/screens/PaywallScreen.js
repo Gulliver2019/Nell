@@ -44,6 +44,11 @@ export default function PaywallScreen({ onComplete }) {
   const monthly = packages.find(p => p.packageType === 'MONTHLY');
   const displayPackages = [annual, monthly].filter(Boolean);
 
+  // DEBUG: log what RevenueCat is returning — remove after testing
+  console.log('[Paywall] packages count:', packages.length);
+  packages.forEach((p, i) => console.log(`[Paywall] pkg[${i}]:`, p.packageType, p.identifier, p.product?.productIdentifier));
+  console.log('[Paywall] annual:', !!annual, 'monthly:', !!monthly);
+
   // Auto-select annual (best value) or first available
   if (!selectedPkg && displayPackages.length > 0) {
     setTimeout(() => setSelectedPkg(annual || displayPackages[0]), 0);
@@ -210,6 +215,19 @@ export default function PaywallScreen({ onComplete }) {
             </TouchableOpacity>
           </View>
         )}
+
+        {/* DEBUG: Remove after testing */}
+        <View style={{ backgroundColor: '#1a1a2e', borderRadius: 8, padding: 10, marginTop: 10, borderWidth: 1, borderColor: '#ff0' }}>
+          <Text style={{ color: '#ff0', fontSize: 11, fontWeight: '700', marginBottom: 4 }}>DEBUG — Package Info</Text>
+          <Text style={{ color: '#fff', fontSize: 10 }}>Total packages: {packages.length}</Text>
+          {packages.map((p, i) => (
+            <Text key={i} style={{ color: '#0f0', fontSize: 10 }}>
+              [{i}] type={p.packageType} id={p.identifier} product={p.product?.productIdentifier}
+            </Text>
+          ))}
+          <Text style={{ color: '#fff', fontSize: 10, marginTop: 4 }}>annual={annual ? 'YES' : 'NO'} monthly={monthly ? 'YES' : 'NO'}</Text>
+          <Text style={{ color: '#fff', fontSize: 10 }}>displayPackages={displayPackages.length}</Text>
+        </View>
       </ScrollView>
 
       {/* Footer */}
