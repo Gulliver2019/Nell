@@ -17,17 +17,13 @@ export function RevenueCatProvider({ children }) {
     let listener;
     const init = async () => {
       try {
-        Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+        Purchases.setLogLevel(LOG_LEVEL.ERROR);
         await Purchases.configure({ apiKey: API_KEY });
-
-        // Force fresh data
-        await Purchases.invalidateCustomerInfoCache();
 
         const info = await Purchases.getCustomerInfo();
         updateCustomerInfo(info);
 
         const offs = await Purchases.getOfferings();
-        console.log('[RC] offerings:', JSON.stringify(offs?.current?.availablePackages?.map(p => p.packageType)));
         setOfferings(offs);
 
         listener = Purchases.addCustomerInfoUpdateListener((info) => {
