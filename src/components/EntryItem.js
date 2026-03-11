@@ -6,6 +6,7 @@ import { Swipeable } from 'react-native-gesture-handler';
 import { SIZES, getBulletTypes, getTaskStates, getSignifiers } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import * as Haptics from 'expo-haptics';
+import TargetIcon from './TargetIcon';
 
 const SWIPE_THRESHOLD = 80;
 
@@ -230,7 +231,7 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
               <Text style={[styles.timeBlockIcon, { color: colors.accentOrange }]}>🧱</Text>
             )}
             {entry.fromProject && (
-              <Text style={styles.projectBadge}>🎯</Text>
+              <TargetIcon size={10} color="#fff" style={{ marginLeft: 4 }} />
             )}
             {isNextUp && (
               <Text style={[styles.nextUpBadge, { color: colors.accentGreen }]}>NEXT</Text>

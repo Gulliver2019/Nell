@@ -8,6 +8,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { getDateKey } from '../utils/storage';
 import * as Haptics from 'expo-haptics';
+import TargetIcon from './TargetIcon';
 
 const REASONS = [
   { key: 'no_time', label: 'Ran out of time', emoji: '⏰' },
@@ -77,11 +78,11 @@ export default function EndOfDayReflection({ visible, onClose }) {
   const todayKey = getDateKey();
 
   const missedHabits = useMemo(() => {
-    return habits.filter(h => !h.completions?.[todayKey]);
+    return habits.filter(h => h.completions?.[todayKey] !== 'done' && h.completions?.[todayKey] !== true);
   }, [habits, todayKey]);
 
   const completedHabits = useMemo(() => {
-    return habits.filter(h => h.completions?.[todayKey]);
+    return habits.filter(h => h.completions?.[todayKey] === 'done' || h.completions?.[todayKey] === true);
   }, [habits, todayKey]);
 
   const [reasons, setReasons] = useState({});      // { habitId: reasonKey }
@@ -142,7 +143,7 @@ export default function EndOfDayReflection({ visible, onClose }) {
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalContent}>
             {step === 'done' ? (
               <View style={styles.doneSection}>
-                <Text style={styles.doneEmoji}>🎯</Text>
+                <TargetIcon size={48} color="#fff" style={{ marginBottom: 12 }} />
                 <Text style={[styles.doneTitle, { color: colors.text }]}>
                   {completionRate >= 80 ? 'Great day!' : completionRate >= 50 ? 'Solid effort!' : 'Tomorrow is a new start.'}
                 </Text>

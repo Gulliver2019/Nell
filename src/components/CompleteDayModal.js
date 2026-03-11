@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SIZES } from '../utils/theme';
 import * as Haptics from 'expo-haptics';
+import TargetIcon from './TargetIcon';
 
 const MOODS = [
   { value: 1, emoji: '😞', label: 'Rough' },
@@ -115,7 +116,7 @@ export default function CompleteDayModal({ visible, onClose, onComplete, stats, 
 
             <View style={[styles.promptCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
               <View style={styles.promptHeader}>
-                <Text style={styles.promptIcon}>🎯</Text>
+                <TargetIcon size={18} color="#fff" />
                 <Text style={[styles.promptLabel, { color: colors.text }]}>Tomorrow</Text>
               </View>
               <TextInput
@@ -197,6 +198,7 @@ const styles = StyleSheet.create({
   statText: {
     fontSize: SIZES.base,
     fontWeight: '500',
+    flexShrink: 1,
   },
   sectionLabel: {
     fontSize: SIZES.sm,
