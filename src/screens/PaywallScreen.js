@@ -125,6 +125,9 @@ export default function PaywallScreen({ onComplete }) {
           <Text style={[styles.title, { color: colors.text }]}>
             Unlock Nell Pro
           </Text>
+          <Text style={{ color: 'red', fontSize: 20, fontWeight: '900' }}>
+            🔴 PAYWALL V2 — DELETE THIS LINE 🔴
+          </Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             Supercharge your productivity
           </Text>
