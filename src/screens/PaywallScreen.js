@@ -128,6 +128,14 @@ export default function PaywallScreen({ onComplete }) {
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             Supercharge your productivity
           </Text>
+          <View style={[styles.trialBanner, { backgroundColor: colors.accent + '15', borderColor: colors.accent + '40' }]}>
+            <Text style={[styles.trialBannerText, { color: colors.accent }]}>
+              Start your 7-day free trial
+            </Text>
+            <Text style={[styles.trialBannerSub, { color: colors.textSecondary }]}>
+              Full access to everything — cancel anytime
+            </Text>
+          </View>
         </View>
 
         {/* Features */}
@@ -180,6 +188,9 @@ export default function PaywallScreen({ onComplete }) {
                       <Text style={[styles.pkgPrice, { color: colors.textSecondary }]}>
                         {formatPrice(pkg)}
                       </Text>
+                      <Text style={[styles.pkgTrial, { color: colors.accentGreen || '#4CAF50' }]}>
+                        7-day free trial
+                      </Text>
                       {formatSubPrice(pkg) && (
                         <Text style={[styles.pkgSub, { color: colors.accent }]}>
                           {formatSubPrice(pkg)}
@@ -220,12 +231,12 @@ export default function PaywallScreen({ onComplete }) {
           {isPurchasing ? (
             <ActivityIndicator color="#FFF" />
           ) : (
-            <Text style={styles.purchaseBtnText}>Continue</Text>
+            <Text style={styles.purchaseBtnText}>Start Free Trial</Text>
           )}
         </TouchableOpacity>
 
         <Text style={[styles.disclosure, { color: colors.textMuted }]}>
-          Payment will be charged to your Apple ID account at confirmation of purchase.
+          7-day free trial, then payment will be charged to your Apple ID account.
           Subscription automatically renews unless cancelled at least 24 hours before the
           end of the current period.
         </Text>
@@ -264,6 +275,10 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: '800', letterSpacing: -0.5, marginBottom: 4 },
   subtitle: { fontSize: 15, fontWeight: '500' },
 
+  trialBanner: { borderRadius: 12, borderWidth: 1, paddingVertical: 12, paddingHorizontal: 16, marginTop: 14, alignItems: 'center' },
+  trialBannerText: { fontSize: 18, fontWeight: '800', marginBottom: 2 },
+  trialBannerSub: { fontSize: 13, fontWeight: '500' },
+
   featuresCard: { borderRadius: 16, borderWidth: 1, overflow: 'hidden', marginBottom: 20 },
   featureRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16 },
   featureIcon: { width: 28, height: 28, marginRight: 12 },
@@ -282,6 +297,7 @@ const styles = StyleSheet.create({
   pkgInfo: { flex: 1 },
   pkgName: { fontSize: 17, fontWeight: '700', marginBottom: 2 },
   pkgPrice: { fontSize: 14 },
+  pkgTrial: { fontSize: 13, fontWeight: '700', marginTop: 2 },
   pkgSub: { fontSize: 13, fontWeight: '600', marginTop: 2 },
 
   noPackages: { borderRadius: 14, borderWidth: 1, padding: 24, alignItems: 'center' },
