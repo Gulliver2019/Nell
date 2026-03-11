@@ -125,20 +125,9 @@ export default function PaywallScreen({ onComplete }) {
           <Text style={[styles.title, { color: colors.text }]}>
             Unlock Nell Pro
           </Text>
-          <Text style={{ color: 'red', fontSize: 20, fontWeight: '900' }}>
-            🔴 PAYWALL V2 — DELETE THIS LINE 🔴
+          <Text style={[styles.subtitle, { color: colors.accent }]}>
+            7-day free trial — cancel anytime
           </Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Supercharge your productivity
-          </Text>
-          <View style={[styles.trialBanner, { backgroundColor: colors.accent + '15', borderColor: colors.accent + '40' }]}>
-            <Text style={[styles.trialBannerText, { color: colors.accent }]}>
-              Start your 7-day free trial
-            </Text>
-            <Text style={[styles.trialBannerSub, { color: colors.textSecondary }]}>
-              Full access to everything — cancel anytime
-            </Text>
-          </View>
         </View>
 
         {/* Features */}
@@ -273,25 +262,25 @@ const styles = StyleSheet.create({
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { paddingHorizontal: 20, paddingBottom: 20 },
 
-  header: { alignItems: 'center', paddingTop: 16, paddingBottom: 14 },
-  icon: { width: 64, height: 64, borderRadius: 14, marginBottom: 12 },
-  title: { fontSize: 24, fontWeight: '800', letterSpacing: -0.5, marginBottom: 4 },
-  subtitle: { fontSize: 15, fontWeight: '500' },
+  header: { alignItems: 'center', paddingTop: 10, paddingBottom: 8 },
+  icon: { width: 52, height: 52, borderRadius: 12, marginBottom: 8 },
+  title: { fontSize: 22, fontWeight: '800', letterSpacing: -0.5, marginBottom: 2 },
+  subtitle: { fontSize: 14, fontWeight: '700' },
 
-  trialBanner: { borderRadius: 12, borderWidth: 1, paddingVertical: 12, paddingHorizontal: 16, marginTop: 14, alignItems: 'center' },
-  trialBannerText: { fontSize: 18, fontWeight: '800', marginBottom: 2 },
-  trialBannerSub: { fontSize: 13, fontWeight: '500' },
+  trialBanner: { display: 'none' },
+  trialBannerText: { display: 'none' },
+  trialBannerSub: { display: 'none' },
 
-  featuresCard: { borderRadius: 16, borderWidth: 1, overflow: 'hidden', marginBottom: 20 },
-  featureRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16 },
-  featureIcon: { width: 28, height: 28, marginRight: 12 },
+  featuresCard: { borderRadius: 14, borderWidth: 1, overflow: 'hidden', marginBottom: 14 },
+  featureRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 14 },
+  featureIcon: { width: 24, height: 24, marginRight: 10 },
   featureText: { flex: 1 },
   featureTitle: { fontSize: 15, fontWeight: '700', marginBottom: 2 },
   featureDesc: { fontSize: 13 },
   checkmark: { fontSize: 18, fontWeight: '700', marginLeft: 8 },
 
-  packages: { gap: 12, marginBottom: 20 },
-  pkgCard: { borderRadius: 14, padding: 16, position: 'relative', overflow: 'hidden' },
+  packages: { gap: 10, marginBottom: 14 },
+  pkgCard: { borderRadius: 12, padding: 14, position: 'relative', overflow: 'hidden' },
   badge: { position: 'absolute', top: 0, right: 0, paddingHorizontal: 12, paddingVertical: 4, borderBottomLeftRadius: 10 },
   badgeText: { color: '#FFF', fontSize: 12, fontWeight: '800' },
   pkgContent: { flexDirection: 'row', alignItems: 'center' },
@@ -306,10 +295,10 @@ const styles = StyleSheet.create({
   noPackages: { borderRadius: 14, borderWidth: 1, padding: 24, alignItems: 'center' },
   noPackagesText: { fontSize: 14 },
 
-  footer: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8, borderTopWidth: StyleSheet.hairlineWidth },
-  purchaseBtn: { borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginBottom: 12 },
+  footer: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 6, borderTopWidth: StyleSheet.hairlineWidth },
+  purchaseBtn: { borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginBottom: 8 },
   purchaseBtnText: { color: '#FFF', fontSize: 17, fontWeight: '800' },
-  disclosure: { fontSize: 11, lineHeight: 15, textAlign: 'center', marginBottom: 10 },
+  disclosure: { fontSize: 10, lineHeight: 14, textAlign: 'center', marginBottom: 6 },
   footerLinks: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10, paddingBottom: 4 },
   linkText: { fontSize: 13, fontWeight: '600' },
   linkSep: { fontSize: 10 },
