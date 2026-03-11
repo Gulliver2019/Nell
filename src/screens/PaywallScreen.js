@@ -63,8 +63,7 @@ export default function PaywallScreen({ onComplete }) {
     const result = await purchasePackage(selectedPkg);
     setIsPurchasing(false);
     if (result.success) {
-      const has = result.customerInfo?.entitlements?.active?.['Nell Pro'];
-      if (has) onComplete();
+      onComplete();
     } else if (!result.userCancelled) {
       Alert.alert('Purchase Failed', 'Something went wrong. Please try again.');
     }
