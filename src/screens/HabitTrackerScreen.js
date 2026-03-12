@@ -115,9 +115,10 @@ export default function HabitTrackerScreen() {
     return missed;
   };
 
-  // Completion rate over last 30 days
+  // Completion rate over last 30 days (returns null if no days tracked yet)
   const getCompletionRate = (habit) => {
     let done = 0;
+    let tracked = 0;
     const today = new Date();
     const created = habit.createdAt ? new Date(habit.createdAt) : null;
     let totalDays = 30;
@@ -128,7 +129,9 @@ export default function HabitTrackerScreen() {
       const key = getDateKey(d);
       const val = habit.completions?.[key];
       if (val === 'done' || val === true) done++;
+      if (val === 'done' || val === true || val === 'missed') tracked++;
     }
+    if (tracked === 0) return null;
     return totalDays > 0 ? Math.round((done / totalDays) * 100) : 0;
   };
 
@@ -380,8 +383,8 @@ export default function HabitTrackerScreen() {
                   <View style={styles.statMetrics}>
                     {/* Completion rate */}
                     <View style={[styles.metricBox, { backgroundColor: colors.bgElevated }]}>
-                      <Text style={[styles.metricValue, { color: rate >= 80 ? colors.accentGreen : rate >= 50 ? '#F0A500' : colors.accentRed }]}>
-                        {rate}%
+                      <Text style={[styles.metricValue, { color: rate === null ? colors.textMuted : rate >= 80 ? colors.accentGreen : rate >= 50 ? '#F0A500' : colors.accentRed }]}>
+                        {rate === null ? '–' : `${rate}%`}
                       </Text>
                       <Text style={[styles.metricLabel, { color: colors.textMuted }]}>30d rate</Text>
                     </View>
