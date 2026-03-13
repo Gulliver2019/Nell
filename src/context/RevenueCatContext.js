@@ -15,6 +15,14 @@ export function RevenueCatProvider({ children }) {
 
   useEffect(() => {
     let listener;
+    let timedOut = false;
+
+    // Ensure app loads within 3s even with no internet
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      setIsReady(true);
+    }, 3000);
+
     const init = async () => {
       try {
         Purchases.setLogLevel(LOG_LEVEL.ERROR);
@@ -32,6 +40,7 @@ export function RevenueCatProvider({ children }) {
       } catch (e) {
         console.warn('RevenueCat init error:', e.message || e);
       } finally {
+        clearTimeout(timeout);
         setIsReady(true);
       }
     };
@@ -39,6 +48,7 @@ export function RevenueCatProvider({ children }) {
     init();
 
     return () => {
+      clearTimeout(timeout);
       if (listener) listener.remove();
     };
   }, []);
