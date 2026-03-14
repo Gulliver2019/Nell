@@ -195,7 +195,7 @@ function AppContent() {
         })}
       >
         <Tab.Screen name="Daily" component={DailyLogScreen} />
-        <Tab.Screen name="Weekly" component={WeeklyIntentionScreen} />
+        {enabledFeatures.weekly !== false && <Tab.Screen name="Weekly" component={WeeklyIntentionScreen} />}
         {enabledFeatures.logging !== false && <Tab.Screen name="Monthly" component={MonthlyLogScreen} />}
         {enabledFeatures.logging !== false && <Tab.Screen name="Future" component={FutureLogScreen} />}
         {enabledFeatures.projects !== false && <Tab.Screen name="Projects" component={ProjectsScreen} />}

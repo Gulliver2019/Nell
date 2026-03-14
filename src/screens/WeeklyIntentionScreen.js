@@ -50,11 +50,31 @@ export default function WeeklyIntentionScreen() {
 
   const weekLabel = useMemo(() => {
     const monday = new Date(weekKey);
-    const sunday = new Date(monday);
-    sunday.setDate(sunday.getDate() + 6);
     const fmt = (d) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-    return `${fmt(monday)} – ${fmt(sunday)}`;
+    return `w/c ${fmt(monday)}`;
   }, [weekKey]);
+
+  // History: past weeks with completed items
+  const [showHistory, setShowHistory] = useState(false);
+  const weekHistory = useMemo(() => {
+    return Object.entries(weeklyIntentions)
+      .filter(([key]) => key < weekKey)
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([key, week]) => {
+        const monday = new Date(key);
+        const label = `w/c ${monday.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+        const areasWithCompleted = (week.areas || [])
+          .map(a => ({
+            ...a,
+            completedTasks: a.tasks.filter(t => t.done),
+          }))
+          .filter(a => a.completedTasks.length > 0);
+        const totalCompleted = areasWithCompleted.reduce((sum, a) => sum + a.completedTasks.length, 0);
+        const totalTasks = (week.areas || []).reduce((sum, a) => sum + a.tasks.length, 0);
+        return { key, label, areasWithCompleted, totalCompleted, totalTasks };
+      })
+      .filter(w => w.totalTasks > 0);
+  }, [weeklyIntentions, weekKey]);
 
   const handleAddArea = async () => {
     const name = newAreaName.trim();
@@ -110,6 +130,7 @@ export default function WeeklyIntentionScreen() {
       type: 'task',
       state: 'open',
       date: new Date().toISOString().split('T')[0],
+      weeklyRef: `${weekKey}|${areaId}|${task.id}`,
     });
     Alert.alert('Added', `"${task.text}" added to today's daily log.`);
   };
@@ -247,10 +268,10 @@ export default function WeeklyIntentionScreen() {
                               {task.text}
                             </Text>
                             <TouchableOpacity
-                              style={styles.scheduleBtn}
+                              style={[styles.addToDailyBtn, { backgroundColor: (colors.accentGreen || '#48bb78') + '18' }]}
                               onPress={() => handleScheduleToDaily(area.id, task)}
                             >
-                              <Ionicons name="today-outline" size={16} color={colors.accent} />
+                              <Text style={[styles.addToDailyText, { color: colors.accentGreen || '#48bb78' }]}>→ Daily</Text>
                             </TouchableOpacity>
                           </TouchableOpacity>
                         )}
@@ -327,6 +348,43 @@ export default function WeeklyIntentionScreen() {
                 </TouchableOpacity>
               )}
             </>
+          )}
+
+          {/* History toggle */}
+          {weekHistory.length > 0 && (
+            <View style={{ marginTop: SIZES.lg }}>
+              <TouchableOpacity
+                style={[styles.historyToggle, { borderColor: colors.border }]}
+                onPress={() => setShowHistory(!showHistory)}
+              >
+                <Ionicons name={showHistory ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textMuted} />
+                <Text style={[styles.historyToggleText, { color: colors.textMuted }]}>
+                  {showHistory ? 'Hide' : 'View'} previous weeks ({weekHistory.length})
+                </Text>
+              </TouchableOpacity>
+
+              {showHistory && weekHistory.map(week => (
+                <View key={week.key} style={[styles.historyWeek, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                  <View style={styles.historyWeekHeader}>
+                    <Text style={[styles.historyWeekLabel, { color: colors.text }]}>{week.label}</Text>
+                    <Text style={[styles.historyWeekCount, { color: colors.accentGreen || '#48bb78' }]}>
+                      {week.totalCompleted}/{week.totalTasks} done
+                    </Text>
+                  </View>
+                  {week.areasWithCompleted.map(area => (
+                    <View key={area.id} style={styles.historyArea}>
+                      <Text style={[styles.historyAreaName, { color: colors.textSecondary }]}>{area.name}</Text>
+                      {area.completedTasks.map(task => (
+                        <View key={task.id} style={styles.historyTaskRow}>
+                          <Ionicons name="checkmark-circle" size={14} color={colors.accentGreen || '#48bb78'} />
+                          <Text style={[styles.historyTaskText, { color: colors.textMuted }]}>{task.text}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ))}
+                </View>
+              ))}
+            </View>
           )}
 
           <View style={{ height: 40 }} />
@@ -407,7 +465,10 @@ const styles = StyleSheet.create({
   },
   taskText: { flex: 1, fontSize: SIZES.sm, fontFamily: FONTS.regular },
   taskDone: { textDecorationLine: 'line-through', opacity: 0.6 },
-  scheduleBtn: { padding: 4 },
+  addToDailyBtn: {
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10,
+  },
+  addToDailyText: { fontSize: SIZES.xs, fontFamily: FONTS.bold },
   swipeAction: {
     justifyContent: 'center', alignItems: 'center',
     width: 60, borderRadius: 0,
@@ -454,4 +515,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 8, borderRadius: SIZES.radius,
   },
   addAreaBtnText: { color: '#fff', fontSize: SIZES.sm, fontFamily: FONTS.bold },
+  // History
+  historyToggle: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 6, paddingVertical: SIZES.sm, borderTopWidth: 1,
+  },
+  historyToggleText: { fontSize: SIZES.sm, fontFamily: FONTS.medium },
+  historyWeek: {
+    marginTop: SIZES.sm, borderRadius: SIZES.radiusLg,
+    borderWidth: 1, padding: SIZES.md,
+  },
+  historyWeekHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginBottom: SIZES.sm,
+  },
+  historyWeekLabel: { fontSize: SIZES.base, fontFamily: FONTS.bold },
+  historyWeekCount: { fontSize: SIZES.xs, fontFamily: FONTS.medium },
+  historyArea: { marginBottom: SIZES.sm },
+  historyAreaName: { fontSize: SIZES.sm, fontFamily: FONTS.medium, marginBottom: 4 },
+  historyTaskRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 2, paddingLeft: 4 },
+  historyTaskText: { fontSize: SIZES.sm, fontFamily: FONTS.regular },
 });

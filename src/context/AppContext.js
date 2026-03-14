@@ -152,6 +152,13 @@ export function AppProvider({ children }) {
       if (entry?.scheduledFrom) {
         await Storage.updateEntry(entry.scheduledFrom, { state: 'complete' });
       }
+      // Sync completion to weekly intention task
+      if (entry?.weeklyRef) {
+        const [wk, areaId, taskId] = entry.weeklyRef.split('|');
+        await Storage.updateWeeklyTask(wk, areaId, taskId, { done: true });
+        const wi = await Storage.getAllWeeklyIntentions();
+        dispatch({ type: 'SET_WEEKLY_INTENTIONS', payload: wi });
+      }
     }
     const entries = await Storage.getAllEntries();
     dispatch({ type: 'SET_ENTRIES', payload: entries });
@@ -349,8 +356,21 @@ export function AppProvider({ children }) {
     await refreshWeeklyIntentions();
   }, [refreshWeeklyIntentions]);
 
-  const updateWeeklyTask = useCallback(async (weekKey, areaId, taskId, updates) => {
-    await Storage.updateWeeklyTask(weekKey, areaId, taskId, updates);
+  const updateWeeklyTask = useCallback(async (wk, areaId, taskId, updates) => {
+    await Storage.updateWeeklyTask(wk, areaId, taskId, updates);
+    // Sync completion to any linked daily entries
+    if (updates.done === true) {
+      const allEntries = await Storage.getAllEntries();
+      const ref = `${wk}|${areaId}|${taskId}`;
+      const linked = allEntries.filter(e => e.weeklyRef === ref && e.state !== 'complete');
+      for (const e of linked) {
+        await Storage.updateEntry(e.id, { state: 'complete' });
+      }
+      if (linked.length > 0) {
+        const entries = await Storage.getAllEntries();
+        dispatch({ type: 'SET_ENTRIES', payload: entries });
+      }
+    }
     await refreshWeeklyIntentions();
   }, [refreshWeeklyIntentions]);
 

@@ -117,6 +117,7 @@ export default function MoreScreen({ navigation }) {
           <Text style={[styles.sectionSub, { color: colors.textMuted, marginBottom: 10 }]}>Show or hide tabs from your navigation</Text>
           {[
             { key: 'logging', label: 'Logging', desc: 'Monthly & Future logs' },
+            { key: 'weekly', label: 'Weekly Intentions', desc: 'Weekly planning tab' },
             { key: 'shopping', label: 'Shopping List', desc: 'Shopping list tab' },
             { key: 'projects', label: 'Projects', desc: 'Project boards' },
             { key: 'collections', label: 'Collections', desc: 'Custom collections' },
