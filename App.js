@@ -25,6 +25,7 @@ import HelpScreen from './src/screens/HelpScreen';
 import ThemePickerScreen from './src/screens/ThemePickerScreen';
 import ProjectsScreen from './src/screens/ProjectsScreen';
 import ShoppingListScreen from './src/screens/ShoppingListScreen';
+import WeeklyIntentionScreen from './src/screens/WeeklyIntentionScreen';
 import PaywallScreen from './src/screens/PaywallScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 // import AIGuidanceButton from './src/components/AIGuidanceButton'; // AI disabled
@@ -50,6 +51,7 @@ function MoreStackScreen() {
 
 const TAB_ICONS = {
   Daily: { focused: 'today', unfocused: 'today-outline' },
+  Weekly: { focused: 'calendar-clear', unfocused: 'calendar-clear-outline' },
   Monthly: { focused: 'calendar', unfocused: 'calendar-outline' },
   Future: { focused: 'rocket', unfocused: 'rocket-outline' },
   Projects: { focused: 'briefcase', unfocused: 'briefcase-outline' },
@@ -193,6 +195,7 @@ function AppContent() {
         })}
       >
         <Tab.Screen name="Daily" component={DailyLogScreen} />
+        <Tab.Screen name="Weekly" component={WeeklyIntentionScreen} />
         {enabledFeatures.logging !== false && <Tab.Screen name="Monthly" component={MonthlyLogScreen} />}
         {enabledFeatures.logging !== false && <Tab.Screen name="Future" component={FutureLogScreen} />}
         {enabledFeatures.projects !== false && <Tab.Screen name="Projects" component={ProjectsScreen} />}

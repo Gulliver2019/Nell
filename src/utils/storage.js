@@ -38,6 +38,7 @@ const STORAGE_KEYS = {
   PROJECTS: 'nell_projects',
   ROUTINES: 'nell_routines',
   WELLNESS_TEMPLATES: 'nell_wellness_templates',
+  WEEKLY_INTENTIONS: 'nell_weekly_intentions',
 };
 
 // Generate unique ID
@@ -416,6 +417,122 @@ export const searchEntries = async (query) => {
   const entries = await getAllEntries();
   const q = query.toLowerCase();
   return entries.filter(e => e.text && e.text.toLowerCase().includes(q));
+};
+
+// Weekly Intentions
+// Data shape: { [weekKey]: { areas: [{ id, name, tasks: [{ id, text, scheduledDate? }] }], createdAt } }
+export const getWeekKey = (date = new Date()) => {
+  const d = new Date(date);
+  const day = d.getDay(); // 0=Sun
+  const diff = d.getDate() - day + (day === 0 ? 0 : 1); // Monday of this week
+  const monday = new Date(d.setDate(diff));
+  return monday.toISOString().split('T')[0];
+};
+
+export const getAllWeeklyIntentions = async () => {
+  try {
+    const data = await AsyncStorage.getItem(STORAGE_KEYS.WEEKLY_INTENTIONS);
+    return data ? JSON.parse(data) : {};
+  } catch (e) {
+    return {};
+  }
+};
+
+export const getWeeklyIntention = async (weekKey) => {
+  const all = await getAllWeeklyIntentions();
+  return all[weekKey] || null;
+};
+
+export const saveWeeklyIntention = async (weekKey, intention) => {
+  const all = await getAllWeeklyIntentions();
+  all[weekKey] = { ...intention, updatedAt: new Date().toISOString() };
+  await AsyncStorage.setItem(STORAGE_KEYS.WEEKLY_INTENTIONS, JSON.stringify(all));
+  return all[weekKey];
+};
+
+export const addWeeklyArea = async (weekKey, areaName) => {
+  const all = await getAllWeeklyIntentions();
+  if (!all[weekKey]) {
+    all[weekKey] = { areas: [], createdAt: new Date().toISOString() };
+  }
+  const area = { id: generateId(), name: areaName, tasks: [] };
+  all[weekKey].areas.push(area);
+  all[weekKey].updatedAt = new Date().toISOString();
+  await AsyncStorage.setItem(STORAGE_KEYS.WEEKLY_INTENTIONS, JSON.stringify(all));
+  return area;
+};
+
+export const removeWeeklyArea = async (weekKey, areaId) => {
+  const all = await getAllWeeklyIntentions();
+  if (all[weekKey]) {
+    all[weekKey].areas = all[weekKey].areas.filter(a => a.id !== areaId);
+    all[weekKey].updatedAt = new Date().toISOString();
+    await AsyncStorage.setItem(STORAGE_KEYS.WEEKLY_INTENTIONS, JSON.stringify(all));
+  }
+};
+
+export const addWeeklyTask = async (weekKey, areaId, taskText) => {
+  const all = await getAllWeeklyIntentions();
+  const area = all[weekKey]?.areas?.find(a => a.id === areaId);
+  if (area) {
+    const task = { id: generateId(), text: taskText, done: false };
+    area.tasks.push(task);
+    all[weekKey].updatedAt = new Date().toISOString();
+    await AsyncStorage.setItem(STORAGE_KEYS.WEEKLY_INTENTIONS, JSON.stringify(all));
+    return task;
+  }
+  return null;
+};
+
+export const updateWeeklyTask = async (weekKey, areaId, taskId, updates) => {
+  const all = await getAllWeeklyIntentions();
+  const area = all[weekKey]?.areas?.find(a => a.id === areaId);
+  if (area) {
+    const task = area.tasks.find(t => t.id === taskId);
+    if (task) {
+      Object.assign(task, updates);
+      all[weekKey].updatedAt = new Date().toISOString();
+      await AsyncStorage.setItem(STORAGE_KEYS.WEEKLY_INTENTIONS, JSON.stringify(all));
+    }
+  }
+};
+
+export const removeWeeklyTask = async (weekKey, areaId, taskId) => {
+  const all = await getAllWeeklyIntentions();
+  const area = all[weekKey]?.areas?.find(a => a.id === areaId);
+  if (area) {
+    area.tasks = area.tasks.filter(t => t.id !== taskId);
+    all[weekKey].updatedAt = new Date().toISOString();
+    await AsyncStorage.setItem(STORAGE_KEYS.WEEKLY_INTENTIONS, JSON.stringify(all));
+  }
+};
+
+export const reorderWeeklyTasks = async (weekKey, areaId, orderedTaskIds) => {
+  const all = await getAllWeeklyIntentions();
+  const area = all[weekKey]?.areas?.find(a => a.id === areaId);
+  if (area) {
+    const reordered = orderedTaskIds
+      .map(id => area.tasks.find(t => t.id === id))
+      .filter(Boolean);
+    area.tasks = reordered;
+    all[weekKey].updatedAt = new Date().toISOString();
+    await AsyncStorage.setItem(STORAGE_KEYS.WEEKLY_INTENTIONS, JSON.stringify(all));
+  }
+};
+
+export const moveWeeklyTask = async (weekKey, fromAreaId, toAreaId, taskId) => {
+  const all = await getAllWeeklyIntentions();
+  const fromArea = all[weekKey]?.areas?.find(a => a.id === fromAreaId);
+  const toArea = all[weekKey]?.areas?.find(a => a.id === toAreaId);
+  if (fromArea && toArea) {
+    const taskIdx = fromArea.tasks.findIndex(t => t.id === taskId);
+    if (taskIdx >= 0) {
+      const [task] = fromArea.tasks.splice(taskIdx, 1);
+      toArea.tasks.push(task);
+      all[weekKey].updatedAt = new Date().toISOString();
+      await AsyncStorage.setItem(STORAGE_KEYS.WEEKLY_INTENTIONS, JSON.stringify(all));
+    }
+  }
 };
 
 // Export all data (for backup)

@@ -22,6 +22,7 @@ const initialState = {
   reflections: [],
   habitReflections: [],
   futureLog: {},
+  weeklyIntentions: {},
   projects: [],
   routines: [],
   wellnessTemplates: { nutrition: [], exercise: [], meditation: { enabled: true } },
@@ -50,6 +51,8 @@ function reducer(state, action) {
       return { ...state, habitReflections: action.payload };
     case 'SET_FUTURE_LOG':
       return { ...state, futureLog: action.payload };
+    case 'SET_WEEKLY_INTENTIONS':
+      return { ...state, weeklyIntentions: action.payload };
     case 'SET_PROJECTS':
       return { ...state, projects: action.payload };
     case 'SET_ROUTINES':
@@ -74,7 +77,7 @@ export function AppProvider({ children }) {
 
   const loadAll = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
-    const [entries, collections, habits, reflections, habitReflections, futureLog, projects, routines, wellnessTemplates, featuresJson, personalityJson] = await Promise.all([
+    const [entries, collections, habits, reflections, habitReflections, futureLog, projects, routines, wellnessTemplates, weeklyIntentions, featuresJson, personalityJson] = await Promise.all([
       Storage.getAllEntries(),
       Storage.getCollections(),
       Storage.getHabits(),
@@ -84,12 +87,13 @@ export function AppProvider({ children }) {
       Storage.getProjects(),
       Storage.getRoutines(),
       Storage.getWellnessTemplates(),
+      Storage.getAllWeeklyIntentions(),
       AsyncStorage.getItem(ENABLED_FEATURES_KEY),
       AsyncStorage.getItem(PERSONALITY_KEY),
     ]);
     const enabledFeatures = featuresJson ? { ...DEFAULT_FEATURES, ...JSON.parse(featuresJson) } : DEFAULT_FEATURES;
     const personalityEnabled = personalityJson !== null ? personalityJson === 'true' : true;
-    dispatch({ type: 'LOAD_ALL', payload: { entries, collections, habits, reflections, habitReflections, futureLog, projects, routines, wellnessTemplates, enabledFeatures, personalityEnabled } });
+    dispatch({ type: 'LOAD_ALL', payload: { entries, collections, habits, reflections, habitReflections, futureLog, projects, routines, wellnessTemplates, weeklyIntentions, enabledFeatures, personalityEnabled } });
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
@@ -324,6 +328,47 @@ export function AppProvider({ children }) {
     dispatch({ type: 'SET_FUTURE_LOG', payload: futureLog });
   }, []);
 
+  // Weekly Intentions
+  const refreshWeeklyIntentions = useCallback(async () => {
+    const data = await Storage.getAllWeeklyIntentions();
+    dispatch({ type: 'SET_WEEKLY_INTENTIONS', payload: data });
+  }, []);
+
+  const addWeeklyArea = useCallback(async (weekKey, areaName) => {
+    await Storage.addWeeklyArea(weekKey, areaName);
+    await refreshWeeklyIntentions();
+  }, [refreshWeeklyIntentions]);
+
+  const removeWeeklyArea = useCallback(async (weekKey, areaId) => {
+    await Storage.removeWeeklyArea(weekKey, areaId);
+    await refreshWeeklyIntentions();
+  }, [refreshWeeklyIntentions]);
+
+  const addWeeklyTask = useCallback(async (weekKey, areaId, taskText) => {
+    await Storage.addWeeklyTask(weekKey, areaId, taskText);
+    await refreshWeeklyIntentions();
+  }, [refreshWeeklyIntentions]);
+
+  const updateWeeklyTask = useCallback(async (weekKey, areaId, taskId, updates) => {
+    await Storage.updateWeeklyTask(weekKey, areaId, taskId, updates);
+    await refreshWeeklyIntentions();
+  }, [refreshWeeklyIntentions]);
+
+  const removeWeeklyTask = useCallback(async (weekKey, areaId, taskId) => {
+    await Storage.removeWeeklyTask(weekKey, areaId, taskId);
+    await refreshWeeklyIntentions();
+  }, [refreshWeeklyIntentions]);
+
+  const reorderWeeklyTasks = useCallback(async (weekKey, areaId, orderedTaskIds) => {
+    await Storage.reorderWeeklyTasks(weekKey, areaId, orderedTaskIds);
+    await refreshWeeklyIntentions();
+  }, [refreshWeeklyIntentions]);
+
+  const moveWeeklyTask = useCallback(async (weekKey, fromAreaId, toAreaId, taskId) => {
+    await Storage.moveWeeklyTask(weekKey, fromAreaId, toAreaId, taskId);
+    await refreshWeeklyIntentions();
+  }, [refreshWeeklyIntentions]);
+
   // Project actions
   const addProject = useCallback(async (project) => {
     await Storage.addProject(project);
@@ -452,6 +497,14 @@ export function AppProvider({ children }) {
     saveHabitReflection,
     addFutureLogEntry,
     removeFutureLogEntry,
+    addWeeklyArea,
+    removeWeeklyArea,
+    addWeeklyTask,
+    updateWeeklyTask,
+    removeWeeklyTask,
+    reorderWeeklyTasks,
+    moveWeeklyTask,
+    refreshWeeklyIntentions,
     addProject,
     updateProject,
     deleteProject,

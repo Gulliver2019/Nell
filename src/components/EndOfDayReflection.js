@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, ScrollView,
+  KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SIZES } from '../utils/theme';
@@ -88,6 +89,7 @@ export default function EndOfDayReflection({ visible, onClose }) {
   const [reasons, setReasons] = useState({});      // { habitId: reasonKey }
   const [commitments, setCommitments] = useState({}); // { habitId: text }
   const [step, setStep] = useState('review');       // 'review' | 'commit' | 'done'
+  const scrollRef = useRef(null);
 
   const setReason = (habitId, reason) => {
     Haptics.selectionAsync();
@@ -128,6 +130,10 @@ export default function EndOfDayReflection({ visible, onClose }) {
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
       <View style={[styles.overlay, { backgroundColor: colors.bg + 'F5' }]}>
         <View style={[styles.modal, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           {/* Header */}
@@ -140,7 +146,12 @@ export default function EndOfDayReflection({ visible, onClose }) {
             </TouchableOpacity>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalContent}>
+          <ScrollView
+            ref={scrollRef}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.modalContent}
+            keyboardShouldPersistTaps="handled"
+          >
             {step === 'done' ? (
               <View style={styles.doneSection}>
                 <TargetIcon size={48} color="#fff" style={{ marginBottom: 12 }} />
@@ -280,6 +291,15 @@ export default function EndOfDayReflection({ visible, onClose }) {
                       placeholderTextColor={colors.textMuted}
                       value={commitments[h.id] || ''}
                       onChangeText={t => setCommitments(prev => ({ ...prev, [h.id]: t }))}
+                      onFocus={(e) => {
+                        setTimeout(() => {
+                          e.target.measureLayout(
+                            scrollRef.current?.getInnerViewNode?.(),
+                            (_x, y) => scrollRef.current?.scrollTo({ y: y - 80, animated: true }),
+                            () => scrollRef.current?.scrollToEnd({ animated: true })
+                          );
+                        }, 300);
+                      }}
                       selectionColor={colors.accent}
                     />
                   </View>
@@ -299,6 +319,7 @@ export default function EndOfDayReflection({ visible, onClose }) {
           </ScrollView>
         </View>
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
