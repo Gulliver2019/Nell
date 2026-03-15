@@ -66,7 +66,7 @@ const buildShareText = (reflection, prompts, moods) => {
     }
   });
 
-  lines.push('— Shared from CrushedIT 💪');
+  lines.push('— Sent from the Nell App');
   return lines.join('\n');
 };
 
