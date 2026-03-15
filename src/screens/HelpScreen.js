@@ -113,6 +113,29 @@ const SECTIONS = [
     ],
   },
   {
+    id: 'weekly-intention',
+    title: 'Weekly Intention',
+    icon: '🎯',
+    items: [
+      {
+        q: 'What is Weekly Intention?',
+        a: 'Weekly Intention helps you plan your week by organising tasks into life areas like Work, Health, Family and more. Each week starts fresh so you can focus on what matters most right now.',
+      },
+      {
+        q: 'How do I add areas and tasks?',
+        a: 'Tap "+ Add Area" to create a custom area or pick from suggestions. Then add tasks under each area. Tap a task to mark it done, long-press to edit, or swipe left to delete.',
+      },
+      {
+        q: 'What is the Future Log nudge?',
+        a: 'If you have items in this month\'s Future Log, a nudge appears at the top reminding you to pull them into your weekly plan. Tap an item to schedule it into your daily log.',
+      },
+      {
+        q: 'Can I see past weeks?',
+        a: 'Yes — tap the history icon at the top right to browse previous weeks and see which tasks you completed.',
+      },
+    ],
+  },
+  {
     id: 'monthly-log',
     title: 'Monthly Log',
     icon: '📆',

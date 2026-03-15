@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useCallback, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet,
-  Alert, Animated, Keyboard, KeyboardAvoidingView, Platform,
+  Alert, Animated, Keyboard, KeyboardAvoidingView, Platform, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Swipeable } from 'react-native-gesture-handler';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { getWeekKey } from '../utils/storage';
@@ -161,7 +162,6 @@ export default function WeeklyIntentionScreen() {
             <Text style={[styles.headerTitle, { color: colors.text }]}>Weekly Intention</Text>
             <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>{weekLabel}</Text>
           </View>
-          <KnowledgeBaseButton screenName="Weekly" />
         </View>
 
         <ScrollView
@@ -389,6 +389,7 @@ export default function WeeklyIntentionScreen() {
 
           <View style={{ height: 40 }} />
         </ScrollView>
+        <KnowledgeBaseButton sectionId="weekly-intention" />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

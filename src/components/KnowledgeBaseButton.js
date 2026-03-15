@@ -5,6 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 
 const SECTION_LABELS = {
   'daily-log': 'Daily Log',
+  'weekly-intention': 'Weekly Intention',
   'monthly-log': 'Monthly Log',
   'future-log': 'Future Log',
   'projects': 'Projects',
