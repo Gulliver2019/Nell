@@ -38,11 +38,11 @@ const PROMPTS = {
 
 const POSITIVITY_BANNER = {
   daily: {
-    title: '✨ Your Positivity Space',
+    title: 'Your Positivity Space',
     message: 'This is your moment to celebrate the good stuff — gratitude, meaning, and the wins that made today yours.',
   },
   weekly: {
-    title: '✨ Weekly Glow-Up',
+    title: 'Weekly Glow-Up',
     message: 'Look back on the week with warmth — the people, the moments, and everything you crushed.',
   },
 };
@@ -54,7 +54,7 @@ const buildShareText = (reflection, prompts, moods) => {
   const isWeekly = reflection.type === 'weekly';
 
   let lines = [];
-  lines.push(`${moodEmoji} My ${isWeekly ? 'Weekly' : 'Daily'} Reflection — ${dateStr}`);
+  lines.push(`Hi - I am working with Nell to help me see the glass as half full so here are some reflections from today.`);
   lines.push('');
 
   prompts.forEach(p => {
@@ -173,7 +173,7 @@ export default function ReflectionScreen() {
 
             {/* Positivity banner */}
             <View style={[styles.positivityBanner, { backgroundColor: colors.accentGold + '12', borderColor: colors.accentGold + '30' }]}>
-              <Text style={styles.positivityTitle}>{POSITIVITY_BANNER[reflectionType].title}</Text>
+              <Text style={[styles.positivityTitle, { color: '#FFFFFF' }]}>{POSITIVITY_BANNER[reflectionType].title}</Text>
               <Text style={[styles.positivityMessage, { color: colors.textSecondary }]}>
                 {POSITIVITY_BANNER[reflectionType].message}
               </Text>
@@ -299,7 +299,7 @@ export default function ReflectionScreen() {
                       onPress={() => handleShare(ref)}
                       style={[styles.shareBtn, { backgroundColor: colors.accentGreen + '15', borderColor: colors.accentGreen + '30' }]}
                     >
-                      <Text style={[styles.shareBtnText, { color: colors.accentGreen }]}>💌 Share this reflection</Text>
+                      <Text style={[styles.shareBtnText, { color: colors.accentGreen }]}>Share this reflection</Text>
                     </TouchableOpacity>
                   )}
                 </View>
