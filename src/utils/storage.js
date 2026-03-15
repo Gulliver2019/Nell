@@ -332,8 +332,10 @@ export const saveReflection = async (reflection) => {
     date: getDateKey(),
     type: 'daily', // daily, weekly, monthly
     gratitude: '',
+    meaningful: '',
     wins: '',
-    challenges: '',
+    kindness: '',
+    appreciated: '',
     tomorrow: '',
     mood: 3, // 1-5
     ...reflection,

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import {
-  View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform,
+  View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -22,16 +22,52 @@ const MOODS = [
 const PROMPTS = {
   daily: [
     { key: 'gratitude', label: 'Grateful for', icon: '🙏', placeholder: 'What are you thankful for today?' },
+    { key: 'meaningful', label: 'Meaningful moment', icon: '💛', placeholder: 'What did you do today that really mattered?' },
     { key: 'wins', label: 'Wins', icon: '🏆', placeholder: 'What did you crush today?' },
-    { key: 'challenges', label: 'Challenges', icon: '💭', placeholder: 'What was difficult?' },
-    { key: 'tomorrow', label: 'Tomorrow', icon: '🎯', placeholder: 'What will you focus on?' },
+    { key: 'kindness', label: 'Kindness', icon: '🤝', placeholder: 'Any kindness you gave or received today?' },
+    { key: 'tomorrow', label: 'Looking forward to', icon: '🌅', placeholder: 'What are you excited about tomorrow?' },
   ],
   weekly: [
     { key: 'gratitude', label: 'Highlights', icon: '⭐', placeholder: 'Best moments this week?' },
+    { key: 'meaningful', label: 'Moments of meaning', icon: '💛', placeholder: 'What felt truly worthwhile this week?' },
     { key: 'wins', label: 'Achievements', icon: '🏆', placeholder: 'What did you accomplish?' },
-    { key: 'challenges', label: 'Lessons', icon: '📖', placeholder: 'What did you learn?' },
-    { key: 'tomorrow', label: 'Next Week', icon: '🚀', placeholder: 'Focus for next week?' },
+    { key: 'appreciated', label: 'People I appreciated', icon: '💜', placeholder: 'Who made your week better?' },
+    { key: 'tomorrow', label: 'Next Week', icon: '🚀', placeholder: 'What are you looking forward to?' },
   ],
+};
+
+const POSITIVITY_BANNER = {
+  daily: {
+    title: '✨ Your Positivity Space',
+    message: 'This is your moment to celebrate the good stuff — gratitude, meaning, and the wins that made today yours.',
+  },
+  weekly: {
+    title: '✨ Weekly Glow-Up',
+    message: 'Look back on the week with warmth — the people, the moments, and everything you crushed.',
+  },
+};
+
+const buildShareText = (reflection, prompts, moods) => {
+  const moodEmoji = moods.find(m => m.value === reflection.mood)?.emoji || '🙂';
+  const moodLabel = moods.find(m => m.value === reflection.mood)?.label || '';
+  const dateStr = formatDate(reflection.date);
+  const isWeekly = reflection.type === 'weekly';
+
+  let lines = [];
+  lines.push(`${moodEmoji} My ${isWeekly ? 'Weekly' : 'Daily'} Reflection — ${dateStr}`);
+  lines.push('');
+
+  prompts.forEach(p => {
+    const val = reflection[p.key];
+    if (val?.trim()) {
+      lines.push(`${p.icon} ${p.label}`);
+      lines.push(val.trim());
+      lines.push('');
+    }
+  });
+
+  lines.push('— Shared from CrushedIT 💪');
+  return lines.join('\n');
 };
 
 export default function ReflectionScreen() {
@@ -71,7 +107,18 @@ export default function ReflectionScreen() {
   };
 
   const prompts = PROMPTS[reflectionType] || PROMPTS.daily;
+  const allDailyPrompts = PROMPTS.daily;
+  const allWeeklyPrompts = PROMPTS.weekly;
   const hasContent = Object.values(answers).some(v => v?.trim());
+
+  const handleShare = async (reflection) => {
+    const refPrompts = reflection.type === 'weekly' ? allWeeklyPrompts : allDailyPrompts;
+    const text = buildShareText(reflection, refPrompts, MOODS);
+    try {
+      await Share.share({ message: text });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (_) {}
+  };
 
   // History sorted by date
   const sortedReflections = useMemo(() => {
@@ -122,6 +169,14 @@ export default function ReflectionScreen() {
                   </Text>
                 </TouchableOpacity>
               ))}
+            </View>
+
+            {/* Positivity banner */}
+            <View style={[styles.positivityBanner, { backgroundColor: colors.accentGold + '12', borderColor: colors.accentGold + '30' }]}>
+              <Text style={styles.positivityTitle}>{POSITIVITY_BANNER[reflectionType].title}</Text>
+              <Text style={[styles.positivityMessage, { color: colors.textSecondary }]}>
+                {POSITIVITY_BANNER[reflectionType].message}
+              </Text>
             </View>
 
             {/* Today's context */}
@@ -206,7 +261,10 @@ export default function ReflectionScreen() {
                 <Text style={[styles.emptyText, { color: colors.textMuted }]}>Take a moment to look back on your day</Text>
               </View>
             ) : (
-              sortedReflections.map(ref => (
+              sortedReflections.map(ref => {
+                const refPrompts = ref.type === 'weekly' ? allWeeklyPrompts : allDailyPrompts;
+                const hasAnyContent = refPrompts.some(p => ref[p.key]?.trim()) || ref.challenges?.trim();
+                return (
                 <View key={ref.id} style={[styles.historyCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
                   <View style={styles.historyHeader}>
                     <View style={styles.historyDateRow}>
@@ -221,7 +279,7 @@ export default function ReflectionScreen() {
                       {MOODS.find(m => m.value === ref.mood)?.emoji || '🙂'}
                     </Text>
                   </View>
-                  {prompts.map(p => (
+                  {refPrompts.map(p => (
                     ref[p.key] ? (
                       <View key={p.key} style={styles.historyItem}>
                         <Text style={[styles.historyLabel, { color: colors.textSecondary }]}>{p.icon} {p.label}</Text>
@@ -229,8 +287,24 @@ export default function ReflectionScreen() {
                       </View>
                     ) : null
                   ))}
+                  {/* Show old "challenges" field from legacy reflections */}
+                  {ref.challenges && !refPrompts.some(p => p.key === 'challenges') ? (
+                    <View style={styles.historyItem}>
+                      <Text style={[styles.historyLabel, { color: colors.textSecondary }]}>💭 Challenges</Text>
+                      <Text style={[styles.historyText, { color: colors.text }]}>{ref.challenges}</Text>
+                    </View>
+                  ) : null}
+                  {hasAnyContent && (
+                    <TouchableOpacity
+                      onPress={() => handleShare(ref)}
+                      style={[styles.shareBtn, { backgroundColor: colors.accentGreen + '15', borderColor: colors.accentGreen + '30' }]}
+                    >
+                      <Text style={[styles.shareBtnText, { color: colors.accentGreen }]}>💌 Share this reflection</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
-              ))
+                );
+              })
             )}
           </ScrollView>
         )}
@@ -313,4 +387,15 @@ const styles = StyleSheet.create({
   historyItem: { marginBottom: 10 },
   historyLabel: { fontSize: SIZES.sm, fontWeight: '600', marginBottom: 4 },
   historyText: { fontSize: SIZES.md, lineHeight: 20 },
+  positivityBanner: {
+    borderRadius: SIZES.radiusLg, padding: 16, marginBottom: 16,
+    borderWidth: 1, alignItems: 'center',
+  },
+  positivityTitle: { fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  positivityMessage: { fontSize: SIZES.sm, textAlign: 'center', lineHeight: 18 },
+  shareBtn: {
+    marginTop: 10, paddingVertical: 10, borderRadius: SIZES.radius,
+    alignItems: 'center', borderWidth: 1,
+  },
+  shareBtnText: { fontSize: SIZES.sm, fontWeight: '700' },
 });
