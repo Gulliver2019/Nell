@@ -291,13 +291,11 @@ export default function EndOfDayReflection({ visible, onClose }) {
                       placeholderTextColor={colors.textMuted}
                       value={commitments[h.id] || ''}
                       onChangeText={t => setCommitments(prev => ({ ...prev, [h.id]: t }))}
-                      onFocus={(e) => {
+                      onFocus={() => {
                         setTimeout(() => {
-                          e.target.measureLayout(
-                            scrollRef.current?.getInnerViewNode?.(),
-                            (_x, y) => scrollRef.current?.scrollTo({ y: y - 80, animated: true }),
-                            () => scrollRef.current?.scrollToEnd({ animated: true })
-                          );
+                          try {
+                            scrollRef.current?.scrollToEnd({ animated: true });
+                          } catch {}
                         }, 300);
                       }}
                       selectionColor={colors.accent}

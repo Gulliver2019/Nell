@@ -129,20 +129,6 @@ export default function PaywallScreen({ onComplete }) {
           </Text>
         </View>
 
-        {/* Features */}
-        <View style={[styles.featuresCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-          {FEATURES.map((f, i) => (
-            <View key={i} style={[styles.featureRow, i < FEATURES.length - 1 && { borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth }]}>
-              <Image source={f.image} style={styles.featureIcon} resizeMode="contain" />
-              <View style={styles.featureText}>
-                <Text style={[styles.featureTitle, { color: colors.text }]}>{f.title}</Text>
-                <Text style={[styles.featureDesc, { color: colors.textSecondary }]}>{f.desc}</Text>
-              </View>
-              <Text style={[styles.checkmark, { color: colors.accent }]}>✓</Text>
-            </View>
-          ))}
-        </View>
-
         {/* Package Options */}
         {displayPackages.length > 0 && (
           <View style={styles.packages}>
@@ -194,6 +180,20 @@ export default function PaywallScreen({ onComplete }) {
             })}
           </View>
         )}
+
+        {/* Features */}
+        <View style={[styles.featuresCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+          {FEATURES.map((f, i) => (
+            <View key={i} style={[styles.featureRow, i < FEATURES.length - 1 && { borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth }]}>
+              <Image source={f.image} style={styles.featureIcon} resizeMode="contain" />
+              <View style={styles.featureText}>
+                <Text style={[styles.featureTitle, { color: colors.text }]}>{f.title}</Text>
+                <Text style={[styles.featureDesc, { color: colors.textSecondary }]}>{f.desc}</Text>
+              </View>
+              <Text style={[styles.checkmark, { color: colors.accent }]}>✓</Text>
+            </View>
+          ))}
+        </View>
 
         {/* No packages fallback */}
         {displayPackages.length === 0 && (

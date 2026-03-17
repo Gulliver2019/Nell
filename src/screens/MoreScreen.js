@@ -308,24 +308,6 @@ export default function MoreScreen({ navigation }) {
           />
         )}
 
-        {/* Preview Screens */}
-        <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>👀 Preview</Text>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('PreviewOnboarding')}
-            style={[styles.contactRow, { borderBottomColor: colors.border }]}
-          >
-            <Text style={[styles.contactLabel, { color: colors.textSecondary }]}>Onboarding</Text>
-            <Text style={[styles.contactValue, { color: colors.accent }]}>View →</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('PreviewPaywall')}
-            style={styles.contactRow}
-          >
-            <Text style={[styles.contactLabel, { color: colors.textSecondary }]}>Paywall</Text>
-            <Text style={[styles.contactValue, { color: colors.accent }]}>View →</Text>
-          </TouchableOpacity>
-        </View>
 
 
         {/* Contact & Support */}
