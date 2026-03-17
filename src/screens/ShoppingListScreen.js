@@ -425,7 +425,9 @@ export default function ShoppingListScreen() {
     if (!editItem || !editName.trim()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     animateLayout();
-    const newCat = guessCategory(editName.trim()) || editCategory;
+    const nameChanged = editName.trim() !== editItem.text;
+    const catChanged = editCategory !== (editItem.category || 'others');
+    const newCat = catChanged ? editCategory : (nameChanged ? (guessCategory(editName.trim()) || editCategory) : editCategory);
     persist(items.map(i => i.id === editItem.id ? {
       ...i,
       text: editName.trim(),

@@ -43,7 +43,7 @@ export function YesterdayNudge({ colors }) {
   // Find habits missed yesterday (that haven't been done today yet)
   const gapsToFill = useMemo(() => {
     if (!yesterdayReflection) return [];
-    return yesterdayReflection.commitments
+    return (yesterdayReflection.commitments || [])
       .filter(c => {
         const habit = habits.find(h => h.id === c.habitId);
         return habit && !habit.completions?.[todayKey];

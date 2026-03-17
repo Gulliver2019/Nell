@@ -23,7 +23,7 @@ const CAL_IMAGE = require('../../assets/cal.png');
 
 const BRAIN_IMAGE = require('../../assets/brain.png');
 const PERSONALITY_IMAGE = require('../../assets/personality.png');
-const ALEXA_IMAGE = require('../../assets/alexa.png');
+
 
 const SLIDES = [
   {
@@ -80,13 +80,6 @@ const SLIDES = [
     title: 'We Like to Have Fun Here',
     subtitle: 'Personality mode is on by default',
     body: 'Nell has a bit of an attitude. You\'ll see things like "Smash the project" and "Scheduled for destruction 💥" instead of boring alerts.\n\nLove it? Great, we\'re a perfect match.\n\nHate it? No hard feelings. Head to More → Personality Mode and flip the switch. We\'ll be professional. Promise. Mostly.',
-  },
-  {
-    key: 'voice',
-    emoji: '🗣️',
-    title: 'Voice Assistants',
-    subtitle: 'Coming soon',
-    body: '"Hey Siri, add \'call the dentist\' to my daily"\n"Alexa, what\'s next on my schedule?"\n"Hey Google, complete my day"\n\nFull voice integration with Siri, Alexa, and Google Assistant is on the way. Manage your tasks, check your schedule, and capture ideas — all hands-free.',
   },
 ];
 
@@ -163,9 +156,9 @@ export default function OnboardingScreen({ onComplete }) {
             <Text style={[styles.slideSubtitle, { color: colors.accent }]}>{slide.subtitle}</Text>
             <Text style={[styles.slideBody, { color: colors.textSecondary }]}>{slide.body}</Text>
           </>
-        ) : slide.key === 'rapid' || slide.key === 'migration' || slide.key === 'project' || slide.key === 'ready' || slide.key === 'pom' || slide.key === 'cal' || slide.key === 'personality' || slide.key === 'voice' ? (
+        ) : slide.key === 'rapid' || slide.key === 'migration' || slide.key === 'project' || slide.key === 'ready' || slide.key === 'pom' || slide.key === 'cal' || slide.key === 'personality' ? (
           <>
-            <Image source={slide.key === 'rapid' ? RAPID_IMAGE : slide.key === 'migration' ? MIGRATION_IMAGE : slide.key === 'project' ? PROJECT_IMAGE : slide.key === 'pom' ? POM_IMAGE : slide.key === 'cal' ? CAL_IMAGE : slide.key === 'personality' ? PERSONALITY_IMAGE : slide.key === 'voice' ? ALEXA_IMAGE : READY_IMAGE} style={styles.slideIcon} resizeMode="contain" />
+            <Image source={slide.key === 'rapid' ? RAPID_IMAGE : slide.key === 'migration' ? MIGRATION_IMAGE : slide.key === 'project' ? PROJECT_IMAGE : slide.key === 'pom' ? POM_IMAGE : slide.key === 'cal' ? CAL_IMAGE : slide.key === 'personality' ? PERSONALITY_IMAGE : READY_IMAGE} style={styles.slideIcon} resizeMode="contain" />
             <Text style={[styles.slideTitle, { color: colors.text }]}>{slide.title}</Text>
             <Text style={[styles.slideSubtitle, { color: colors.accent }]}>{slide.subtitle}</Text>
             <Text style={[styles.slideBody, { color: colors.textSecondary }]}>{slide.body}</Text>

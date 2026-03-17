@@ -367,6 +367,9 @@ export const saveHabitReflection = async (reflection) => {
     commitments: [],    // [{ habitId, habitName, habitIcon, commitment }]
     ...reflection,
   };
+  if (!Array.isArray(newRef.commitments)) {
+    newRef.commitments = [];
+  }
   reflections.push(newRef);
   await AsyncStorage.setItem(STORAGE_KEYS.HABIT_REFLECTIONS, JSON.stringify(reflections));
   return newRef;
@@ -426,15 +429,37 @@ export const searchEntries = async (query) => {
 export const getWeekKey = (date = new Date()) => {
   const d = new Date(date);
   const day = d.getDay(); // 0=Sun
-  const diff = d.getDate() - day + (day === 0 ? 0 : 1); // Monday of this week
-  const monday = new Date(d.setDate(diff));
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday of this week
+  const monday = new Date(d.getFullYear(), d.getMonth(), diff);
   return monday.toISOString().split('T')[0];
 };
 
 export const getAllWeeklyIntentions = async () => {
   try {
     const data = await AsyncStorage.getItem(STORAGE_KEYS.WEEKLY_INTENTIONS);
-    return data ? JSON.parse(data) : {};
+    if (!data) return {};
+    const all = JSON.parse(data);
+    // Migrate any entries stored under incorrect Sunday keys to the correct Monday
+    let migrated = false;
+    for (const key of Object.keys(all)) {
+      const d = new Date(key + 'T00:00:00');
+      if (d.getDay() === 0) {
+        const correctKey = getWeekKey(d);
+        if (correctKey !== key) {
+          if (all[correctKey]) {
+            all[correctKey].areas = [...(all[correctKey].areas || []), ...(all[key].areas || [])];
+          } else {
+            all[correctKey] = all[key];
+          }
+          delete all[key];
+          migrated = true;
+        }
+      }
+    }
+    if (migrated) {
+      await AsyncStorage.setItem(STORAGE_KEYS.WEEKLY_INTENTIONS, JSON.stringify(all));
+    }
+    return all;
   } catch (e) {
     return {};
   }

@@ -327,24 +327,6 @@ export default function MoreScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* Coming Soon */}
-        <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Image source={require('../../assets/alexa.png')} style={{ width: 24, height: 24 }} />
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Coming Soon</Text>
-          </View>
-          <Text style={[styles.sectionSub, { color: colors.textMuted, marginBottom: 12 }]}>Voice assistant integration</Text>
-          <Text style={[styles.comingSoonBody, { color: colors.textSecondary }]}>
-            {"\"Hey Siri, add 'call the dentist' to my daily\"\n\"Alexa, what's next on my schedule?\"\n\"Hey Google, how's my day going?\""}
-          </Text>
-          <View style={styles.assistantRow}>
-            {['🍎 Siri', '🔵 Alexa', '🟢 Google'].map(a => (
-              <View key={a} style={[styles.assistantChip, { backgroundColor: colors.accent + '12' }]}>
-                <Text style={[styles.assistantChipText, { color: colors.accent }]}>{a}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
 
         {/* Contact & Support */}
         <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
