@@ -7,8 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { useRevenueCat } from '../context/RevenueCatContext';
 
-const PRIVACY_URL = 'https://sr6labs.co.uk/privacy';
-const TERMS_URL = 'https://sr6labs.co.uk/terms';
+const PRIVACY_URL = 'https://sr6labs.co.uk/privacy.html';
+const TERMS_URL = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
 
 const FEATURES = [
   { image: require('../../assets/rapid.png'), title: 'Rapid Logging', desc: 'Thoughts into tasks instantly' },
@@ -103,7 +103,7 @@ export default function PaywallScreen({ onComplete }) {
         style: 'currency',
         currency: p.currencyCode,
       }).format(monthlyPrice);
-      return `Just ${formatted}/month`;
+      return `(${formatted}/mo equivalent)`;
     } catch {
       return null;
     }
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
   header: { alignItems: 'center', paddingTop: 10, paddingBottom: 8 },
   icon: { width: 52, height: 52, borderRadius: 12, marginBottom: 8 },
   title: { fontSize: 22, fontWeight: '800', letterSpacing: -0.5, marginBottom: 2 },
-  subtitle: { fontSize: 14, fontWeight: '700' },
+  subtitle: { fontSize: 13, fontWeight: '600' },
 
   trialBanner: { display: 'none' },
   trialBannerText: { display: 'none' },
@@ -286,10 +286,10 @@ const styles = StyleSheet.create({
   radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
   radioFill: { width: 12, height: 12, borderRadius: 6 },
   pkgInfo: { flex: 1 },
-  pkgName: { fontSize: 17, fontWeight: '700', marginBottom: 2 },
-  pkgPrice: { fontSize: 14 },
-  pkgTrial: { fontSize: 13, fontWeight: '700', marginTop: 2 },
-  pkgSub: { fontSize: 13, fontWeight: '600', marginTop: 2 },
+  pkgName: { fontSize: 15, fontWeight: '600', marginBottom: 2 },
+  pkgPrice: { fontSize: 20, fontWeight: '800', marginTop: 2 },
+  pkgTrial: { fontSize: 12, fontWeight: '600', marginTop: 4 },
+  pkgSub: { fontSize: 12, fontWeight: '500', marginTop: 2 },
 
   noPackages: { borderRadius: 14, borderWidth: 1, padding: 24, alignItems: 'center' },
   noPackagesText: { fontSize: 14 },
