@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ActivityIndicator,
   Alert, Linking, ScrollView, Image, Dimensions,
@@ -20,34 +20,26 @@ const FEATURES = [
 export default function PaywallScreen({ onComplete }) {
   const { colors } = useTheme();
   const { isReady, isProUser, offerings, purchasePackage, restorePurchases, refreshCustomerInfo } = useRevenueCat();
-  const [selectedId, setSelectedId] = useState(null);
+  const [selectedPkg, setSelectedPkg] = useState(null);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
-  const hasAutoSelected = useRef(false);
 
   const packages = offerings?.current?.availablePackages || [];
   const annual = packages.find(p => p.packageType === 'ANNUAL');
   const monthly = packages.find(p => p.packageType === 'MONTHLY');
   const displayPackages = useMemo(() => [annual, monthly].filter(Boolean), [annual, monthly]);
 
-  // Resolve selectedId to actual package object from current offerings
-  const selectedPkg = useMemo(
-    () => selectedId ? packages.find(p => p.identifier === selectedId) || null : null,
-    [selectedId, packages]
-  );
-
   // Auto-dismiss if already pro
   useEffect(() => {
     if (isProUser) onComplete();
   }, [isProUser]);
 
-  // Auto-select annual (best value) once on initial load
+  // Auto-select annual (best value) or first available
   useEffect(() => {
-    if (!hasAutoSelected.current && displayPackages.length > 0) {
-      hasAutoSelected.current = true;
-      setSelectedId((annual || displayPackages[0]).identifier);
+    if (!selectedPkg && displayPackages.length > 0) {
+      setSelectedPkg(annual || displayPackages[0]);
     }
-  }, [displayPackages]);
+  }, [displayPackages, annual]);
 
   if (!isReady) {
     return (
@@ -68,18 +60,25 @@ export default function PaywallScreen({ onComplete }) {
   }, [annual, monthly]);
 
   const handlePurchase = async () => {
-    if (!selectedPkg) {
+    // Re-read from offerings to avoid stale package reference
+    const currentPackages = offerings?.current?.availablePackages || [];
+    const pkg = selectedPkg
+      ? currentPackages.find(p => p.identifier === selectedPkg.identifier) || selectedPkg
+      : null;
+    if (!pkg) {
       Alert.alert('Not Ready', 'Subscription packages are still loading. Please try again in a moment.');
       return;
     }
     setIsPurchasing(true);
     try {
-      const result = await purchasePackage(selectedPkg);
+      const result = await purchasePackage(pkg);
       if (result.success) {
         setIsPurchasing(false);
         onComplete();
         return;
       }
+      // Purchase may have gone through even if RevenueCat didn't report success
+      // (common in sandbox). Re-check entitlements before giving up.
       const info = await refreshCustomerInfo();
       setIsPurchasing(false);
       if (info?.entitlements?.active?.['Nell Pro']) {
@@ -88,6 +87,7 @@ export default function PaywallScreen({ onComplete }) {
         Alert.alert('Purchase Failed', result.error?.message || 'Something went wrong. Please try again.');
       }
     } catch (e) {
+      // Still check if purchase actually went through
       try {
         const info = await refreshCustomerInfo();
         if (info?.entitlements?.active?.['Nell Pro']) {
@@ -178,7 +178,7 @@ export default function PaywallScreen({ onComplete }) {
                       borderWidth: isSelected ? 2 : 1,
                     },
                   ]}
-                  onPress={() => setSelectedId(pkg.identifier)}
+                  onPress={() => setSelectedPkg(pkg)}
                   activeOpacity={0.7}
                 >
                   {isAnnual && savingsText && (
