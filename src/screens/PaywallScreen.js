@@ -19,7 +19,7 @@ const FEATURES = [
 
 export default function PaywallScreen({ onComplete }) {
   const { colors } = useTheme();
-  const { isReady, isProUser, offerings, purchasePackage, restorePurchases } = useRevenueCat();
+  const { isReady, isProUser, offerings, purchasePackage, restorePurchases, refreshCustomerInfo } = useRevenueCat();
   const [selectedPkg, setSelectedPkg] = useState(null);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
@@ -72,13 +72,30 @@ export default function PaywallScreen({ onComplete }) {
     setIsPurchasing(true);
     try {
       const result = await purchasePackage(pkg);
-      setIsPurchasing(false);
       if (result.success) {
+        setIsPurchasing(false);
+        onComplete();
+        return;
+      }
+      // Purchase may have gone through even if RevenueCat didn't report success
+      // (common in sandbox). Re-check entitlements before giving up.
+      const info = await refreshCustomerInfo();
+      setIsPurchasing(false);
+      if (info?.entitlements?.active?.['Nell Pro']) {
         onComplete();
       } else if (!result.userCancelled) {
         Alert.alert('Purchase Failed', result.error?.message || 'Something went wrong. Please try again.');
       }
     } catch (e) {
+      // Still check if purchase actually went through
+      try {
+        const info = await refreshCustomerInfo();
+        if (info?.entitlements?.active?.['Nell Pro']) {
+          setIsPurchasing(false);
+          onComplete();
+          return;
+        }
+      } catch (_) {}
       setIsPurchasing(false);
       Alert.alert('Purchase Failed', e.message || 'An unexpected error occurred. Please try again.');
     }
