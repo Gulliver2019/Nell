@@ -286,7 +286,7 @@ export default function MoreScreen({ navigation }) {
               <TouchableOpacity
                 onPress={async () => {
                   const result = await restorePurchases();
-                  if (result.success && result.customerInfo?.entitlements?.active?.['GoalDigger Pro']) {
+                  if (result.success && result.customerInfo?.entitlements?.active?.['Nell Pro']) {
                     Alert.alert('Restored!', 'Your Nell Pro subscription has been restored.');
                   } else {
                     Alert.alert('No Purchases Found', 'We couldn\'t find any previous purchases to restore.');
@@ -328,7 +328,7 @@ export default function MoreScreen({ navigation }) {
             <Text style={[styles.contactValue, { color: colors.accent }]}>View →</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => Linking.openURL('https://sr6labs.co.uk/privacy.html')}
+            onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}
             style={styles.contactRow}
           >
             <Text style={[styles.contactLabel, { color: colors.textSecondary }]}>Terms of Service</Text>

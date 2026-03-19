@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ActivityIndicator,
   Alert, Linking, ScrollView, Image, Dimensions,
@@ -24,10 +24,22 @@ export default function PaywallScreen({ onComplete }) {
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
 
+  const packages = offerings?.current?.availablePackages || [];
+  const annual = packages.find(p => p.packageType === 'ANNUAL');
+  const monthly = packages.find(p => p.packageType === 'MONTHLY');
+  const displayPackages = useMemo(() => [annual, monthly].filter(Boolean), [annual, monthly]);
+
   // Auto-dismiss if already pro
-  React.useEffect(() => {
+  useEffect(() => {
     if (isProUser) onComplete();
   }, [isProUser]);
+
+  // Auto-select annual (best value) or first available
+  useEffect(() => {
+    if (!selectedPkg && displayPackages.length > 0) {
+      setSelectedPkg(annual || displayPackages[0]);
+    }
+  }, [displayPackages, annual]);
 
   if (!isReady) {
     return (
@@ -39,16 +51,6 @@ export default function PaywallScreen({ onComplete }) {
 
   if (isProUser) return null;
 
-  const packages = offerings?.current?.availablePackages || [];
-  const annual = packages.find(p => p.packageType === 'ANNUAL');
-  const monthly = packages.find(p => p.packageType === 'MONTHLY');
-  const displayPackages = [annual, monthly].filter(Boolean);
-
-  // Auto-select annual (best value) or first available
-  if (!selectedPkg && displayPackages.length > 0) {
-    setTimeout(() => setSelectedPkg(annual || displayPackages[0]), 0);
-  }
-
   // Calculate savings
   const savingsText = useMemo(() => {
     if (!annual || !monthly) return null;
@@ -58,14 +60,27 @@ export default function PaywallScreen({ onComplete }) {
   }, [annual, monthly]);
 
   const handlePurchase = async () => {
-    if (!selectedPkg) return;
+    // Re-read from offerings to avoid stale package reference
+    const currentPackages = offerings?.current?.availablePackages || [];
+    const pkg = selectedPkg
+      ? currentPackages.find(p => p.identifier === selectedPkg.identifier) || selectedPkg
+      : null;
+    if (!pkg) {
+      Alert.alert('Not Ready', 'Subscription packages are still loading. Please try again in a moment.');
+      return;
+    }
     setIsPurchasing(true);
-    const result = await purchasePackage(selectedPkg);
-    setIsPurchasing(false);
-    if (result.success) {
-      onComplete();
-    } else if (!result.userCancelled) {
-      Alert.alert('Purchase Failed', 'Something went wrong. Please try again.');
+    try {
+      const result = await purchasePackage(pkg);
+      setIsPurchasing(false);
+      if (result.success) {
+        onComplete();
+      } else if (!result.userCancelled) {
+        Alert.alert('Purchase Failed', result.error?.message || 'Something went wrong. Please try again.');
+      }
+    } catch (e) {
+      setIsPurchasing(false);
+      Alert.alert('Purchase Failed', e.message || 'An unexpected error occurred. Please try again.');
     }
   };
 
@@ -124,8 +139,8 @@ export default function PaywallScreen({ onComplete }) {
           <Text style={[styles.title, { color: colors.text }]}>
             Unlock Nell Pro
           </Text>
-          <Text style={[styles.subtitle, { color: colors.accent }]}>
-            7-day free trial — cancel anytime
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+            Unlock all premium features
           </Text>
         </View>
 
@@ -162,17 +177,17 @@ export default function PaywallScreen({ onComplete }) {
                       <Text style={[styles.pkgName, { color: colors.text }]}>
                         {isAnnual ? 'Annual' : 'Monthly'}
                       </Text>
-                      <Text style={[styles.pkgPrice, { color: colors.textSecondary }]}>
+                      <Text style={[styles.pkgPrice, { color: colors.text }]}>
                         {formatPrice(pkg)}
                       </Text>
-                      <Text style={[styles.pkgTrial, { color: colors.accentGreen || '#4CAF50' }]}>
-                        7-day free trial
-                      </Text>
                       {formatSubPrice(pkg) && (
-                        <Text style={[styles.pkgSub, { color: colors.accent }]}>
+                        <Text style={[styles.pkgSub, { color: colors.textMuted }]}>
                           {formatSubPrice(pkg)}
                         </Text>
                       )}
+                      <Text style={[styles.pkgTrial, { color: colors.textMuted }]}>
+                        Includes 7-day free trial
+                      </Text>
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -222,14 +237,21 @@ export default function PaywallScreen({ onComplete }) {
           {isPurchasing ? (
             <ActivityIndicator color="#FFF" />
           ) : (
-            <Text style={styles.purchaseBtnText}>Start Free Trial</Text>
+            <>
+              <Text style={styles.purchaseBtnText}>
+                {selectedPkg ? `Subscribe — ${formatPrice(selectedPkg)}` : 'Subscribe'}
+              </Text>
+              {selectedPkg && (
+                <Text style={styles.purchaseBtnSub}>7-day free trial included</Text>
+              )}
+            </>
           )}
         </TouchableOpacity>
 
         <Text style={[styles.disclosure, { color: colors.textMuted }]}>
-          7-day free trial, then payment will be charged to your Apple ID account.
-          Subscription automatically renews unless cancelled at least 24 hours before the
-          end of the current period.
+          {selectedPkg ? `${formatPrice(selectedPkg)}. ` : ''}Payment will be charged to your Apple ID account.
+          {selectedPkg?.product?.introPrice ? ' First 7 days are free.' : ''} Subscription automatically
+          renews unless cancelled at least 24 hours before the end of the current period.
         </Text>
 
         <View style={styles.footerLinks}>
@@ -242,11 +264,11 @@ export default function PaywallScreen({ onComplete }) {
           </TouchableOpacity>
           <Text style={[styles.linkSep, { color: colors.textMuted }]}>•</Text>
           <TouchableOpacity onPress={() => Linking.openURL(TERMS_URL)}>
-            <Text style={[styles.linkText, { color: colors.accent }]}>Terms</Text>
+            <Text style={[styles.linkText, { color: colors.accent }]}>Terms of Use (EULA)</Text>
           </TouchableOpacity>
           <Text style={[styles.linkSep, { color: colors.textMuted }]}>•</Text>
           <TouchableOpacity onPress={() => Linking.openURL(PRIVACY_URL)}>
-            <Text style={[styles.linkText, { color: colors.accent }]}>Privacy</Text>
+            <Text style={[styles.linkText, { color: colors.accent }]}>Privacy Policy</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -287,9 +309,9 @@ const styles = StyleSheet.create({
   radioFill: { width: 12, height: 12, borderRadius: 6 },
   pkgInfo: { flex: 1 },
   pkgName: { fontSize: 15, fontWeight: '600', marginBottom: 2 },
-  pkgPrice: { fontSize: 20, fontWeight: '800', marginTop: 2 },
-  pkgTrial: { fontSize: 12, fontWeight: '600', marginTop: 4 },
-  pkgSub: { fontSize: 12, fontWeight: '500', marginTop: 2 },
+  pkgPrice: { fontSize: 26, fontWeight: '800', marginTop: 2 },
+  pkgTrial: { fontSize: 11, fontWeight: '500', marginTop: 4 },
+  pkgSub: { fontSize: 11, fontWeight: '500', marginTop: 2 },
 
   noPackages: { borderRadius: 14, borderWidth: 1, padding: 24, alignItems: 'center' },
   noPackagesText: { fontSize: 14 },
@@ -297,6 +319,7 @@ const styles = StyleSheet.create({
   footer: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 6, borderTopWidth: StyleSheet.hairlineWidth },
   purchaseBtn: { borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginBottom: 8 },
   purchaseBtnText: { color: '#FFF', fontSize: 17, fontWeight: '800' },
+  purchaseBtnSub: { color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: '500', marginTop: 2 },
   disclosure: { fontSize: 10, lineHeight: 14, textAlign: 'center', marginBottom: 6 },
   footerLinks: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10, paddingBottom: 4 },
   linkText: { fontSize: 13, fontWeight: '600' },
