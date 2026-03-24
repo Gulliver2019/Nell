@@ -196,7 +196,13 @@ export default function MonthlyLogScreen({ route }) {
                   day?.isToday && [styles.dayCellToday, { backgroundColor: colors.accent + '20' }],
                 ]}
                 disabled={!day}
-                onPress={() => {}}
+                onPress={() => {
+                  if (day) {
+                    setAddingToDay(day.dateKey);
+                    setEditingEntry(null);
+                    setFlyoutVisible(true);
+                  }
+                }}
               >
                 {day && (
                   <>

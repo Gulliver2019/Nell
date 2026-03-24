@@ -126,7 +126,7 @@ export default function EntryFormFlyout({
       </TouchableOpacity>
 
       <Animated.View style={[styles.flyout, { backgroundColor: colors.bgCard, borderColor: colors.border, transform: [{ translateY: slideAnim }] }]}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 0 }}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }} keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}>
           <ScrollView keyboardShouldPersistTaps="handled" bounces={false} showsVerticalScrollIndicator={false}>
             {/* Header */}
             <View style={styles.flyoutHeader}>
@@ -332,6 +332,7 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingHorizontal: 20,
     paddingBottom: 20,
+    flex: 1,
   },
   flyoutHeader: {
     flexDirection: 'row',

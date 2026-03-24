@@ -431,7 +431,10 @@ export const getWeekKey = (date = new Date()) => {
   const day = d.getDay(); // 0=Sun
   const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday of this week
   const monday = new Date(d.getFullYear(), d.getMonth(), diff);
-  return monday.toISOString().split('T')[0];
+  const y = monday.getFullYear();
+  const m = String(monday.getMonth() + 1).padStart(2, '0');
+  const dd = String(monday.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
 };
 
 export const getAllWeeklyIntentions = async () => {

@@ -240,7 +240,16 @@ export default function ShoppingListScreen() {
     (async () => {
       try {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
-        if (raw) setItems(JSON.parse(raw));
+        if (raw) {
+          setItems(JSON.parse(raw));
+        } else {
+          // Seed default items on first load
+          const defaults = [
+            { id: generateId(), name: 'Cereal', category: 'cereals', checked: false, qty: '' },
+          ];
+          setItems(defaults);
+          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(defaults));
+        }
         const orderRaw = await AsyncStorage.getItem(CATEGORY_ORDER_KEY);
         if (orderRaw) setCategoryOrder(JSON.parse(orderRaw));
       } catch (e) { /* ignore */ }
