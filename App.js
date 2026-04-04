@@ -166,15 +166,15 @@ function AppContent() {
     );
   }
 
-  // Then show paywall if user is not pro and hasn't dismissed it before
-  if (!isProUser && !paywallDismissed) {
-    return (
-      <PaywallScreen onComplete={() => {
-        AsyncStorage.setItem(PAYWALL_KEY, 'true').catch(() => {});
-        setPaywallDismissed(true);
-      }} />
-    );
-  }
+  // TODO: Re-enable paywall before release
+  // if (!isProUser && !paywallDismissed) {
+  //   return (
+  //     <PaywallScreen onComplete={() => {
+  //       AsyncStorage.setItem(PAYWALL_KEY, 'true').catch(() => {});
+  //       setPaywallDismissed(true);
+  //     }} />
+  //   );
+  // }
 
   const initialRoute = (defaultScreen === 'Jarvis') ? 'Daily' : defaultScreen; // AI disabled — Jarvis always falls back to Daily
 
