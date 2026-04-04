@@ -59,7 +59,7 @@ export function RevenueCatProvider({ children }) {
   const updateCustomerInfo = (info) => {
     setCustomerInfo(info);
     const entitlement = info?.entitlements?.active?.[ENTITLEMENT_ID];
-    setIsProUser(!!entitlement);
+    setIsProUser(BYPASS_PAYWALL || !!entitlement);
   };
 
   const purchasePackage = useCallback(async (pkg) => {
