@@ -7,8 +7,11 @@ const RevenueCatContext = createContext();
 const API_KEY = 'appl_DAxZGGbcBkxcpJbYKzIeqeGvufz';
 const ENTITLEMENT_ID = 'Nell Pro';
 
+// TODO: Set back to false before release
+const BYPASS_PAYWALL = true;
+
 export function RevenueCatProvider({ children }) {
-  const [isProUser, setIsProUser] = useState(false);
+  const [isProUser, setIsProUser] = useState(BYPASS_PAYWALL);
   const [customerInfo, setCustomerInfo] = useState(null);
   const [offerings, setOfferings] = useState(null);
   const [isReady, setIsReady] = useState(false);
