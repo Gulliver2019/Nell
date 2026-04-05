@@ -317,57 +317,59 @@ export default function CollectionsScreen({ route }) {
       />
 
       {/* New Collection Modal */}
-      <Modal visible={showNewModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.bgCard }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>New Collection</Text>
+      <Modal visible={showNewModal} transparent animationType="fade">
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <SafeAreaView style={styles.modalTopContainer} edges={['top']}>
+            <View style={[styles.modalContent, { backgroundColor: colors.bgCard }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>New Collection</Text>
 
-            <TextInput
-              style={[styles.modalInput, { backgroundColor: colors.bgInput, color: colors.text }]}
-              placeholder="Collection name"
-              placeholderTextColor={colors.textMuted}
-              value={newTitle}
-              onChangeText={setNewTitle}
-              selectionColor={colors.accent}
-              autoFocus
-            />
+              <TextInput
+                style={[styles.modalInput, { backgroundColor: colors.bgInput, color: colors.text }]}
+                placeholder="Collection name"
+                placeholderTextColor={colors.textMuted}
+                value={newTitle}
+                onChangeText={setNewTitle}
+                selectionColor={colors.accent}
+                autoFocus
+              />
 
-            <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Icon</Text>
-            <View style={styles.iconGrid}>
-              {ICONS.map(icon => (
-                <TouchableOpacity
-                  key={icon}
-                  style={[styles.iconBtn, { backgroundColor: colors.bgInput }, newIcon === icon && [styles.iconBtnActive, { borderColor: colors.accent }]]}
-                  onPress={() => setNewIcon(icon)}
-                >
-                  <Text style={styles.iconText}>{icon}</Text>
+              <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Icon</Text>
+              <View style={styles.iconGrid}>
+                {ICONS.map(icon => (
+                  <TouchableOpacity
+                    key={icon}
+                    style={[styles.iconBtn, { backgroundColor: colors.bgInput }, newIcon === icon && [styles.iconBtnActive, { borderColor: colors.accent }]]}
+                    onPress={() => setNewIcon(icon)}
+                  >
+                    <Text style={styles.iconText}>{icon}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Colour</Text>
+              <View style={styles.colorGrid}>
+                {ACCENT_COLORS.map(color => (
+                  <TouchableOpacity
+                    key={color}
+                    style={[styles.colorBtn, { backgroundColor: color }, newColor === color && [styles.colorBtnActive, { borderColor: colors.text }]]}
+                    onPress={() => setNewColor(color)}
+                  />
+                ))}
+              </View>
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity onPress={() => setShowNewModal(false)} style={[styles.cancelBtn, { backgroundColor: colors.bgInput }]}>
+                  <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Cancel</Text>
                 </TouchableOpacity>
-              ))}
+                <TouchableOpacity onPress={handleCreateCollection} style={styles.createBtn}>
+                  <LinearGradient colors={[colors.accent, colors.accentLight]} style={styles.createGradient}>
+                    <Text style={[styles.createText, { color: colors.text }]}>Create</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
             </View>
-
-            <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Colour</Text>
-            <View style={styles.colorGrid}>
-              {ACCENT_COLORS.map(color => (
-                <TouchableOpacity
-                  key={color}
-                  style={[styles.colorBtn, { backgroundColor: color }, newColor === color && [styles.colorBtnActive, { borderColor: colors.text }]]}
-                  onPress={() => setNewColor(color)}
-                />
-              ))}
-            </View>
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity onPress={() => setShowNewModal(false)} style={[styles.cancelBtn, { backgroundColor: colors.bgInput }]}>
-                <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleCreateCollection} style={styles.createBtn}>
-                <LinearGradient colors={[colors.accent, colors.accentLight]} style={styles.createGradient}>
-                  <Text style={[styles.createText, { color: colors.text }]}>Create</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+          </SafeAreaView>
+        </KeyboardAvoidingView>
       </Modal>
       <KnowledgeBaseButton sectionId="collections" />
     </SafeAreaView>
@@ -420,11 +422,12 @@ const styles = StyleSheet.create({
   // Modal
   modalOverlay: {
     flex: 1, backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'flex-end',
+  },
+  modalTopContainer: {
+    paddingTop: 8,
   },
   modalContent: {
-    borderTopLeftRadius: SIZES.radiusXl,
-    borderTopRightRadius: SIZES.radiusXl, padding: 24,
+    borderRadius: SIZES.radiusXl, padding: 24, marginHorizontal: 16,
   },
   modalTitle: { fontSize: SIZES.xl, fontWeight: '700', marginBottom: 16 },
   modalInput: {

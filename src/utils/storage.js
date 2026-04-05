@@ -39,6 +39,7 @@ const STORAGE_KEYS = {
   ROUTINES: 'nell_routines',
   WELLNESS_TEMPLATES: 'nell_wellness_templates',
   WEEKLY_INTENTIONS: 'nell_weekly_intentions',
+  GOALS: 'nell_goals',
 };
 
 // Generate unique ID
@@ -706,6 +707,51 @@ export const reorderProjectTasks = async (projectId, column, orderedTaskIds) => 
     .filter(Boolean);
   projects[idx].tasks = [...otherTasks, ...sorted];
   await saveProjects(projects);
+};
+
+// ─── Goals ──────────────────────────────────────────────
+
+export const getGoals = async () => {
+  try {
+    const data = await AsyncStorage.getItem(STORAGE_KEYS.GOALS);
+    return data ? JSON.parse(data) : [];
+  } catch (e) {
+    return [];
+  }
+};
+
+export const saveGoals = async (goals) => {
+  await AsyncStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(goals));
+};
+
+export const addGoal = async (goal) => {
+  const goals = await getGoals();
+  const newGoal = {
+    id: generateId(),
+    createdAt: new Date().toISOString(),
+    title: '',
+    emoji: '🎯',
+    color: '#6C5CE7',
+    deadline: null,
+    projectIds: [],
+    ...goal,
+  };
+  goals.push(newGoal);
+  await saveGoals(goals);
+  return newGoal;
+};
+
+export const updateGoal = async (id, updates) => {
+  const goals = await getGoals();
+  const idx = goals.findIndex(g => g.id === id);
+  if (idx === -1) return;
+  goals[idx] = { ...goals[idx], ...updates, updatedAt: new Date().toISOString() };
+  await saveGoals(goals);
+};
+
+export const deleteGoal = async (id) => {
+  const goals = await getGoals();
+  await saveGoals(goals.filter(g => g.id !== id));
 };
 
 // ─── Routines ───────────────────────────────────────────

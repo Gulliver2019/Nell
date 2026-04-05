@@ -24,6 +24,7 @@ const initialState = {
   futureLog: {},
   weeklyIntentions: {},
   projects: [],
+  goals: [],
   routines: [],
   wellnessTemplates: { nutrition: [], exercise: [], meditation: { enabled: true } },
   enabledFeatures: DEFAULT_FEATURES,
@@ -55,6 +56,8 @@ function reducer(state, action) {
       return { ...state, weeklyIntentions: action.payload };
     case 'SET_PROJECTS':
       return { ...state, projects: action.payload };
+    case 'SET_GOALS':
+      return { ...state, goals: action.payload };
     case 'SET_ROUTINES':
       return { ...state, routines: action.payload };
     case 'SET_WELLNESS_TEMPLATES':
@@ -77,7 +80,7 @@ export function AppProvider({ children }) {
 
   const loadAll = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
-    const [entries, collections, habits, reflections, habitReflections, futureLog, projects, routines, wellnessTemplates, weeklyIntentions, featuresJson, personalityJson] = await Promise.all([
+    const [entries, collections, habits, reflections, habitReflections, futureLog, projects, goals, routines, wellnessTemplates, weeklyIntentions, featuresJson, personalityJson] = await Promise.all([
       Storage.getAllEntries(),
       Storage.getCollections(),
       Storage.getHabits(),
@@ -85,6 +88,7 @@ export function AppProvider({ children }) {
       Storage.getHabitReflections(),
       Storage.getFutureLog(),
       Storage.getProjects(),
+      Storage.getGoals(),
       Storage.getRoutines(),
       Storage.getWellnessTemplates(),
       Storage.getAllWeeklyIntentions(),
@@ -93,7 +97,7 @@ export function AppProvider({ children }) {
     ]);
     const enabledFeatures = featuresJson ? { ...DEFAULT_FEATURES, ...JSON.parse(featuresJson) } : DEFAULT_FEATURES;
     const personalityEnabled = personalityJson !== null ? personalityJson === 'true' : true;
-    dispatch({ type: 'LOAD_ALL', payload: { entries, collections, habits, reflections, habitReflections, futureLog, projects, routines, wellnessTemplates, weeklyIntentions, enabledFeatures, personalityEnabled } });
+    dispatch({ type: 'LOAD_ALL', payload: { entries, collections, habits, reflections, habitReflections, futureLog, projects, goals, routines, wellnessTemplates, weeklyIntentions, enabledFeatures, personalityEnabled } });
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
@@ -342,8 +346,9 @@ export function AppProvider({ children }) {
   }, []);
 
   const addWeeklyArea = useCallback(async (weekKey, areaName) => {
-    await Storage.addWeeklyArea(weekKey, areaName);
+    const area = await Storage.addWeeklyArea(weekKey, areaName);
     await refreshWeeklyIntentions();
+    return area;
   }, [refreshWeeklyIntentions]);
 
   const removeWeeklyArea = useCallback(async (weekKey, areaId) => {
@@ -444,6 +449,25 @@ export function AppProvider({ children }) {
     dispatch({ type: 'SET_PROJECTS', payload: projects });
   }, []);
 
+  // Goal actions
+  const addGoal = useCallback(async (goal) => {
+    await Storage.addGoal(goal);
+    const goals = await Storage.getGoals();
+    dispatch({ type: 'SET_GOALS', payload: goals });
+  }, []);
+
+  const updateGoal = useCallback(async (id, updates) => {
+    await Storage.updateGoal(id, updates);
+    const goals = await Storage.getGoals();
+    dispatch({ type: 'SET_GOALS', payload: goals });
+  }, []);
+
+  const deleteGoal = useCallback(async (id) => {
+    await Storage.deleteGoal(id);
+    const goals = await Storage.getGoals();
+    dispatch({ type: 'SET_GOALS', payload: goals });
+  }, []);
+
   // Routine actions
   const addRoutine = useCallback(async (routine) => {
     await Storage.addRoutine(routine);
@@ -534,6 +558,9 @@ export function AppProvider({ children }) {
     updateProjectTask,
     reorderProjectTasks,
     reorderProjects,
+    addGoal,
+    updateGoal,
+    deleteGoal,
     addRoutine,
     updateRoutine,
     deleteRoutine,

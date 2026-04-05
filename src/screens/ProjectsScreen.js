@@ -7,6 +7,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
+import Svg, { Polyline, Line, Circle, Text as SvgText } from 'react-native-svg';
 import { SIZES } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
@@ -246,6 +247,90 @@ function TaskCard({ task, colors, onMove, onDelete, onEdit, drag, isActive }) {
   );
 }
 
+// Burndown chart — ideal vs actual completion
+function BurndownChart({ project, colors }) {
+  const CHART_W = SCREEN_WIDTH - 64;
+  const CHART_H = 140;
+  const PAD = { top: 16, right: 16, bottom: 24, left: 32 };
+  const plotW = CHART_W - PAD.left - PAD.right;
+  const plotH = CHART_H - PAD.top - PAD.bottom;
+
+  const data = useMemo(() => {
+    if (!project.startDate || !project.endDate || project.tasks.length === 0) return null;
+
+    const start = new Date(project.startDate + 'T00:00:00');
+    const end = new Date(project.endDate + 'T00:00:00');
+    const totalDays = Math.max(1, Math.round((end - start) / 86400000));
+    const totalTasks = project.tasks.length;
+
+    const doneTasks = project.tasks
+      .filter(t => t.column === 'done' && t.movedAt)
+      .map(t => ({ date: new Date(t.movedAt), id: t.id }))
+      .sort((a, b) => a.date - b.date);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const daysElapsed = Math.min(totalDays, Math.max(0, Math.round((today - start) / 86400000)));
+
+    const actualPoints = [];
+    let doneByDay = 0;
+    let doneIdx = 0;
+
+    for (let d = 0; d <= daysElapsed; d++) {
+      const dayDate = new Date(start);
+      dayDate.setDate(dayDate.getDate() + d);
+      dayDate.setHours(23, 59, 59, 999);
+
+      while (doneIdx < doneTasks.length && doneTasks[doneIdx].date <= dayDate) {
+        doneByDay++;
+        doneIdx++;
+      }
+      actualPoints.push({ day: d, remaining: totalTasks - doneByDay });
+    }
+
+    return { totalDays, totalTasks, actualPoints, daysElapsed };
+  }, [project]);
+
+  if (!data) return null;
+
+  const { totalDays, totalTasks, actualPoints } = data;
+  const xScale = (day) => PAD.left + (day / totalDays) * plotW;
+  const yScaleR = (remaining) => PAD.top + (1 - remaining / totalTasks) * plotH;
+
+  const idealLine = `${xScale(0)},${yScaleR(totalTasks)} ${xScale(totalDays)},${yScaleR(0)}`;
+  const actualLine = actualPoints.map(p => `${xScale(p.day)},${yScaleR(p.remaining)}`).join(' ');
+  const lastPoint = actualPoints[actualPoints.length - 1];
+
+  return (
+    <View style={[styles.burndownContainer, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+      <Text style={[styles.burndownTitle, { color: colors.textSecondary }]}>BURNDOWN</Text>
+      <Svg width={CHART_W} height={CHART_H}>
+        <Line x1={PAD.left} y1={PAD.top} x2={PAD.left} y2={PAD.top + plotH} stroke={colors.border} strokeWidth={1} />
+        <Line x1={PAD.left} y1={PAD.top + plotH} x2={PAD.left + plotW} y2={PAD.top + plotH} stroke={colors.border} strokeWidth={1} />
+        <SvgText x={PAD.left - 6} y={yScaleR(totalTasks) + 4} fill={colors.textMuted} fontSize={10} textAnchor="end">{totalTasks}</SvgText>
+        <SvgText x={PAD.left - 6} y={yScaleR(0) + 4} fill={colors.textMuted} fontSize={10} textAnchor="end">0</SvgText>
+        <Polyline points={idealLine} fill="none" stroke={colors.textMuted} strokeWidth={1.5} strokeDasharray="6,4" opacity={0.5} />
+        {actualPoints.length > 1 && (
+          <Polyline points={actualLine} fill="none" stroke={project.color} strokeWidth={2.5} strokeLinejoin="round" />
+        )}
+        {lastPoint && (
+          <Circle cx={xScale(lastPoint.day)} cy={yScaleR(lastPoint.remaining)} r={4} fill={project.color} />
+        )}
+      </Svg>
+      <View style={styles.burndownLegend}>
+        <View style={styles.burndownLegendItem}>
+          <View style={[styles.burndownLegendDash, { borderColor: colors.textMuted }]} />
+          <Text style={[styles.burndownLegendText, { color: colors.textMuted }]}>Ideal</Text>
+        </View>
+        <View style={styles.burndownLegendItem}>
+          <View style={[styles.burndownLegendLine, { backgroundColor: project.color }]} />
+          <Text style={[styles.burndownLegendText, { color: colors.textMuted }]}>Actual</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 // Kanban board detail view
 function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onDeleteTask, onReorderTasks, onOpenMakeTime, onEditTask, personalityEnabled }) {
   const [flyoutVisible, setFlyoutVisible] = useState(false);
@@ -330,6 +415,9 @@ function ProjectKanbanView({ project, colors, onBack, onAddTask, onMoveTask, onD
           }]} />
         </View>
       )}
+
+      {/* Burndown chart */}
+      <BurndownChart project={project} colors={colors} />
 
       {/* Make Some Time banner — top of page like Complete Day */}
       {incompleteTasks.length > 0 && (
@@ -1155,4 +1243,18 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginRight: 8,
   },
   makeTimeCheckIcon: { color: '#fff', fontSize: 12, fontWeight: '800' },
+  // Burndown chart
+  burndownContainer: {
+    marginHorizontal: 16, marginTop: 12, borderRadius: SIZES.radius,
+    borderWidth: 1, padding: 12, alignItems: 'center',
+  },
+  burndownTitle: {
+    fontSize: SIZES.xs, fontWeight: '700', textTransform: 'uppercase',
+    letterSpacing: 0.5, marginBottom: 4, alignSelf: 'flex-start',
+  },
+  burndownLegend: { flexDirection: 'row', gap: 16, marginTop: 4 },
+  burndownLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  burndownLegendDash: { width: 16, height: 0, borderWidth: 1, borderStyle: 'dashed' },
+  burndownLegendLine: { width: 16, height: 3, borderRadius: 1.5 },
+  burndownLegendText: { fontSize: SIZES.xs },
 });

@@ -24,6 +24,7 @@ import MoreScreen from './src/screens/MoreScreen';
 import HelpScreen from './src/screens/HelpScreen';
 import ThemePickerScreen from './src/screens/ThemePickerScreen';
 import ProjectsScreen from './src/screens/ProjectsScreen';
+import GoalsScreen from './src/screens/GoalsScreen';
 import ShoppingListScreen from './src/screens/ShoppingListScreen';
 import WeeklyIntentionScreen from './src/screens/WeeklyIntentionScreen';
 import PaywallScreen from './src/screens/PaywallScreen';
@@ -55,6 +56,7 @@ const TAB_ICONS = {
   Monthly: { focused: 'calendar', unfocused: 'calendar-outline' },
   Future: { focused: 'rocket', unfocused: 'rocket-outline' },
   Projects: { focused: 'briefcase', unfocused: 'briefcase-outline' },
+  Goals: { focused: 'flag', unfocused: 'flag-outline' },
   Collections: { focused: 'folder', unfocused: 'folder-outline' },
   Shopping: { focused: 'cart', unfocused: 'cart-outline' },
   Habits: { focused: 'checkmark-circle', unfocused: 'checkmark-circle-outline' },
@@ -199,6 +201,7 @@ function AppContent() {
         {enabledFeatures.logging !== false && <Tab.Screen name="Monthly" component={MonthlyLogScreen} />}
         {enabledFeatures.logging !== false && <Tab.Screen name="Future" component={FutureLogScreen} />}
         {enabledFeatures.projects !== false && <Tab.Screen name="Projects" component={ProjectsScreen} />}
+        {enabledFeatures.projects !== false && <Tab.Screen name="Goals" component={GoalsScreen} />}
         {enabledFeatures.collections !== false && <Tab.Screen name="Collections" component={CollectionsScreen} />}
         {enabledFeatures.shopping !== false && <Tab.Screen name="Shopping" component={ShoppingListScreen} />}
         {enabledFeatures.habits !== false && <Tab.Screen name="Habits" component={HabitTrackerScreen} />}
