@@ -50,9 +50,11 @@ export default function WeeklyIntentionScreen() {
   const monthlyItems = futureLog[currentMonthKey] || [];
 
   const weekLabel = useMemo(() => {
-    const monday = new Date(weekKey);
+    const sunday = new Date(weekKey + 'T00:00:00');
+    const saturday = new Date(sunday);
+    saturday.setDate(saturday.getDate() + 6);
     const fmt = (d) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-    return `w/c ${fmt(monday)}`;
+    return `${fmt(sunday)} – ${fmt(saturday)}`;
   }, [weekKey]);
 
   // History: past weeks with completed items
@@ -62,8 +64,11 @@ export default function WeeklyIntentionScreen() {
       .filter(([key]) => key < weekKey)
       .sort(([a], [b]) => b.localeCompare(a))
       .map(([key, week]) => {
-        const monday = new Date(key);
-        const label = `w/c ${monday.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+        const sunday = new Date(key + 'T00:00:00');
+        const saturday = new Date(sunday);
+        saturday.setDate(saturday.getDate() + 6);
+        const fmt = (d) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        const label = `${fmt(sunday)} – ${fmt(saturday)}`;
         const areasWithCompleted = (week.areas || [])
           .map(a => ({
             ...a,

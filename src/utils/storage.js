@@ -432,12 +432,12 @@ export const searchEntries = async (query) => {
 // Data shape: { [weekKey]: { areas: [{ id, name, tasks: [{ id, text, scheduledDate? }] }], createdAt } }
 export const getWeekKey = (date = new Date()) => {
   const d = new Date(date);
-  const day = d.getDay(); // 0=Sun
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday of this week
-  const monday = new Date(d.getFullYear(), d.getMonth(), diff);
-  const y = monday.getFullYear();
-  const m = String(monday.getMonth() + 1).padStart(2, '0');
-  const dd = String(monday.getDate()).padStart(2, '0');
+  const day = d.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+  const diff = d.getDate() - day; // Sunday of this week
+  const sunday = new Date(d.getFullYear(), d.getMonth(), diff);
+  const y = sunday.getFullYear();
+  const m = String(sunday.getMonth() + 1).padStart(2, '0');
+  const dd = String(sunday.getDate()).padStart(2, '0');
   return `${y}-${m}-${dd}`;
 };
 
@@ -446,21 +446,23 @@ export const getAllWeeklyIntentions = async () => {
     const data = await AsyncStorage.getItem(STORAGE_KEYS.WEEKLY_INTENTIONS);
     if (!data) return {};
     const all = JSON.parse(data);
-    // Migrate any entries stored under incorrect Sunday keys to the correct Monday
+
+    // One-time migration: move any Monday-keyed weeks to their correct Sunday key
     let migrated = false;
     for (const key of Object.keys(all)) {
       const d = new Date(key + 'T00:00:00');
-      if (d.getDay() === 0) {
-        const correctKey = getWeekKey(d);
-        if (correctKey !== key) {
-          if (all[correctKey]) {
-            all[correctKey].areas = [...(all[correctKey].areas || []), ...(all[key].areas || [])];
-          } else {
-            all[correctKey] = all[key];
-          }
-          delete all[key];
-          migrated = true;
+      const correctKey = getWeekKey(d);
+      if (correctKey !== key) {
+        if (all[correctKey]) {
+          // Merge areas, avoiding duplicates by id
+          const existingIds = new Set(all[correctKey].areas.map(a => a.id));
+          const newAreas = (all[key].areas || []).filter(a => !existingIds.has(a.id));
+          all[correctKey].areas = [...all[correctKey].areas, ...newAreas];
+        } else {
+          all[correctKey] = all[key];
         }
+        delete all[key];
+        migrated = true;
       }
     }
     if (migrated) {
