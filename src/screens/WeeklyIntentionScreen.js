@@ -9,7 +9,7 @@ import { Swipeable } from 'react-native-gesture-handler';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
-import { getWeekKey, getMonthKey } from '../utils/storage';
+import { getWeekKey } from '../utils/storage';
 import { SIZES, FONTS } from '../utils/theme';
 import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
 
@@ -26,7 +26,7 @@ const AREA_SUGGESTIONS = [
 export default function WeeklyIntentionScreen() {
   const { colors } = useTheme();
   const {
-    weeklyIntentions, futureLog, goals, projects,
+    weeklyIntentions,
     addWeeklyArea, removeWeeklyArea,
     addWeeklyTask, updateWeeklyTask, removeWeeklyTask,
     scheduleEntry, addEntry,
@@ -41,25 +41,8 @@ export default function WeeklyIntentionScreen() {
   const [newTaskTexts, setNewTaskTexts] = useState({});
   const [editingTask, setEditingTask] = useState(null);
   const [editText, setEditText] = useState('');
-  const [focusTaskInput, setFocusTaskInput] = useState(null); // { goalId, focusId, areaId }
-  const [focusTaskText, setFocusTaskText] = useState('');
-
-  // Get current month's future log items for the nudge
-  const currentMonthKey = useMemo(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  }, []);
-  const monthlyItems = futureLog[currentMonthKey] || [];
-
-  // Goal focuses for current month + linked projects
-  const goalFocuses = useMemo(() => {
-    return (goals || []).map(goal => {
-      const focuses = (goal.monthlyFocuses || []).filter(f => f.monthKey === currentMonthKey);
-      const linked = (projects || []).filter(p => goal.projectIds.includes(p.id));
-      if (focuses.length === 0 && linked.length === 0) return null;
-      return { goal, focuses, linkedProjects: linked };
-    }).filter(Boolean);
-  }, [goals, projects, currentMonthKey]);
+  const [schedulingTask, setSchedulingTask] = useState(null); // { areaId, task }
+  const [scheduleDate, setScheduleDate] = useState(new Date());
 
   const weekLabel = useMemo(() => {
     const sunday = new Date(weekKey + 'T00:00:00');
@@ -142,44 +125,27 @@ export default function WeeklyIntentionScreen() {
     setEditText('');
   };
 
-  const handleScheduleToDaily = async (areaId, task) => {
+  const handleScheduleToDaily = (areaId, task) => {
+    setSchedulingTask({ areaId, task });
+    setScheduleDate(new Date());
+  };
+
+  const confirmScheduleToDaily = async () => {
+    if (!schedulingTask) return;
+    const { areaId, task } = schedulingTask;
+    const y = scheduleDate.getFullYear();
+    const m = String(scheduleDate.getMonth() + 1).padStart(2, '0');
+    const d = String(scheduleDate.getDate()).padStart(2, '0');
+    const targetDate = `${y}-${m}-${d}`;
     await addEntry({
       text: task.text,
       type: 'task',
       state: 'open',
-      date: new Date().toISOString().split('T')[0],
+      date: targetDate,
       weeklyRef: `${weekKey}|${areaId}|${task.id}`,
     });
-    Alert.alert('Added', `"${task.text}" added to today's daily log.`);
-  };
-
-  // Add a monthly focus as a weekly area
-  const handleAddFocusToWeek = async (goal, focus) => {
-    const areaName = `${goal.emoji} ${focus.text}`;
-    const existing = areas.find(a => a.name === areaName);
-    if (existing) {
-      setFocusTaskInput({ goalId: goal.id, focusId: focus.id, areaId: existing.id });
-      return;
-    }
-    const area = await addWeeklyArea(weekKey, areaName);
-    if (area) {
-      setFocusTaskInput({ goalId: goal.id, focusId: focus.id, areaId: area.id });
-    }
-  };
-
-  // Add a sub-task to a focus area
-  const handleAddFocusTask = async () => {
-    const text = focusTaskText.trim();
-    if (!text || !focusTaskInput) return;
-    await addWeeklyTask(weekKey, focusTaskInput.areaId, text);
-    setFocusTaskText('');
-  };
-
-  // Check if a focus already has a weekly area
-  const getFocusAreaId = (goal, focus) => {
-    const areaName = `${goal.emoji} ${focus.text}`;
-    const area = areas.find(a => a.name === areaName);
-    return area?.id || null;
+    setSchedulingTask(null);
+    Alert.alert('Added', `"${task.text}" added to daily for ${targetDate}.`);
   };
 
   const unusedSuggestions = AREA_SUGGESTIONS.filter(
@@ -215,114 +181,6 @@ export default function WeeklyIntentionScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Monthly nudge */}
-          {monthlyItems.length > 0 && (
-            <View style={[styles.nudgeBanner, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-              <Ionicons name="bulb-outline" size={18} color={colors.accentGold || colors.accent} />
-              <Text style={[styles.nudgeText, { color: colors.textSecondary }]}>
-                You have {monthlyItems.length} item{monthlyItems.length !== 1 ? 's' : ''} in your monthly log — consider pulling some into this week.
-              </Text>
-            </View>
-          )}
-
-          {/* Goal focuses for this month — interactive */}
-          {goalFocuses.length > 0 && (
-            <View style={[styles.goalFocusBanner, { backgroundColor: colors.accent + '08', borderColor: colors.accent + '25' }]}>
-              <Text style={[styles.goalFocusBannerTitle, { color: colors.accent }]}>MONTHLY FOCUS MOTHER FUCKER</Text>
-              {goalFocuses.map(({ goal, focuses, linkedProjects }) => (
-                <View key={goal.id} style={styles.goalFocusGroup}>
-                  <Text style={[styles.goalFocusGoalName, { color: colors.text }]}>{goal.emoji} {goal.title}</Text>
-                  {focuses.map(f => {
-                    const existingAreaId = getFocusAreaId(goal, f);
-                    const isExpanded = focusTaskInput?.focusId === f.id;
-                    const focusArea = existingAreaId ? areas.find(a => a.id === existingAreaId) : null;
-                    const focusTasks = focusArea?.tasks || [];
-                    return (
-                      <View key={f.id} style={[styles.focusCard, { backgroundColor: (goal.color || colors.accent) + '10', borderColor: (goal.color || colors.accent) + '25' }]}>
-                        <View style={styles.focusCardHeader}>
-                          <Text style={[styles.focusCardText, { color: colors.text }]}>→ {f.text}</Text>
-                          {existingAreaId ? (
-                            <TouchableOpacity
-                              onPress={() => setFocusTaskInput(isExpanded ? null : { goalId: goal.id, focusId: f.id, areaId: existingAreaId })}
-                              style={[styles.focusAddedBadge, { backgroundColor: colors.accentGreen + '20' }]}
-                            >
-                              <Ionicons name={isExpanded ? 'chevron-up' : 'add-circle-outline'} size={14} color={colors.accentGreen} />
-                              <Text style={[styles.focusAddedText, { color: colors.accentGreen }]}>
-                                {focusTasks.length > 0 ? `${focusTasks.filter(t => t.done).length}/${focusTasks.length}` : 'Add tasks'}
-                              </Text>
-                            </TouchableOpacity>
-                          ) : (
-                            <TouchableOpacity
-                              onPress={() => handleAddFocusToWeek(goal, f)}
-                              style={[styles.focusAddBtn, { backgroundColor: (goal.color || colors.accent) + '20' }]}
-                            >
-                              <Ionicons name="add" size={14} color={goal.color || colors.accent} />
-                              <Text style={[styles.focusAddBtnText, { color: goal.color || colors.accent }]}>Add to this week</Text>
-                            </TouchableOpacity>
-                          )}
-                        </View>
-
-                        {/* Expanded: show existing tasks + input */}
-                        {isExpanded && existingAreaId && (
-                          <View style={styles.focusExpanded}>
-                            {focusTasks.map(task => (
-                              <View key={task.id} style={styles.focusTaskRow}>
-                                <TouchableOpacity onPress={() => handleToggleTask(existingAreaId, task.id, task.done)}>
-                                  <Ionicons
-                                    name={task.done ? 'checkmark-circle' : 'ellipse-outline'}
-                                    size={18}
-                                    color={task.done ? colors.accentGreen : colors.textMuted}
-                                  />
-                                </TouchableOpacity>
-                                <Text style={[
-                                  styles.focusTaskText, { color: colors.text },
-                                  task.done && { textDecorationLine: 'line-through', color: colors.textMuted },
-                                ]} numberOfLines={1}>{task.text}</Text>
-                                <TouchableOpacity onPress={() => handleScheduleToDaily(existingAreaId, task)}>
-                                  <Ionicons name="arrow-forward-circle-outline" size={18} color={colors.accent} />
-                                </TouchableOpacity>
-                              </View>
-                            ))}
-                            <View style={[styles.focusTaskInputRow, { backgroundColor: colors.bgInput, borderColor: colors.border }]}>
-                              <TextInput
-                                style={[styles.focusTaskInputField, { color: colors.text }]}
-                                placeholder="Add a task for this focus..."
-                                placeholderTextColor={colors.textMuted}
-                                value={focusTaskText}
-                                onChangeText={setFocusTaskText}
-                                onSubmitEditing={handleAddFocusTask}
-                                returnKeyType="done"
-                                selectionColor={colors.accent}
-                              />
-                              <TouchableOpacity onPress={handleAddFocusTask} disabled={!focusTaskText.trim()}>
-                                <Ionicons name="arrow-up-circle" size={26} color={focusTaskText.trim() ? (goal.color || colors.accent) : colors.textMuted} />
-                              </TouchableOpacity>
-                            </View>
-                          </View>
-                        )}
-                      </View>
-                    );
-                  })}
-                  {linkedProjects.length > 0 && (
-                    <View style={styles.goalFocusProjects}>
-                      {linkedProjects.map(p => {
-                        const pDone = p.tasks.filter(t => t.column === 'done').length;
-                        const pTotal = p.tasks.length;
-                        const pPercent = pTotal > 0 ? Math.round((pDone / pTotal) * 100) : 0;
-                        return (
-                          <View key={p.id} style={[styles.goalFocusProjectChip, { backgroundColor: p.color + '18' }]}>
-                            <Text style={styles.goalFocusProjectEmoji}>{p.emoji}</Text>
-                            <Text style={[styles.goalFocusProjectName, { color: colors.text }]}>{p.title}</Text>
-                            <Text style={[styles.goalFocusProjectPct, { color: p.color }]}>{pPercent}%</Text>
-                          </View>
-                        );
-                      })}
-                    </View>
-                  )}
-                </View>
-              ))}
-            </View>
-          )}
 
           {/* Areas */}
           {areas.length === 0 && !showAreaInput ? (
@@ -536,6 +394,43 @@ export default function WeeklyIntentionScreen() {
         </ScrollView>
         <KnowledgeBaseButton sectionId="weekly-intention" />
       </KeyboardAvoidingView>
+
+      {/* Date picker modal for scheduling to daily */}
+      <Modal visible={!!schedulingTask} transparent animationType="fade">
+        <View style={styles.datePickerOverlay}>
+          <View style={[styles.datePickerModal, { backgroundColor: colors.bgCard }]}>
+            <Text style={[styles.datePickerTitle, { color: colors.text }]}>Add to Daily</Text>
+            <Text style={[styles.datePickerSubtitle, { color: colors.textMuted }]} numberOfLines={2}>
+              {schedulingTask?.task?.text}
+            </Text>
+            <Text style={[styles.datePickerLabel, { color: colors.textSecondary }]}>Pick a date:</Text>
+            <DateTimePicker
+              value={scheduleDate}
+              mode="date"
+              display="inline"
+              themeVariant="dark"
+              accentColor={colors.accent}
+              onChange={(event, selected) => {
+                if (selected) setScheduleDate(selected);
+              }}
+            />
+            <View style={styles.datePickerActions}>
+              <TouchableOpacity
+                onPress={() => setSchedulingTask(null)}
+                style={[styles.datePickerBtn, { backgroundColor: colors.bgElevated }]}
+              >
+                <Text style={[styles.datePickerBtnText, { color: colors.textMuted }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={confirmScheduleToDaily}
+                style={[styles.datePickerBtn, { backgroundColor: colors.accent }]}
+              >
+                <Text style={[styles.datePickerBtnText, { color: '#fff' }]}>Add to Daily</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -553,17 +448,6 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: SIZES.xl, fontFamily: FONTS.bold },
   headerSubtitle: { fontSize: SIZES.sm, fontFamily: FONTS.regular, marginTop: 2 },
   content: { flex: 1, paddingHorizontal: SIZES.md },
-  // Monthly nudge
-  nudgeBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    padding: SIZES.sm,
-    marginTop: SIZES.sm,
-    borderRadius: SIZES.radius,
-    borderWidth: 1,
-  },
-  nudgeText: { flex: 1, fontSize: SIZES.sm, fontFamily: FONTS.regular },
   // Empty state
   emptyState: {
     alignItems: 'center',
@@ -681,54 +565,22 @@ const styles = StyleSheet.create({
   historyAreaName: { fontSize: SIZES.sm, fontFamily: FONTS.medium, marginBottom: 4 },
   historyTaskRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 2, paddingLeft: 4 },
   historyTaskText: { fontSize: SIZES.sm, fontFamily: FONTS.regular },
-  // Goal focus banner — interactive
-  goalFocusBanner: {
-    borderRadius: 14, borderWidth: 1, padding: 14,
-    marginBottom: 16, overflow: 'hidden',
+  // Date picker modal
+  datePickerOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center', alignItems: 'center', padding: 20,
   },
-  goalFocusBannerTitle: {
-    fontSize: SIZES.sm, fontWeight: '900', letterSpacing: 1.5,
-    textAlign: 'center', marginBottom: 10,
+  datePickerModal: {
+    borderRadius: 20, padding: 20, width: '100%', maxWidth: 380,
   },
-  goalFocusGroup: { marginBottom: 10 },
-  goalFocusGoalName: { fontSize: SIZES.base, fontWeight: '700', marginBottom: 6 },
-  goalFocusProjects: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 },
-  goalFocusProjectChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8,
+  datePickerTitle: { fontSize: SIZES.lg, fontWeight: '700', marginBottom: 4 },
+  datePickerSubtitle: { fontSize: SIZES.sm, marginBottom: 12 },
+  datePickerLabel: { fontSize: SIZES.sm, fontWeight: '600', marginBottom: 8 },
+  datePickerActions: {
+    flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 12,
   },
-  goalFocusProjectEmoji: { fontSize: 14 },
-  goalFocusProjectName: { fontSize: SIZES.xs, fontWeight: '600' },
-  goalFocusProjectPct: { fontSize: SIZES.xs, fontWeight: '700' },
-  // Focus card (per focus item)
-  focusCard: {
-    borderRadius: 10, borderWidth: 1, padding: 10, marginBottom: 6,
+  datePickerBtn: {
+    paddingHorizontal: 18, paddingVertical: 10, borderRadius: 12,
   },
-  focusCardHeader: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-  },
-  focusCardText: { fontSize: SIZES.sm, fontWeight: '600', flex: 1 },
-  focusAddBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12,
-  },
-  focusAddBtnText: { fontSize: SIZES.xs, fontWeight: '700' },
-  focusAddedBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10,
-  },
-  focusAddedText: { fontSize: SIZES.xs, fontWeight: '700' },
-  // Expanded focus tasks
-  focusExpanded: { marginTop: 8 },
-  focusTaskRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    paddingVertical: 5,
-  },
-  focusTaskText: { flex: 1, fontSize: SIZES.sm },
-  focusTaskInputRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    borderRadius: 10, borderWidth: 1,
-    paddingHorizontal: 10, paddingVertical: 4, marginTop: 6,
-  },
-  focusTaskInputField: { flex: 1, fontSize: SIZES.sm, paddingVertical: 6 },
+  datePickerBtnText: { fontSize: SIZES.sm, fontWeight: '700' },
 });

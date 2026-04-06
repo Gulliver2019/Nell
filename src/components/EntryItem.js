@@ -148,6 +148,7 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
       style={[
         styles.entry,
         { backgroundColor: colors.bg },
+        entry.fromProject && styles.projectIndent,
         isNextUp && { backgroundColor: pulseBackground, borderLeftWidth: 3, borderLeftColor: colors.accentGreen, borderRadius: 6 },
         isInactive && styles.entryInactive,
         isActive && { backgroundColor: colors.bgElevated, opacity: 0.9 },
@@ -255,7 +256,7 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
   );
 
   if (!canSwipe) {
-    return <View style={[styles.container, entry.fromProject && styles.projectIndent]}>{entryContent}</View>;
+    return <View style={styles.container}>{entryContent}</View>;
   }
 
   return (
@@ -271,9 +272,7 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
       overshootRight={false}
       friction={2}
     >
-      <View style={entry.fromProject ? styles.projectIndent : undefined}>
-        {entryContent}
-      </View>
+      {entryContent}
     </Swipeable>
   );
 }
