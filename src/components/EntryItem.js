@@ -148,7 +148,6 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
       style={[
         styles.entry,
         { backgroundColor: colors.bg },
-        entry.fromProject && styles.projectIndent,
         isNextUp && { backgroundColor: pulseBackground, borderLeftWidth: 3, borderLeftColor: colors.accentGreen, borderRadius: 6 },
         isInactive && styles.entryInactive,
         isActive && { backgroundColor: colors.bgElevated, opacity: 0.9 },
@@ -281,12 +280,6 @@ const styles = StyleSheet.create({
   container: {
     position: 'relative',
     marginBottom: 2,
-  },
-  projectIndent: {
-    marginLeft: 20,
-    borderLeftWidth: 2,
-    borderLeftColor: 'rgba(108,92,231,0.3)',
-    paddingLeft: 8,
   },
   dragHandle: {
     width: 20,
