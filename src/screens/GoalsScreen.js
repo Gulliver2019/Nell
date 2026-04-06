@@ -43,7 +43,7 @@ export default function GoalsScreen() {
   const [showNewModal, setShowNewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
 
-  // New goal form state
+  // Form state (shared for new + edit)
   const [newTitle, setNewTitle] = useState('');
   const [newEmoji, setNewEmoji] = useState('🎯');
   const [newColor, setNewColor] = useState(GOAL_COLORS[0]);
@@ -54,6 +54,32 @@ export default function GoalsScreen() {
   const resetForm = () => {
     setNewTitle('');
     setNewEmoji('🎯');
+    setNewColor(GOAL_COLORS[0]);
+    setNewDeadline(null);
+    setNewProjectIds([]);
+  };
+
+  const openEditModal = (goal) => {
+    setNewTitle(goal.title);
+    setNewEmoji(goal.emoji);
+    setNewColor(goal.color);
+    setNewDeadline(goal.deadline);
+    setNewProjectIds([...goal.projectIds]);
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selectedGoal || !newTitle.trim()) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await updateGoal(selectedGoal.id, {
+      title: newTitle.trim(),
+      emoji: newEmoji,
+      color: newColor,
+      deadline: newDeadline,
+      projectIds: newProjectIds,
+    });
+    setShowEditModal(false);
+  };
     setNewColor(GOAL_COLORS[0]);
     setNewDeadline(null);
     setNewProjectIds([]);
@@ -76,9 +102,9 @@ export default function GoalsScreen() {
   const handleDeleteGoal = (goal) => {
     Alert.alert('Delete Goal', `Remove "${goal.title}"?`, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => {
-        deleteGoal(goal.id);
+      { text: 'Delete', style: 'destructive', onPress: async () => {
         if (selectedGoal?.id === goal.id) setSelectedGoal(null);
+        await deleteGoal(goal.id);
       }},
     ]);
   };
@@ -174,6 +200,9 @@ export default function GoalsScreen() {
               </Text>
             </View>
           </View>
+          <TouchableOpacity onPress={() => openEditModal(goal)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ marginRight: 12 }}>
+            <Ionicons name="pencil-outline" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
           <TouchableOpacity onPress={() => handleDeleteGoal(goal)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Ionicons name="trash-outline" size={20} color={colors.accentRed} />
           </TouchableOpacity>
@@ -554,6 +583,118 @@ export default function GoalsScreen() {
                 <TouchableOpacity onPress={handleCreateGoal} style={styles.createBtn}>
                   <LinearGradient colors={[colors.accent, colors.accentLight]} style={styles.createGradient}>
                     <Text style={[styles.createText, { color: colors.text }]}>Create</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </SafeAreaView>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Edit Goal Modal */}
+      <Modal visible={showEditModal} transparent animationType="fade">
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <SafeAreaView style={styles.modalTopContainer} edges={['top']}>
+            <View style={[styles.modalContent, { backgroundColor: colors.bgCard }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Edit Goal</Text>
+
+              <TextInput
+                style={[styles.modalInput, { backgroundColor: colors.bgInput, color: colors.text }]}
+                placeholder="What do you want to achieve?"
+                placeholderTextColor={colors.textMuted}
+                value={newTitle}
+                onChangeText={setNewTitle}
+                selectionColor={colors.accent}
+                autoFocus
+              />
+
+              <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Icon</Text>
+              <View style={styles.iconGrid}>
+                {EMOJIS.map(e => (
+                  <TouchableOpacity
+                    key={e}
+                    style={[styles.iconBtn, { backgroundColor: colors.bgInput }, newEmoji === e && [styles.iconBtnActive, { borderColor: colors.accent }]]}
+                    onPress={() => setNewEmoji(e)}
+                  >
+                    <Text style={styles.iconText}>{e}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Colour</Text>
+              <View style={styles.colorGrid}>
+                {GOAL_COLORS.map(c => (
+                  <TouchableOpacity
+                    key={c}
+                    style={[styles.colorBtn, { backgroundColor: c }, newColor === c && [styles.colorBtnActive, { borderColor: colors.text }]]}
+                    onPress={() => setNewColor(c)}
+                  />
+                ))}
+              </View>
+
+              <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Deadline (Optional)</Text>
+              <TouchableOpacity
+                style={[styles.dateButton, { backgroundColor: colors.bgInput }]}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Ionicons name="calendar-outline" size={18} color={colors.textMuted} />
+                <Text style={[styles.dateButtonText, { color: newDeadline ? colors.text : colors.textMuted }]}>
+                  {newDeadline ? formatDate(newDeadline) : 'No deadline'}
+                </Text>
+                {newDeadline && (
+                  <TouchableOpacity onPress={() => setNewDeadline(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+                  </TouchableOpacity>
+                )}
+              </TouchableOpacity>
+
+              {showDatePicker && (
+                <DateTimePicker
+                  value={newDeadline ? new Date(newDeadline + 'T00:00:00') : new Date()}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                  themeVariant="dark"
+                  onChange={(e, date) => {
+                    if (Platform.OS === 'android') setShowDatePicker(false);
+                    if (date) setNewDeadline(getDateKey(date));
+                  }}
+                />
+              )}
+              {showDatePicker && Platform.OS === 'ios' && (
+                <TouchableOpacity onPress={() => setShowDatePicker(false)} style={styles.datePickerDone}>
+                  <Text style={[styles.datePickerDoneText, { color: colors.accent }]}>Done</Text>
+                </TouchableOpacity>
+              )}
+
+              {projects.length > 0 && (
+                <>
+                  <Text style={[styles.modalLabel, { color: colors.textSecondary, marginTop: 8 }]}>Link Projects</Text>
+                  <ScrollView style={styles.projectPickerScroll} nestedScrollEnabled>
+                    {projects.map(p => {
+                      const selected = newProjectIds.includes(p.id);
+                      return (
+                        <TouchableOpacity
+                          key={p.id}
+                          style={[styles.projectPickerRow, { backgroundColor: selected ? p.color + '20' : colors.bgInput, borderColor: selected ? p.color : 'transparent' }]}
+                          onPress={() => toggleProjectLink(p.id)}
+                        >
+                          <Text style={styles.projectPickerEmoji}>{p.emoji}</Text>
+                          <Text style={[styles.projectPickerTitle, { color: colors.text }]}>{p.title}</Text>
+                          {selected && <Ionicons name="checkmark-circle" size={20} color={p.color} />}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </>
+              )}
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity onPress={() => setShowEditModal(false)} style={[styles.cancelBtn, { backgroundColor: colors.bgInput }]}>
+                  <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleSaveEdit} style={styles.createBtn}>
+                  <LinearGradient colors={[colors.accent, colors.accentLight]} style={styles.createGradient}>
+                    <Text style={[styles.createText, { color: colors.text }]}>Save</Text>
                   </LinearGradient>
                 </TouchableOpacity>
               </View>
