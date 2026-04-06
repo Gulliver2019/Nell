@@ -41,6 +41,8 @@ export default function WeeklyIntentionScreen() {
   const [newTaskTexts, setNewTaskTexts] = useState({});
   const [editingTask, setEditingTask] = useState(null);
   const [editText, setEditText] = useState('');
+  const [focusTaskInput, setFocusTaskInput] = useState(null); // { goalId, focusId, areaId }
+  const [focusTaskText, setFocusTaskText] = useState('');
 
   // Get current month's future log items for the nudge
   const currentMonthKey = useMemo(() => {
@@ -151,6 +153,35 @@ export default function WeeklyIntentionScreen() {
     Alert.alert('Added', `"${task.text}" added to today's daily log.`);
   };
 
+  // Add a monthly focus as a weekly area
+  const handleAddFocusToWeek = async (goal, focus) => {
+    const areaName = `${goal.emoji} ${focus.text}`;
+    const existing = areas.find(a => a.name === areaName);
+    if (existing) {
+      setFocusTaskInput({ goalId: goal.id, focusId: focus.id, areaId: existing.id });
+      return;
+    }
+    const area = await addWeeklyArea(weekKey, areaName);
+    if (area) {
+      setFocusTaskInput({ goalId: goal.id, focusId: focus.id, areaId: area.id });
+    }
+  };
+
+  // Add a sub-task to a focus area
+  const handleAddFocusTask = async () => {
+    const text = focusTaskText.trim();
+    if (!text || !focusTaskInput) return;
+    await addWeeklyTask(weekKey, focusTaskInput.areaId, text);
+    setFocusTaskText('');
+  };
+
+  // Check if a focus already has a weekly area
+  const getFocusAreaId = (goal, focus) => {
+    const areaName = `${goal.emoji} ${focus.text}`;
+    const area = areas.find(a => a.name === areaName);
+    return area?.id || null;
+  };
+
   const unusedSuggestions = AREA_SUGGESTIONS.filter(
     s => !areas.some(a => a.name.toLowerCase() === s.toLowerCase())
   );
@@ -194,18 +225,84 @@ export default function WeeklyIntentionScreen() {
             </View>
           )}
 
-          {/* Goal focuses for this month */}
+          {/* Goal focuses for this month — interactive */}
           {goalFocuses.length > 0 && (
             <View style={[styles.goalFocusBanner, { backgroundColor: colors.accent + '08', borderColor: colors.accent + '25' }]}>
               <Text style={[styles.goalFocusBannerTitle, { color: colors.accent }]}>MONTHLY FOCUS MOTHER FUCKER</Text>
               {goalFocuses.map(({ goal, focuses, linkedProjects }) => (
                 <View key={goal.id} style={styles.goalFocusGroup}>
                   <Text style={[styles.goalFocusGoalName, { color: colors.text }]}>{goal.emoji} {goal.title}</Text>
-                  {focuses.map(f => (
-                    <Text key={f.id} style={[styles.goalFocusItem, { color: colors.textSecondary }]}>
-                      → {f.text}
-                    </Text>
-                  ))}
+                  {focuses.map(f => {
+                    const existingAreaId = getFocusAreaId(goal, f);
+                    const isExpanded = focusTaskInput?.focusId === f.id;
+                    const focusArea = existingAreaId ? areas.find(a => a.id === existingAreaId) : null;
+                    const focusTasks = focusArea?.tasks || [];
+                    return (
+                      <View key={f.id} style={[styles.focusCard, { backgroundColor: (goal.color || colors.accent) + '10', borderColor: (goal.color || colors.accent) + '25' }]}>
+                        <View style={styles.focusCardHeader}>
+                          <Text style={[styles.focusCardText, { color: colors.text }]}>→ {f.text}</Text>
+                          {existingAreaId ? (
+                            <TouchableOpacity
+                              onPress={() => setFocusTaskInput(isExpanded ? null : { goalId: goal.id, focusId: f.id, areaId: existingAreaId })}
+                              style={[styles.focusAddedBadge, { backgroundColor: colors.accentGreen + '20' }]}
+                            >
+                              <Ionicons name={isExpanded ? 'chevron-up' : 'add-circle-outline'} size={14} color={colors.accentGreen} />
+                              <Text style={[styles.focusAddedText, { color: colors.accentGreen }]}>
+                                {focusTasks.length > 0 ? `${focusTasks.filter(t => t.done).length}/${focusTasks.length}` : 'Add tasks'}
+                              </Text>
+                            </TouchableOpacity>
+                          ) : (
+                            <TouchableOpacity
+                              onPress={() => handleAddFocusToWeek(goal, f)}
+                              style={[styles.focusAddBtn, { backgroundColor: (goal.color || colors.accent) + '20' }]}
+                            >
+                              <Ionicons name="add" size={14} color={goal.color || colors.accent} />
+                              <Text style={[styles.focusAddBtnText, { color: goal.color || colors.accent }]}>Add to this week</Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+
+                        {/* Expanded: show existing tasks + input */}
+                        {isExpanded && existingAreaId && (
+                          <View style={styles.focusExpanded}>
+                            {focusTasks.map(task => (
+                              <View key={task.id} style={styles.focusTaskRow}>
+                                <TouchableOpacity onPress={() => handleToggleTask(existingAreaId, task.id, task.done)}>
+                                  <Ionicons
+                                    name={task.done ? 'checkmark-circle' : 'ellipse-outline'}
+                                    size={18}
+                                    color={task.done ? colors.accentGreen : colors.textMuted}
+                                  />
+                                </TouchableOpacity>
+                                <Text style={[
+                                  styles.focusTaskText, { color: colors.text },
+                                  task.done && { textDecorationLine: 'line-through', color: colors.textMuted },
+                                ]} numberOfLines={1}>{task.text}</Text>
+                                <TouchableOpacity onPress={() => handleScheduleToDaily(existingAreaId, task)}>
+                                  <Ionicons name="arrow-forward-circle-outline" size={18} color={colors.accent} />
+                                </TouchableOpacity>
+                              </View>
+                            ))}
+                            <View style={[styles.focusTaskInputRow, { backgroundColor: colors.bgInput, borderColor: colors.border }]}>
+                              <TextInput
+                                style={[styles.focusTaskInputField, { color: colors.text }]}
+                                placeholder="Add a task for this focus..."
+                                placeholderTextColor={colors.textMuted}
+                                value={focusTaskText}
+                                onChangeText={setFocusTaskText}
+                                onSubmitEditing={handleAddFocusTask}
+                                returnKeyType="done"
+                                selectionColor={colors.accent}
+                              />
+                              <TouchableOpacity onPress={handleAddFocusTask} disabled={!focusTaskText.trim()}>
+                                <Ionicons name="arrow-up-circle" size={26} color={focusTaskText.trim() ? (goal.color || colors.accent) : colors.textMuted} />
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
                   {linkedProjects.length > 0 && (
                     <View style={styles.goalFocusProjects}>
                       {linkedProjects.map(p => {
@@ -584,7 +681,7 @@ const styles = StyleSheet.create({
   historyAreaName: { fontSize: SIZES.sm, fontFamily: FONTS.medium, marginBottom: 4 },
   historyTaskRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 2, paddingLeft: 4 },
   historyTaskText: { fontSize: SIZES.sm, fontFamily: FONTS.regular },
-  // Goal focus banner
+  // Goal focus banner — interactive
   goalFocusBanner: {
     borderRadius: 14, borderWidth: 1, padding: 14,
     marginBottom: 16, overflow: 'hidden',
@@ -594,8 +691,7 @@ const styles = StyleSheet.create({
     textAlign: 'center', marginBottom: 10,
   },
   goalFocusGroup: { marginBottom: 10 },
-  goalFocusGoalName: { fontSize: SIZES.base, fontWeight: '700', marginBottom: 4 },
-  goalFocusItem: { fontSize: SIZES.sm, marginLeft: 8, marginBottom: 2 },
+  goalFocusGoalName: { fontSize: SIZES.base, fontWeight: '700', marginBottom: 6 },
   goalFocusProjects: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 },
   goalFocusProjectChip: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
@@ -604,4 +700,35 @@ const styles = StyleSheet.create({
   goalFocusProjectEmoji: { fontSize: 14 },
   goalFocusProjectName: { fontSize: SIZES.xs, fontWeight: '600' },
   goalFocusProjectPct: { fontSize: SIZES.xs, fontWeight: '700' },
+  // Focus card (per focus item)
+  focusCard: {
+    borderRadius: 10, borderWidth: 1, padding: 10, marginBottom: 6,
+  },
+  focusCardHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+  },
+  focusCardText: { fontSize: SIZES.sm, fontWeight: '600', flex: 1 },
+  focusAddBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12,
+  },
+  focusAddBtnText: { fontSize: SIZES.xs, fontWeight: '700' },
+  focusAddedBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10,
+  },
+  focusAddedText: { fontSize: SIZES.xs, fontWeight: '700' },
+  // Expanded focus tasks
+  focusExpanded: { marginTop: 8 },
+  focusTaskRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingVertical: 5,
+  },
+  focusTaskText: { flex: 1, fontSize: SIZES.sm },
+  focusTaskInputRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    borderRadius: 10, borderWidth: 1,
+    paddingHorizontal: 10, paddingVertical: 4, marginTop: 6,
+  },
+  focusTaskInputField: { flex: 1, fontSize: SIZES.sm, paddingVertical: 6 },
 });

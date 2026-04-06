@@ -1,14 +1,15 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal,
+  View, Text, TouchableOpacity, TextInput, StyleSheet, ScrollView, Alert, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SIZES, getBulletTypes, getTaskStates, getSignifiers } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
-import { getMonthKey, getMonthName, getDateKey } from '../utils/storage';
+import { getMonthKey, getMonthName, getDateKey, getWeekKey } from '../utils/storage';
 import FAB from '../components/FAB';
 import EntryFormFlyout from '../components/EntryFormFlyout';
 import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
@@ -20,13 +21,34 @@ export default function MonthlyLogScreen({ route }) {
   const TASK_STATES = getTaskStates(colors);
   const BULLET_TYPES = getBulletTypes(colors);
   const SIGNIFIERS = getSignifiers(colors);
-  const { entries, goals, addEntry, updateEntry } = useApp();
+  const { entries, goals, weeklyIntentions, addEntry, updateEntry, addWeeklyArea, addWeeklyTask } = useApp();
   const [currentMonth, setCurrentMonth] = useState(getMonthKey());
   const [flyoutVisible, setFlyoutVisible] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
   const [addingToDay, setAddingToDay] = useState(null);
   const [convertEntry, setConvertEntry] = useState(null);
   const [convertDate, setConvertDate] = useState(new Date());
+  const [sendingFocus, setSendingFocus] = useState(null);
+  const [weeklyText, setWeeklyText] = useState('');
+
+  // Send a monthly focus to this week's intentions
+  const handleSendFocusToWeekly = async (focus) => {
+    const text = weeklyText.trim();
+    if (!text) return;
+    const wk = getWeekKey();
+    const areaName = `${focus.goalEmoji} ${focus.text}`;
+    const week = weeklyIntentions[wk] || { areas: [] };
+    let area = week.areas.find(a => a.name === areaName);
+    if (!area) {
+      area = await addWeeklyArea(wk, areaName);
+    }
+    if (area) {
+      await addWeeklyTask(wk, area.id, text);
+    }
+    setWeeklyText('');
+    setSendingFocus(null);
+    Alert.alert('Sent ✓', `Added to this week's intentions`);
+  };
 
   // Deep-link: jump to specific month from route params
   React.useEffect(() => {
@@ -190,17 +212,51 @@ export default function MonthlyLogScreen({ route }) {
           </View>
         </View>
 
-        {/* Monthly Focus Banner */}
+        {/* Monthly Focus Banner — interactive */}
         {monthlyFocuses.length > 0 && (
           <View style={[styles.focusBanner, { backgroundColor: colors.accent + '12', borderColor: colors.accent + '30' }]}>
             <Text style={[styles.focusBannerTitle, { color: colors.accent }]}>MONTHLY FOCUS MOTHER FUCKER</Text>
             {monthlyFocuses.map(f => (
-              <View key={f.id} style={[styles.focusBannerItem, { backgroundColor: f.goalColor + '15' }]}>
-                <Text style={[styles.focusBannerEmoji]}>{f.goalEmoji}</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.focusBannerText, { color: colors.text }]}>{f.text}</Text>
-                  <Text style={[styles.focusBannerGoal, { color: colors.textMuted }]}>{f.goalTitle}</Text>
+              <View key={f.id}>
+                <View style={[styles.focusBannerItem, { backgroundColor: f.goalColor + '15' }]}>
+                  <Text style={[styles.focusBannerEmoji]}>{f.goalEmoji}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.focusBannerText, { color: colors.text }]}>{f.text}</Text>
+                    <Text style={[styles.focusBannerGoal, { color: colors.textMuted }]}>{f.goalTitle}</Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => { setSendingFocus(sendingFocus?.id === f.id ? null : f); setWeeklyText(''); }}
+                    style={[styles.focusSendIcon, { backgroundColor: colors.accent + '20' }]}
+                  >
+                    <Ionicons name={sendingFocus?.id === f.id ? 'chevron-up' : 'arrow-forward-circle-outline'} size={18} color={colors.accent} />
+                  </TouchableOpacity>
                 </View>
+
+                {/* Inline send to weekly */}
+                {sendingFocus?.id === f.id && (
+                  <View style={[styles.focusWeeklyInline, { backgroundColor: colors.accent + '08', borderColor: colors.accent + '25' }]}>
+                    <Text style={[styles.focusWeeklyLabel, { color: colors.accent }]}>What will you work on this week?</Text>
+                    <View style={[styles.focusWeeklyInputRow, { backgroundColor: colors.bgInput, borderColor: colors.border }]}>
+                      <TextInput
+                        style={[styles.focusWeeklyInput, { color: colors.text }]}
+                        placeholder="e.g. competitor analysis, wireframes..."
+                        placeholderTextColor={colors.textMuted}
+                        value={weeklyText}
+                        onChangeText={setWeeklyText}
+                        onSubmitEditing={() => handleSendFocusToWeekly(f)}
+                        returnKeyType="send"
+                        selectionColor={colors.accent}
+                        autoFocus
+                      />
+                      <TouchableOpacity onPress={() => handleSendFocusToWeekly(f)} disabled={!weeklyText.trim()}>
+                        <Ionicons name="send" size={22} color={weeklyText.trim() ? colors.accent : colors.textMuted} />
+                      </TouchableOpacity>
+                    </View>
+                    <TouchableOpacity onPress={() => setSendingFocus(null)} style={styles.focusWeeklyCancel}>
+                      <Text style={[styles.focusWeeklyCancelText, { color: colors.textMuted }]}>Cancel</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
             ))}
           </View>
@@ -508,4 +564,19 @@ const styles = StyleSheet.create({
   focusBannerEmoji: { fontSize: 22 },
   focusBannerText: { fontSize: SIZES.base, fontWeight: '700' },
   focusBannerGoal: { fontSize: SIZES.xs, marginTop: 1 },
+  focusSendIcon: {
+    width: 32, height: 32, borderRadius: 16,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  focusWeeklyInline: {
+    borderRadius: 10, borderWidth: 1, padding: 12, marginBottom: 6, marginTop: -2,
+  },
+  focusWeeklyLabel: { fontSize: SIZES.sm, fontWeight: '700', marginBottom: 8 },
+  focusWeeklyInputRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    borderRadius: 10, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 4,
+  },
+  focusWeeklyInput: { flex: 1, fontSize: SIZES.sm, paddingVertical: 8 },
+  focusWeeklyCancel: { alignSelf: 'flex-end', marginTop: 6 },
+  focusWeeklyCancelText: { fontSize: SIZES.xs },
 });
