@@ -203,9 +203,10 @@ function AppContent() {
         {enabledFeatures.projects !== false && <Tab.Screen name="Projects" component={ProjectsScreen} />}
         {enabledFeatures.projects !== false && <Tab.Screen name="Goals" component={GoalsScreen} />}
         {enabledFeatures.collections !== false && <Tab.Screen name="Collections" component={CollectionsScreen} />}
-        {enabledFeatures.shopping !== false && <Tab.Screen name="Shopping" component={ShoppingListScreen} />}
+        {/* TODO: Re-enable when ready */}
+        {/* {enabledFeatures.shopping !== false && <Tab.Screen name="Shopping" component={ShoppingListScreen} />} */}
         {enabledFeatures.habits !== false && <Tab.Screen name="Habits" component={HabitTrackerScreen} />}
-        {enabledFeatures.reflections !== false && <Tab.Screen name="Reflect" component={ReflectionScreen} />}
+        {/* {enabledFeatures.reflections !== false && <Tab.Screen name="Reflect" component={ReflectionScreen} />} */}
         <Tab.Screen name="Index" component={IndexScreen} />
         <Tab.Screen name="More" component={MoreStackScreen} />
       </Tab.Navigator>

@@ -20,7 +20,7 @@ export default function MonthlyLogScreen({ route }) {
   const TASK_STATES = getTaskStates(colors);
   const BULLET_TYPES = getBulletTypes(colors);
   const SIGNIFIERS = getSignifiers(colors);
-  const { entries, addEntry, updateEntry } = useApp();
+  const { entries, goals, addEntry, updateEntry } = useApp();
   const [currentMonth, setCurrentMonth] = useState(getMonthKey());
   const [flyoutVisible, setFlyoutVisible] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
@@ -142,6 +142,19 @@ export default function MonthlyLogScreen({ route }) {
 
   const weekDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
+  // Monthly focuses from goals
+  const monthlyFocuses = useMemo(() => {
+    const focuses = [];
+    (goals || []).forEach(goal => {
+      (goal.monthlyFocuses || []).forEach(f => {
+        if (f.monthKey === currentMonth) {
+          focuses.push({ ...f, goalEmoji: goal.emoji, goalTitle: goal.title, goalColor: goal.color });
+        }
+      });
+    });
+    return focuses;
+  }, [goals, currentMonth]);
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -176,6 +189,22 @@ export default function MonthlyLogScreen({ route }) {
             ))}
           </View>
         </View>
+
+        {/* Monthly Focus Banner */}
+        {monthlyFocuses.length > 0 && (
+          <View style={[styles.focusBanner, { backgroundColor: colors.accent + '12', borderColor: colors.accent + '30' }]}>
+            <Text style={[styles.focusBannerTitle, { color: colors.accent }]}>MONTHLY FOCUS MOTHER FUCKER</Text>
+            {monthlyFocuses.map(f => (
+              <View key={f.id} style={[styles.focusBannerItem, { backgroundColor: f.goalColor + '15' }]}>
+                <Text style={[styles.focusBannerEmoji]}>{f.goalEmoji}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.focusBannerText, { color: colors.text }]}>{f.text}</Text>
+                  <Text style={[styles.focusBannerGoal, { color: colors.textMuted }]}>{f.goalTitle}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* Calendar Grid */}
         <View style={styles.calendar}>
@@ -463,4 +492,20 @@ const styles = StyleSheet.create({
   convertBtnText: {
     fontSize: SIZES.base, fontWeight: '700',
   },
+  // Monthly Focus Banner
+  focusBanner: {
+    marginHorizontal: 16, marginBottom: 12, borderRadius: 14,
+    borderWidth: 1, padding: 14, overflow: 'hidden',
+  },
+  focusBannerTitle: {
+    fontSize: SIZES.sm, fontWeight: '900', letterSpacing: 1.5,
+    textAlign: 'center', marginBottom: 10,
+  },
+  focusBannerItem: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    padding: 10, borderRadius: 10, marginBottom: 6,
+  },
+  focusBannerEmoji: { fontSize: 22 },
+  focusBannerText: { fontSize: SIZES.base, fontWeight: '700' },
+  focusBannerGoal: { fontSize: SIZES.xs, marginTop: 1 },
 });

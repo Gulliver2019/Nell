@@ -255,7 +255,7 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
   );
 
   if (!canSwipe) {
-    return <View style={styles.container}>{entryContent}</View>;
+    return <View style={[styles.container, entry.fromProject && styles.projectIndent]}>{entryContent}</View>;
   }
 
   return (
@@ -271,7 +271,9 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
       overshootRight={false}
       friction={2}
     >
-      {entryContent}
+      <View style={entry.fromProject ? styles.projectIndent : undefined}>
+        {entryContent}
+      </View>
     </Swipeable>
   );
 }
@@ -280,6 +282,12 @@ const styles = StyleSheet.create({
   container: {
     position: 'relative',
     marginBottom: 2,
+  },
+  projectIndent: {
+    marginLeft: 20,
+    borderLeftWidth: 2,
+    borderLeftColor: 'rgba(108,92,231,0.3)',
+    paddingLeft: 8,
   },
   dragHandle: {
     width: 20,

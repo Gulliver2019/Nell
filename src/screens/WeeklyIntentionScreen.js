@@ -9,7 +9,7 @@ import { Swipeable } from 'react-native-gesture-handler';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
-import { getWeekKey } from '../utils/storage';
+import { getWeekKey, getMonthKey } from '../utils/storage';
 import { SIZES, FONTS } from '../utils/theme';
 import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
 
@@ -26,7 +26,7 @@ const AREA_SUGGESTIONS = [
 export default function WeeklyIntentionScreen() {
   const { colors } = useTheme();
   const {
-    weeklyIntentions, futureLog,
+    weeklyIntentions, futureLog, goals, projects,
     addWeeklyArea, removeWeeklyArea,
     addWeeklyTask, updateWeeklyTask, removeWeeklyTask,
     scheduleEntry, addEntry,
@@ -48,6 +48,16 @@ export default function WeeklyIntentionScreen() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   }, []);
   const monthlyItems = futureLog[currentMonthKey] || [];
+
+  // Goal focuses for current month + linked projects
+  const goalFocuses = useMemo(() => {
+    return (goals || []).map(goal => {
+      const focuses = (goal.monthlyFocuses || []).filter(f => f.monthKey === currentMonthKey);
+      const linked = (projects || []).filter(p => goal.projectIds.includes(p.id));
+      if (focuses.length === 0 && linked.length === 0) return null;
+      return { goal, focuses, linkedProjects: linked };
+    }).filter(Boolean);
+  }, [goals, projects, currentMonthKey]);
 
   const weekLabel = useMemo(() => {
     const sunday = new Date(weekKey + 'T00:00:00');
@@ -181,6 +191,39 @@ export default function WeeklyIntentionScreen() {
               <Text style={[styles.nudgeText, { color: colors.textSecondary }]}>
                 You have {monthlyItems.length} item{monthlyItems.length !== 1 ? 's' : ''} in your monthly log — consider pulling some into this week.
               </Text>
+            </View>
+          )}
+
+          {/* Goal focuses for this month */}
+          {goalFocuses.length > 0 && (
+            <View style={[styles.goalFocusBanner, { backgroundColor: colors.accent + '08', borderColor: colors.accent + '25' }]}>
+              <Text style={[styles.goalFocusBannerTitle, { color: colors.accent }]}>MONTHLY FOCUS MOTHER FUCKER</Text>
+              {goalFocuses.map(({ goal, focuses, linkedProjects }) => (
+                <View key={goal.id} style={styles.goalFocusGroup}>
+                  <Text style={[styles.goalFocusGoalName, { color: colors.text }]}>{goal.emoji} {goal.title}</Text>
+                  {focuses.map(f => (
+                    <Text key={f.id} style={[styles.goalFocusItem, { color: colors.textSecondary }]}>
+                      → {f.text}
+                    </Text>
+                  ))}
+                  {linkedProjects.length > 0 && (
+                    <View style={styles.goalFocusProjects}>
+                      {linkedProjects.map(p => {
+                        const pDone = p.tasks.filter(t => t.column === 'done').length;
+                        const pTotal = p.tasks.length;
+                        const pPercent = pTotal > 0 ? Math.round((pDone / pTotal) * 100) : 0;
+                        return (
+                          <View key={p.id} style={[styles.goalFocusProjectChip, { backgroundColor: p.color + '18' }]}>
+                            <Text style={styles.goalFocusProjectEmoji}>{p.emoji}</Text>
+                            <Text style={[styles.goalFocusProjectName, { color: colors.text }]}>{p.title}</Text>
+                            <Text style={[styles.goalFocusProjectPct, { color: p.color }]}>{pPercent}%</Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  )}
+                </View>
+              ))}
             </View>
           )}
 
@@ -541,4 +584,24 @@ const styles = StyleSheet.create({
   historyAreaName: { fontSize: SIZES.sm, fontFamily: FONTS.medium, marginBottom: 4 },
   historyTaskRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 2, paddingLeft: 4 },
   historyTaskText: { fontSize: SIZES.sm, fontFamily: FONTS.regular },
+  // Goal focus banner
+  goalFocusBanner: {
+    borderRadius: 14, borderWidth: 1, padding: 14,
+    marginBottom: 16, overflow: 'hidden',
+  },
+  goalFocusBannerTitle: {
+    fontSize: SIZES.sm, fontWeight: '900', letterSpacing: 1.5,
+    textAlign: 'center', marginBottom: 10,
+  },
+  goalFocusGroup: { marginBottom: 10 },
+  goalFocusGoalName: { fontSize: SIZES.base, fontWeight: '700', marginBottom: 4 },
+  goalFocusItem: { fontSize: SIZES.sm, marginLeft: 8, marginBottom: 2 },
+  goalFocusProjects: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 },
+  goalFocusProjectChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8,
+  },
+  goalFocusProjectEmoji: { fontSize: 14 },
+  goalFocusProjectName: { fontSize: SIZES.xs, fontWeight: '600' },
+  goalFocusProjectPct: { fontSize: SIZES.xs, fontWeight: '700' },
 });

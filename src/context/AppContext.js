@@ -468,6 +468,25 @@ export function AppProvider({ children }) {
     dispatch({ type: 'SET_GOALS', payload: goals });
   }, []);
 
+  const addMonthlyFocus = useCallback(async (goalId, monthKey, text) => {
+    const focus = await Storage.addMonthlyFocus(goalId, monthKey, text);
+    const goals = await Storage.getGoals();
+    dispatch({ type: 'SET_GOALS', payload: goals });
+    return focus;
+  }, []);
+
+  const updateMonthlyFocus = useCallback(async (goalId, focusId, updates) => {
+    await Storage.updateMonthlyFocus(goalId, focusId, updates);
+    const goals = await Storage.getGoals();
+    dispatch({ type: 'SET_GOALS', payload: goals });
+  }, []);
+
+  const deleteMonthlyFocus = useCallback(async (goalId, focusId) => {
+    await Storage.deleteMonthlyFocus(goalId, focusId);
+    const goals = await Storage.getGoals();
+    dispatch({ type: 'SET_GOALS', payload: goals });
+  }, []);
+
   // Routine actions
   const addRoutine = useCallback(async (routine) => {
     await Storage.addRoutine(routine);
@@ -561,6 +580,9 @@ export function AppProvider({ children }) {
     addGoal,
     updateGoal,
     deleteGoal,
+    addMonthlyFocus,
+    updateMonthlyFocus,
+    deleteMonthlyFocus,
     addRoutine,
     updateRoutine,
     deleteRoutine,

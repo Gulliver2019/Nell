@@ -736,6 +736,7 @@ export const addGoal = async (goal) => {
     color: '#6C5CE7',
     deadline: null,
     projectIds: [],
+    monthlyFocuses: [],
     ...goal,
   };
   goals.push(newGoal);
@@ -754,6 +755,38 @@ export const updateGoal = async (id, updates) => {
 export const deleteGoal = async (id) => {
   const goals = await getGoals();
   await saveGoals(goals.filter(g => g.id !== id));
+};
+
+export const addMonthlyFocus = async (goalId, monthKey, text) => {
+  const goals = await getGoals();
+  const goal = goals.find(g => g.id === goalId);
+  if (!goal) return null;
+  if (!goal.monthlyFocuses) goal.monthlyFocuses = [];
+  const focus = { id: generateId(), monthKey, text, createdAt: new Date().toISOString() };
+  goal.monthlyFocuses.push(focus);
+  goal.updatedAt = new Date().toISOString();
+  await saveGoals(goals);
+  return focus;
+};
+
+export const updateMonthlyFocus = async (goalId, focusId, updates) => {
+  const goals = await getGoals();
+  const goal = goals.find(g => g.id === goalId);
+  if (!goal) return;
+  const focus = (goal.monthlyFocuses || []).find(f => f.id === focusId);
+  if (!focus) return;
+  Object.assign(focus, updates, { updatedAt: new Date().toISOString() });
+  goal.updatedAt = new Date().toISOString();
+  await saveGoals(goals);
+};
+
+export const deleteMonthlyFocus = async (goalId, focusId) => {
+  const goals = await getGoals();
+  const goal = goals.find(g => g.id === goalId);
+  if (!goal) return;
+  goal.monthlyFocuses = (goal.monthlyFocuses || []).filter(f => f.id !== focusId);
+  goal.updatedAt = new Date().toISOString();
+  await saveGoals(goals);
 };
 
 // ─── Routines ───────────────────────────────────────────
