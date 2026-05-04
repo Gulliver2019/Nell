@@ -818,8 +818,8 @@ export default function ProjectsScreen({ route }) {
       const project = projects.find(p => p.id === projectId);
       if (!project) continue;
       const text = personalityEnabled
-        ? `Smash ${project.emoji} ${project.title}`
-        : `Work on ${project.emoji} ${project.title}`;
+        ? `${project.emoji} ${project.title} — Smash it`
+        : `${project.emoji} ${project.title}`;
       await addEntry({ text, type: 'task', date: targetDate, source: 'daily', fromProject: true, projectId: project.id, pomodoros: makeTimePomodoros });
     }
 
