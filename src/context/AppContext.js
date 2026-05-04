@@ -487,11 +487,70 @@ export function AppProvider({ children }) {
     dispatch({ type: 'SET_GOALS', payload: goals });
   }, []);
 
+  // Goal sub-item actions
+  const addGoalDiscipline = useCallback(async (goalId, text) => {
+    const item = await Storage.addGoalDiscipline(goalId, text);
+    const goals = await Storage.getGoals();
+    dispatch({ type: 'SET_GOALS', payload: goals });
+    return item;
+  }, []);
+
+  const updateGoalDiscipline = useCallback(async (goalId, disciplineId, updates) => {
+    await Storage.updateGoalDiscipline(goalId, disciplineId, updates);
+    const goals = await Storage.getGoals();
+    dispatch({ type: 'SET_GOALS', payload: goals });
+  }, []);
+
+  const deleteGoalDiscipline = useCallback(async (goalId, disciplineId) => {
+    await Storage.deleteGoalDiscipline(goalId, disciplineId);
+    const goals = await Storage.getGoals();
+    dispatch({ type: 'SET_GOALS', payload: goals });
+  }, []);
+
+  const addGoalWeeklyTask = useCallback(async (goalId, text) => {
+    const item = await Storage.addGoalWeeklyTask(goalId, text);
+    const goals = await Storage.getGoals();
+    dispatch({ type: 'SET_GOALS', payload: goals });
+    return item;
+  }, []);
+
+  const updateGoalWeeklyTask = useCallback(async (goalId, taskId, updates) => {
+    await Storage.updateGoalWeeklyTask(goalId, taskId, updates);
+    const goals = await Storage.getGoals();
+    dispatch({ type: 'SET_GOALS', payload: goals });
+  }, []);
+
+  const deleteGoalWeeklyTask = useCallback(async (goalId, taskId) => {
+    await Storage.deleteGoalWeeklyTask(goalId, taskId);
+    const goals = await Storage.getGoals();
+    dispatch({ type: 'SET_GOALS', payload: goals });
+  }, []);
+
+  const addGoalStandard = useCallback(async (goalId, text) => {
+    const item = await Storage.addGoalStandard(goalId, text);
+    const goals = await Storage.getGoals();
+    dispatch({ type: 'SET_GOALS', payload: goals });
+    return item;
+  }, []);
+
+  const updateGoalStandard = useCallback(async (goalId, standardId, updates) => {
+    await Storage.updateGoalStandard(goalId, standardId, updates);
+    const goals = await Storage.getGoals();
+    dispatch({ type: 'SET_GOALS', payload: goals });
+  }, []);
+
+  const deleteGoalStandard = useCallback(async (goalId, standardId) => {
+    await Storage.deleteGoalStandard(goalId, standardId);
+    const goals = await Storage.getGoals();
+    dispatch({ type: 'SET_GOALS', payload: goals });
+  }, []);
+
   // Routine actions
   const addRoutine = useCallback(async (routine) => {
-    await Storage.addRoutine(routine);
+    const newRoutine = await Storage.addRoutine(routine);
     const routines = await Storage.getRoutines();
     dispatch({ type: 'SET_ROUTINES', payload: routines });
+    return newRoutine;
   }, []);
 
   const updateRoutine = useCallback(async (id, updates) => {
@@ -583,6 +642,15 @@ export function AppProvider({ children }) {
     addMonthlyFocus,
     updateMonthlyFocus,
     deleteMonthlyFocus,
+    addGoalDiscipline,
+    updateGoalDiscipline,
+    deleteGoalDiscipline,
+    addGoalWeeklyTask,
+    updateGoalWeeklyTask,
+    deleteGoalWeeklyTask,
+    addGoalStandard,
+    updateGoalStandard,
+    deleteGoalStandard,
     addRoutine,
     updateRoutine,
     deleteRoutine,

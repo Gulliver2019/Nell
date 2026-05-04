@@ -30,7 +30,8 @@ export default function DailyLogScreen() {
   const {
     entries, selectedDate, setSelectedDate, addEntry, updateEntry,
     deleteEntry, migrateEntry, scheduleEntry, reorderEntries, migratePastEntries,
-    completeDayAndMigrate, saveReflection,
+    completeDayAndMigrate, saveReflection, generateRoutineEntries,
+    addRoutine, deleteRoutine,
   } = useApp();
 
   const today = getDateKey();
@@ -104,6 +105,11 @@ export default function DailyLogScreen() {
       } catch (e) { setDayCompleted(false); }
     })();
   }, [completedDayKey]);
+
+  // Generate routine entries for the selected date
+  useEffect(() => {
+    generateRoutineEntries(selectedDate);
+  }, [selectedDate, generateRoutineEntries]);
 
   const handleCompleteDay = useCallback(async (reflection) => {
     const count = await completeDayAndMigrate(reflection);
@@ -191,6 +197,20 @@ export default function DailyLogScreen() {
     setEditingEntry(entry);
     setFlyoutVisible(true);
   }, []);
+
+  const handleToggleRoutine = useCallback(async (entry, shouldRepeat) => {
+    if (shouldRepeat) {
+      // Create a routine from this entry
+      const routine = await addRoutine({ text: entry.text, enabled: true });
+      await updateEntry(entry.id, { source: 'routine', routineId: routine.id });
+    } else {
+      // Remove the routine
+      if (entry.routineId) {
+        await deleteRoutine(entry.routineId);
+      }
+      await updateEntry(entry.id, { source: null, routineId: null });
+    }
+  }, [addRoutine, deleteRoutine, updateEntry]);
 
   const handleSchedule = useCallback((id) => {
     setScheduleEntryId(id);
@@ -495,6 +515,7 @@ export default function DailyLogScreen() {
         onSubmit={handleAdd}
         entry={editingEntry}
         visibleFields={['text', 'type', 'signifier', 'pomodoros', 'timeBlock', 'date']}
+        onToggleRoutine={handleToggleRoutine}
       />
 
       {/* Date Picker for scheduling */}

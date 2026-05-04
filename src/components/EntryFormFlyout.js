@@ -28,7 +28,7 @@ for (let h = 5; h <= 22; h++) {
  *  extraData      – any extra data merged into submit payload (e.g. { collection: id })
  */
 export default function EntryFormFlyout({
-  visible, onClose, onSubmit, entry = null, visibleFields, extraData = {},
+  visible, onClose, onSubmit, entry = null, visibleFields, extraData = {}, onToggleRoutine,
 }) {
   const { colors } = useTheme();
   const BULLET_TYPES = getBulletTypes(colors);
@@ -48,6 +48,7 @@ export default function EntryFormFlyout({
   const [date, setDate] = useState(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [repeatDaily, setRepeatDaily] = useState(false);
 
   // Which fields to render
   const fields = visibleFields || ['text', 'type', 'signifier', 'pomodoros', 'timeBlock', 'date'];
@@ -64,6 +65,7 @@ export default function EntryFormFlyout({
         setIsAdmin(!!entry.isAdmin);
         setTimeBlock(entry.timeBlock || null);
         setDate(entry.date ? new Date(entry.date + 'T00:00:00') : null);
+        setRepeatDaily(entry.source === 'routine' || !!entry.routineId);
       } else {
         setText('');
         setType('task');
@@ -72,6 +74,7 @@ export default function EntryFormFlyout({
         setIsAdmin(false);
         setTimeBlock(null);
         setDate(null);
+        setRepeatDaily(false);
       }
       setShowDatePicker(false);
       setShowTimePicker(false);
@@ -96,6 +99,13 @@ export default function EntryFormFlyout({
       data.date = `${y}-${m}-${d}`;
     }
     if (isEdit) data.id = entry.id;
+    // Handle repeat daily toggle change
+    if (isEdit && onToggleRoutine) {
+      const wasRoutine = entry.source === 'routine' || !!entry.routineId;
+      if (repeatDaily !== wasRoutine) {
+        onToggleRoutine(entry, repeatDaily);
+      }
+    }
     onSubmit(data);
     onClose();
   };
@@ -296,6 +306,24 @@ export default function EntryFormFlyout({
               </View>
             )}
 
+            {/* Repeat daily toggle */}
+            {isEdit && entry.type === 'task' && (
+              <View style={styles.fieldRow}>
+                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Repeat Daily</Text>
+                <TouchableOpacity
+                  style={[styles.toggleRow, { backgroundColor: colors.bgInput }]}
+                  onPress={() => { setRepeatDaily(!repeatDaily); Haptics.selectionAsync(); }}
+                >
+                  <Text style={[styles.toggleText, { color: repeatDaily ? colors.accentGreen : colors.textMuted }]}>
+                    {repeatDaily ? '🔁 Repeating every day' : 'Off — one-time task'}
+                  </Text>
+                  <View style={[styles.toggleSwitch, { backgroundColor: repeatDaily ? colors.accentGreen : colors.border }]}>
+                    <View style={[styles.toggleKnob, { transform: [{ translateX: repeatDaily ? 18 : 2 }] }]} />
+                  </View>
+                </TouchableOpacity>
+              </View>
+            )}
+
             {/* Submit button */}
             <TouchableOpacity
               style={[styles.submitBtn, { backgroundColor: colors.accent }, !text.trim() && { opacity: 0.4 }]}
@@ -460,5 +488,29 @@ const styles = StyleSheet.create({
   submitText: {
     fontSize: SIZES.base,
     fontWeight: '700',
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: SIZES.radius,
+  },
+  toggleText: {
+    fontSize: SIZES.sm,
+    fontWeight: '600',
+  },
+  toggleSwitch: {
+    width: 40,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+  },
+  toggleKnob: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#fff',
   },
 });

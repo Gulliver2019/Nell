@@ -42,6 +42,7 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
   const signifierConfig = entry.signifier ? SIGNIFIERS[entry.signifier] : null;
 
   const canSwipe = entry.type === 'task' && entry.state === 'open';
+  const canMigrate = canSwipe && entry.source !== 'routine' && !entry.routineId;
 
   const renderRightActions = (progress, dragX) => {
     const trans = dragX.interpolate({
@@ -261,10 +262,10 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
   return (
     <Swipeable
       ref={swipeableRef}
-      renderLeftActions={renderLeftActions}
+      renderLeftActions={canMigrate ? renderLeftActions : undefined}
       renderRightActions={renderRightActions}
       onSwipeableOpen={(direction) => {
-        if (direction === 'left') onSwipeRight();
+        if (direction === 'left' && canMigrate) onSwipeRight();
         else if (direction === 'right') onSwipeLeft();
       }}
       overshootLeft={false}

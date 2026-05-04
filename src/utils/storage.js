@@ -732,11 +732,10 @@ export const addGoal = async (goal) => {
     id: generateId(),
     createdAt: new Date().toISOString(),
     title: '',
-    emoji: '🎯',
-    color: '#6C5CE7',
-    deadline: null,
-    projectIds: [],
-    monthlyFocuses: [],
+    description: '',
+    dailyDisciplines: [],
+    weeklyTasks: [],
+    standards: [],
     ...goal,
   };
   goals.push(newGoal);
@@ -785,6 +784,104 @@ export const deleteMonthlyFocus = async (goalId, focusId) => {
   const goal = goals.find(g => g.id === goalId);
   if (!goal) return;
   goal.monthlyFocuses = (goal.monthlyFocuses || []).filter(f => f.id !== focusId);
+  goal.updatedAt = new Date().toISOString();
+  await saveGoals(goals);
+};
+
+// ─── Goal Sub-Items (Disciplines, Weekly Tasks, Standards) ──────
+
+export const addGoalDiscipline = async (goalId, text) => {
+  const goals = await getGoals();
+  const goal = goals.find(g => g.id === goalId);
+  if (!goal) return null;
+  if (!goal.dailyDisciplines) goal.dailyDisciplines = [];
+  const item = { id: generateId(), text, createdAt: new Date().toISOString(), routineId: null };
+  goal.dailyDisciplines.push(item);
+  goal.updatedAt = new Date().toISOString();
+  await saveGoals(goals);
+  return item;
+};
+
+export const updateGoalDiscipline = async (goalId, disciplineId, updates) => {
+  const goals = await getGoals();
+  const goal = goals.find(g => g.id === goalId);
+  if (!goal) return;
+  const item = (goal.dailyDisciplines || []).find(d => d.id === disciplineId);
+  if (!item) return;
+  Object.assign(item, updates, { updatedAt: new Date().toISOString() });
+  goal.updatedAt = new Date().toISOString();
+  await saveGoals(goals);
+};
+
+export const deleteGoalDiscipline = async (goalId, disciplineId) => {
+  const goals = await getGoals();
+  const goal = goals.find(g => g.id === goalId);
+  if (!goal) return;
+  goal.dailyDisciplines = (goal.dailyDisciplines || []).filter(d => d.id !== disciplineId);
+  goal.updatedAt = new Date().toISOString();
+  await saveGoals(goals);
+};
+
+export const addGoalWeeklyTask = async (goalId, text) => {
+  const goals = await getGoals();
+  const goal = goals.find(g => g.id === goalId);
+  if (!goal) return null;
+  if (!goal.weeklyTasks) goal.weeklyTasks = [];
+  const item = { id: generateId(), text, createdAt: new Date().toISOString() };
+  goal.weeklyTasks.push(item);
+  goal.updatedAt = new Date().toISOString();
+  await saveGoals(goals);
+  return item;
+};
+
+export const updateGoalWeeklyTask = async (goalId, taskId, updates) => {
+  const goals = await getGoals();
+  const goal = goals.find(g => g.id === goalId);
+  if (!goal) return;
+  const item = (goal.weeklyTasks || []).find(t => t.id === taskId);
+  if (!item) return;
+  Object.assign(item, updates, { updatedAt: new Date().toISOString() });
+  goal.updatedAt = new Date().toISOString();
+  await saveGoals(goals);
+};
+
+export const deleteGoalWeeklyTask = async (goalId, taskId) => {
+  const goals = await getGoals();
+  const goal = goals.find(g => g.id === goalId);
+  if (!goal) return;
+  goal.weeklyTasks = (goal.weeklyTasks || []).filter(t => t.id !== taskId);
+  goal.updatedAt = new Date().toISOString();
+  await saveGoals(goals);
+};
+
+export const addGoalStandard = async (goalId, text) => {
+  const goals = await getGoals();
+  const goal = goals.find(g => g.id === goalId);
+  if (!goal) return null;
+  if (!goal.standards) goal.standards = [];
+  const item = { id: generateId(), text, createdAt: new Date().toISOString() };
+  goal.standards.push(item);
+  goal.updatedAt = new Date().toISOString();
+  await saveGoals(goals);
+  return item;
+};
+
+export const updateGoalStandard = async (goalId, standardId, updates) => {
+  const goals = await getGoals();
+  const goal = goals.find(g => g.id === goalId);
+  if (!goal) return;
+  const item = (goal.standards || []).find(s => s.id === standardId);
+  if (!item) return;
+  Object.assign(item, updates, { updatedAt: new Date().toISOString() });
+  goal.updatedAt = new Date().toISOString();
+  await saveGoals(goals);
+};
+
+export const deleteGoalStandard = async (goalId, standardId) => {
+  const goals = await getGoals();
+  const goal = goals.find(g => g.id === goalId);
+  if (!goal) return;
+  goal.standards = (goal.standards || []).filter(s => s.id !== standardId);
   goal.updatedAt = new Date().toISOString();
   await saveGoals(goals);
 };
