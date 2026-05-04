@@ -32,6 +32,15 @@ jobs:
           gem install cocoapods
           cd ios && pod install
 
+      - name: Set build number
+        run: |
+          BUILD_NUMBER=${{ github.run_number }}
+          # Update Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" ios/GoalDigger/Info.plist
+          # Update project.pbxproj
+          sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*/CURRENT_PROJECT_VERSION = $BUILD_NUMBER/g" ios/GoalDigger.xcodeproj/project.pbxproj
+          echo "Build number set to $BUILD_NUMBER"
+
       - name: Import signing certificate
         env:
           CERTIFICATE_BASE64: ${{ secrets.CERTIFICATE_BASE64 }}
