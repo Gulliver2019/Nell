@@ -89,7 +89,7 @@ export default function EntryFormFlyout({
   const handleSubmit = () => {
     if (!text.trim()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const data = { text: text.trim(), type, signifier, ...extraData };
+    const data = { text: text.trim(), type, signifier, isAdmin, ...extraData };
     if (show('pomodoros')) data.pomodoros = pomodoros;
     if (show('timeBlock')) data.timeBlock = timeBlock || null;
     if (show('date') && date) {
@@ -303,6 +303,24 @@ export default function EntryFormFlyout({
                     }}
                   />
                 )}
+              </View>
+            )}
+
+            {/* Admin task toggle */}
+            {isEdit && entry.type === 'task' && (
+              <View style={styles.fieldRow}>
+                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Admin Task</Text>
+                <TouchableOpacity
+                  style={[styles.toggleRow, { backgroundColor: colors.bgInput }]}
+                  onPress={() => { setIsAdmin(!isAdmin); Haptics.selectionAsync(); }}
+                >
+                  <Text style={[styles.toggleText, { color: isAdmin ? colors.accentOrange : colors.textMuted }]}>
+                    {isAdmin ? '📋 Grouped under Admin block' : 'Off — standalone task'}
+                  </Text>
+                  <View style={[styles.toggleSwitch, { backgroundColor: isAdmin ? colors.accentOrange : colors.border }]}>
+                    <View style={[styles.toggleKnob, { transform: [{ translateX: isAdmin ? 18 : 2 }] }]} />
+                  </View>
+                </TouchableOpacity>
               </View>
             )}
 

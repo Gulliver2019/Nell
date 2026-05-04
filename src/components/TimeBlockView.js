@@ -317,9 +317,13 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
   }, [showMeetingModal]);
 
   // Build a map: slot → entry or meeting (accounting for multi-slot blocks)
+  // Admin sub-tasks are excluded — they appear under a synthetic "Admin" block
+  const adminTasks = useMemo(() => entries.filter(e => e.isAdmin), [entries]);
+  const nonAdminEntries = useMemo(() => entries.filter(e => !e.isAdmin), [entries]);
+
   const slotMap = useMemo(() => {
     const map = {};
-    entries.forEach(entry => {
+    nonAdminEntries.forEach(entry => {
       if (!entry.timeBlock) return;
       const startIdx = ALL_SLOTS.indexOf(entry.timeBlock);
       if (startIdx === -1) return;
@@ -353,10 +357,10 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
     return map;
   }, [entries, meetings]);
 
-  // Unassigned entries (no timeBlock)
+  // Unassigned entries (no timeBlock), excluding admin tasks
   const unassigned = useMemo(() =>
-    entries.filter(e => !e.timeBlock && e.state !== 'migrated' && e.state !== 'cancelled' && e.state !== 'complete'),
-    [entries]
+    nonAdminEntries.filter(e => !e.timeBlock && e.state !== 'migrated' && e.state !== 'cancelled' && e.state !== 'complete'),
+    [nonAdminEntries]
   );
 
   // Check if a range of slots is available (optionally ignoring a specific entry)
@@ -614,12 +618,44 @@ export default function TimeBlockView({ entries, onUpdate, colors, dateKey, onAd
   return (
     <View style={styles.container}>
       {/* Unassigned entries — tap to select, then tap a slot */}
-      {unassigned.length > 0 && (
+      {(unassigned.length > 0 || adminTasks.length > 0) && (
         <View style={[styles.unassignedSection, { borderBottomColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-            {selectedEntry ? 'TAP A TIME SLOT BELOW' : `UNSCHEDULED (${unassigned.length})`}
+            {selectedEntry ? 'TAP A TIME SLOT BELOW' : `UNSCHEDULED (${unassigned.length + (adminTasks.length > 0 ? 1 : 0)})`}
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.unassignedList}>
+            {/* Admin block chip — groups all admin sub-tasks */}
+            {adminTasks.length > 0 && (
+              <View style={styles.adminChipGroup}>
+                <TouchableOpacity
+                  style={[
+                    styles.unassignedChip,
+                    { backgroundColor: colors.accentOrange + '15', borderColor: colors.accentOrange + '40' },
+                  ]}
+                  onPress={() => {}}
+                  activeOpacity={0.9}
+                >
+                  <Text style={[styles.unassignedText, { color: colors.accentOrange }]} numberOfLines={1}>
+                    📋 Admin ({adminTasks.length})
+                  </Text>
+                </TouchableOpacity>
+                {adminTasks.map(task => (
+                  <View key={task.id} style={[styles.adminSubChip, { backgroundColor: colors.bgElevated, borderColor: colors.border }]}>
+                    <Text style={[styles.adminSubText, { color: colors.textSecondary }]} numberOfLines={1}>
+                      ↳ {task.text}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => onUpdate?.(task.id, { state: task.state === 'complete' ? 'open' : 'complete' })}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    >
+                      <Text style={{ fontSize: 14, color: task.state === 'complete' ? colors.accentGreen : colors.textMuted }}>
+                        {task.state === 'complete' ? '✓' : '○'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
             {unassigned.map(entry => {
               const isSelected = selectedEntry?.id === entry.id;
               const slotsNeeded = Math.max(1, entry.pomodoros || 1);
@@ -1048,6 +1084,23 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '600',
     marginLeft: 2,
+  },
+  adminChipGroup: {
+    marginRight: 8,
+    gap: 4,
+  },
+  adminSubChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    gap: 6,
+  },
+  adminSubText: {
+    fontSize: 11,
+    flex: 1,
   },
   timeline: {
     flex: 1,

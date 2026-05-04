@@ -112,6 +112,7 @@ export const addEntry = async (entry) => {
     collection: null,
     pomodoros: 0,        // estimated pomodoro count (each = 25 min)
     timeBlock: null,     // start time string e.g. "09:00" for time blocking
+    isAdmin: false,      // true = grouped under Admin block in time blocking
     ...entry,
   };
   entries.push(newEntry);

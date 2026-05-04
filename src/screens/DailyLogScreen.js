@@ -142,6 +142,10 @@ export default function DailyLogScreen() {
       });
   }, [entries, selectedDate]);
 
+  // Split into regular entries and admin sub-tasks
+  const regularEntries = useMemo(() => dayEntries.filter(e => !e.isAdmin), [dayEntries]);
+  const adminEntries = useMemo(() => dayEntries.filter(e => e.isAdmin), [dayEntries]);
+
   const stats = useMemo(() => {
     const tasks = dayEntries.filter(e => e.type === 'task');
     return {
@@ -239,7 +243,26 @@ export default function DailyLogScreen() {
     updateEntry(id, { state: 'migrated' });
   }, [updateEntry]);
 
+  // Combined list: regular entries + admin header + admin entries
+  const listData = useMemo(() => {
+    if (adminEntries.length === 0) return regularEntries;
+    return [
+      ...regularEntries,
+      { id: '__admin_header__', _isHeader: true },
+      ...adminEntries,
+    ];
+  }, [regularEntries, adminEntries]);
+
   const renderEntry = useCallback(({ item, drag, isActive }) => {
+    if (item._isHeader) {
+      return (
+        <View style={styles.adminHeader}>
+          <View style={[styles.adminHeaderLine, { backgroundColor: colors.accentOrange + '40' }]} />
+          <Text style={[styles.adminHeaderText, { color: colors.accentOrange }]}>📋 ADMIN</Text>
+          <View style={[styles.adminHeaderLine, { backgroundColor: colors.accentOrange + '40' }]} />
+        </View>
+      );
+    }
     return (
       <ScaleDecorator>
         <EntryItem
@@ -252,6 +275,7 @@ export default function DailyLogScreen() {
           drag={drag}
           isActive={isActive}
           isNextUp={item.id === nextUpId}
+          isAdminTask={!!item.isAdmin}
         />
       </ScaleDecorator>
     );
@@ -470,7 +494,7 @@ export default function DailyLogScreen() {
       {viewMode === 'list' ? (
         <DraggableFlatList
           ref={listRef}
-          data={dayEntries}
+          data={listData}
           renderItem={renderEntry}
           keyExtractor={item => item.id}
           onDragEnd={handleDragEnd}
@@ -835,5 +859,21 @@ const styles = StyleSheet.create({
   intentionSaveBtnText: {
     fontSize: SIZES.base,
     fontWeight: '700',
+  },
+  adminHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 10,
+  },
+  adminHeaderLine: {
+    flex: 1,
+    height: 1,
+  },
+  adminHeaderText: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.2,
   },
 });
