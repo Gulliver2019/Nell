@@ -31,7 +31,7 @@ export default function DailyLogScreen() {
     entries, selectedDate, setSelectedDate, addEntry, updateEntry,
     deleteEntry, migrateEntry, scheduleEntry, reorderEntries, migratePastEntries,
     completeDayAndMigrate, saveReflection, generateRoutineEntries,
-    addRoutine, deleteRoutine,
+    addRoutine, updateRoutine, deleteRoutine,
   } = useApp();
 
   const today = getDateKey();
@@ -202,11 +202,16 @@ export default function DailyLogScreen() {
     setFlyoutVisible(true);
   }, []);
 
-  const handleToggleRoutine = useCallback(async (entry, shouldRepeat) => {
+  const handleToggleRoutine = useCallback(async (entry, shouldRepeat, repeatDays) => {
     if (shouldRepeat) {
-      // Create a routine from this entry
-      const routine = await addRoutine({ text: entry.text, enabled: true });
-      await updateEntry(entry.id, { source: 'routine', routineId: routine.id });
+      if (entry.routineId) {
+        // Already a routine — just update the days
+        await updateRoutine(entry.routineId, { repeatDays: repeatDays || null });
+      } else {
+        // Create a routine from this entry
+        const routine = await addRoutine({ text: entry.text, enabled: true, repeatDays: repeatDays || null });
+        await updateEntry(entry.id, { source: 'routine', routineId: routine.id });
+      }
     } else {
       // Remove the routine
       if (entry.routineId) {
@@ -214,7 +219,7 @@ export default function DailyLogScreen() {
       }
       await updateEntry(entry.id, { source: null, routineId: null });
     }
-  }, [addRoutine, deleteRoutine, updateEntry]);
+  }, [addRoutine, deleteRoutine, updateEntry, updateRoutine]);
 
   const handleSchedule = useCallback((id) => {
     setScheduleEntryId(id);

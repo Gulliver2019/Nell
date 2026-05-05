@@ -6,9 +6,11 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { SIZES, getBulletTypes, getSignifiers } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
+import { useApp } from '../context/AppContext';
 import * as Haptics from 'expo-haptics';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const TIME_SLOTS = [];
 for (let h = 5; h <= 22; h++) {
@@ -31,6 +33,7 @@ export default function EntryFormFlyout({
   visible, onClose, onSubmit, entry = null, visibleFields, extraData = {}, onToggleRoutine,
 }) {
   const { colors } = useTheme();
+  const { routines } = useApp();
   const BULLET_TYPES = getBulletTypes(colors);
   const SIGNIFIER_MAP = getSignifiers(colors);
   const isEdit = !!entry;
@@ -49,6 +52,7 @@ export default function EntryFormFlyout({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [repeatDaily, setRepeatDaily] = useState(false);
+  const [repeatDays, setRepeatDays] = useState(null); // null = every day, or [0,1,2,...6]
 
   // Which fields to render
   const fields = visibleFields || ['text', 'type', 'signifier', 'pomodoros', 'timeBlock', 'date'];
@@ -66,6 +70,13 @@ export default function EntryFormFlyout({
         setTimeBlock(entry.timeBlock || null);
         setDate(entry.date ? new Date(entry.date + 'T00:00:00') : null);
         setRepeatDaily(entry.source === 'routine' || !!entry.routineId);
+        // Pre-fill repeatDays from the linked routine
+        if (entry.routineId) {
+          const routine = routines.find(r => r.id === entry.routineId);
+          setRepeatDays(routine?.repeatDays || null);
+        } else {
+          setRepeatDays(null);
+        }
       } else {
         setText('');
         setType('task');
@@ -75,6 +86,7 @@ export default function EntryFormFlyout({
         setTimeBlock(null);
         setDate(null);
         setRepeatDaily(false);
+        setRepeatDays(null);
       }
       setShowDatePicker(false);
       setShowTimePicker(false);
@@ -103,7 +115,15 @@ export default function EntryFormFlyout({
     if (isEdit && onToggleRoutine) {
       const wasRoutine = entry.source === 'routine' || !!entry.routineId;
       if (repeatDaily !== wasRoutine) {
-        onToggleRoutine(entry, repeatDaily);
+        onToggleRoutine(entry, repeatDaily, repeatDays);
+      } else if (repeatDaily && wasRoutine) {
+        // Schedule may have changed even if still repeating
+        const routine = routines.find(r => r.id === entry.routineId);
+        const oldDays = routine?.repeatDays || null;
+        const daysChanged = JSON.stringify(oldDays) !== JSON.stringify(repeatDays);
+        if (daysChanged) {
+          onToggleRoutine(entry, repeatDaily, repeatDays);
+        }
       }
     }
     onSubmit(data);
@@ -324,21 +344,60 @@ export default function EntryFormFlyout({
               </View>
             )}
 
-            {/* Repeat daily toggle */}
+            {/* Repeat schedule */}
             {isEdit && entry.type === 'task' && (
               <View style={styles.fieldRow}>
-                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Repeat Daily</Text>
+                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Repeat</Text>
                 <TouchableOpacity
                   style={[styles.toggleRow, { backgroundColor: colors.bgInput }]}
                   onPress={() => { setRepeatDaily(!repeatDaily); Haptics.selectionAsync(); }}
                 >
                   <Text style={[styles.toggleText, { color: repeatDaily ? colors.accentGreen : colors.textMuted }]}>
-                    {repeatDaily ? '🔁 Repeating every day' : 'Off — one-time task'}
+                    {repeatDaily ? '🔁 Repeating' : 'Off — one-time task'}
                   </Text>
                   <View style={[styles.toggleSwitch, { backgroundColor: repeatDaily ? colors.accentGreen : colors.border }]}>
                     <View style={[styles.toggleKnob, { transform: [{ translateX: repeatDaily ? 18 : 2 }] }]} />
                   </View>
                 </TouchableOpacity>
+                {repeatDaily && (
+                  <View style={styles.dayPickerInline}>
+                    <TouchableOpacity
+                      style={[styles.dayOption, !repeatDays && { backgroundColor: colors.accent + '15' }]}
+                      onPress={() => { setRepeatDays(null); Haptics.selectionAsync(); }}
+                    >
+                      <Text style={[styles.dayOptionText, { color: !repeatDays ? colors.accent : colors.textMuted }]}>Every day</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.dayOption, repeatDays && { backgroundColor: colors.accent + '15' }]}
+                      onPress={() => { setRepeatDays(repeatDays || [1,2,3,4,5]); Haptics.selectionAsync(); }}
+                    >
+                      <Text style={[styles.dayOptionText, { color: repeatDays ? colors.accent : colors.textMuted }]}>Specific days</Text>
+                    </TouchableOpacity>
+                    {repeatDays && (
+                      <View style={styles.dayChipsRow}>
+                        {DAY_LABELS.map((label, idx) => (
+                          <TouchableOpacity
+                            key={idx}
+                            style={[
+                              styles.dayChip,
+                              { borderColor: colors.border },
+                              repeatDays.includes(idx) && { backgroundColor: colors.accent, borderColor: colors.accent },
+                            ]}
+                            onPress={() => {
+                              const next = repeatDays.includes(idx)
+                                ? repeatDays.filter(d => d !== idx)
+                                : [...repeatDays, idx].sort();
+                              if (next.length > 0) setRepeatDays(next);
+                              Haptics.selectionAsync();
+                            }}
+                          >
+                            <Text style={[styles.dayChipText, { color: repeatDays.includes(idx) ? '#fff' : colors.text }]}>{label}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                )}
               </View>
             )}
 
@@ -530,5 +589,36 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 9,
     backgroundColor: '#fff',
+  },
+  dayPickerInline: {
+    marginTop: 8,
+    gap: 8,
+  },
+  dayOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  dayOptionText: {
+    fontSize: SIZES.sm,
+    fontWeight: '600',
+  },
+  dayChipsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+    gap: 4,
+  },
+  dayChip: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dayChipText: {
+    fontSize: SIZES.xs,
+    fontWeight: '700',
   },
 });

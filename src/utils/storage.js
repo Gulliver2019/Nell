@@ -945,6 +945,7 @@ export const addRoutine = async (routine) => {
     signifier: null,
     pomodoros: 0,
     enabled: true,
+    repeatDays: null, // null = every day, or array of day numbers [0=Sun,1=Mon,...6=Sat]
     sortOrder: routines.length,
     ...routine,
   };
@@ -974,8 +975,14 @@ export const generateRoutineEntries = async (dateKey) => {
   const routines = await getRoutines();
   const entries = await getAllEntries();
   const enabled = routines.filter(r => r.enabled);
+  // Get day of week for this dateKey (format: YYYY-MM-DD)
+  const dayOfWeek = new Date(dateKey + 'T12:00:00').getDay(); // 0=Sun,1=Mon,...6=Sat
   let added = 0;
   for (const routine of enabled) {
+    // Skip if routine is day-specific and today isn't one of those days
+    if (routine.repeatDays && routine.repeatDays.length > 0) {
+      if (!routine.repeatDays.includes(dayOfWeek)) continue;
+    }
     const exists = entries.some(e => e.routineId === routine.id && e.date === dateKey);
     if (!exists) {
       await addEntry({

@@ -12,6 +12,8 @@ import { useApp } from '../context/AppContext';
 import * as Haptics from 'expo-haptics';
 import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
 
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
 export default function GoalsScreen() {
   const { colors } = useTheme();
   const {
@@ -21,13 +23,14 @@ export default function GoalsScreen() {
     addGoalDiscipline, updateGoalDiscipline, deleteGoalDiscipline,
     addGoalWeeklyTask, updateGoalWeeklyTask, deleteGoalWeeklyTask,
     addGoalStandard, updateGoalStandard, deleteGoalStandard,
-    addRoutine, deleteRoutine,
+    addRoutine, updateRoutine, deleteRoutine, routines,
   } = useApp();
 
   const [selectedGoal, setSelectedGoal] = useState(null);
   const [showNewModal, setShowNewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showProjectPicker, setShowProjectPicker] = useState(false);
+  const [showDayPicker, setShowDayPicker] = useState(null); // holds discipline object when picking days
 
   // Form state
   const [formTitle, setFormTitle] = useState('');
@@ -154,10 +157,32 @@ export default function GoalsScreen() {
       Alert.alert('Already Active', 'This discipline is already repeating on your daily.');
       return;
     }
+    // Show day picker - user chooses every day or specific days
+    setShowDayPicker({ goalId, discipline });
+  };
+
+  const handleConfirmDays = async (repeatDays) => {
+    if (!showDayPicker) return;
+    const { goalId, discipline } = showDayPicker;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const routine = await addRoutine({ text: discipline.text, enabled: true });
+    const routine = await addRoutine({ text: discipline.text, enabled: true, repeatDays });
     await updateGoalDiscipline(goalId, discipline.id, { routineId: routine.id });
-    Alert.alert('Added ✓', 'This discipline will now repeat on your daily log each day.');
+    setShowDayPicker(null);
+    const label = repeatDays ? DAY_LABELS.filter((_, i) => repeatDays.includes(i)).join(', ') : 'every day';
+    Alert.alert('Added ✓', `This discipline will repeat on your daily (${label}).`);
+  };
+
+  const handleEditRoutineDays = (discipline) => {
+    if (!discipline.routineId) return;
+    const routine = routines.find(r => r.id === discipline.routineId);
+    if (!routine) return;
+    setShowDayPicker({ goalId: selectedGoal.id, discipline, existingRoutineId: routine.id, currentDays: routine.repeatDays });
+  };
+
+  const handleUpdateRoutineDays = async (repeatDays) => {
+    if (!showDayPicker?.existingRoutineId) return;
+    await updateRoutine(showDayPicker.existingRoutineId, { repeatDays });
+    setShowDayPicker(null);
   };
 
   const handleRemoveFromDaily = (goalId, discipline) => {
@@ -299,11 +324,23 @@ export default function GoalsScreen() {
                   <Text style={[styles.itemText, { color: colors.text }]}>{d.text}</Text>
                   <View style={styles.itemActions}>
                     {d.routineId ? (
-                      <TouchableOpacity onPress={() => handleRemoveFromDaily(goal.id, d)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-                        <View style={[styles.activeBadge, { backgroundColor: colors.accentGreen + '20' }]}>
-                          <Text style={[styles.activeBadgeText, { color: colors.accentGreen }]}>Active</Text>
-                        </View>
-                      </TouchableOpacity>
+                      <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+                        <TouchableOpacity onPress={() => handleEditRoutineDays(d)} onLongPress={() => handleRemoveFromDaily(goal.id, d)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+                          <View style={[styles.activeBadge, { backgroundColor: colors.accentGreen + '20' }]}>
+                            <Text style={[styles.activeBadgeText, { color: colors.accentGreen }]}>
+                              {(() => {
+                                const routine = routines.find(r => r.id === d.routineId);
+                                if (!routine?.repeatDays || routine.repeatDays.length === 0) return 'Daily';
+                                if (routine.repeatDays.length === 7) return 'Daily';
+                                return routine.repeatDays.map(i => DAY_LABELS[i]).join(', ');
+                              })()}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => handleRemoveFromDaily(goal.id, d)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+                          <Ionicons name="close-circle" size={16} color={colors.textMuted} />
+                        </TouchableOpacity>
+                      </View>
                     ) : (
                       <TouchableOpacity onPress={() => handleAddToDaily(goal.id, d)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
                         <View style={[styles.addDailyBtn, { backgroundColor: colors.accent + '15' }]}>
@@ -499,6 +536,22 @@ export default function GoalsScreen() {
             </View>
           </TouchableOpacity>
         </Modal>
+
+        {/* Day Picker Modal */}
+        <DayPickerModal
+          visible={!!showDayPicker}
+          colors={colors}
+          initialDays={showDayPicker?.currentDays || null}
+          isEditing={!!showDayPicker?.existingRoutineId}
+          onConfirm={(days) => {
+            if (showDayPicker?.existingRoutineId) {
+              handleUpdateRoutineDays(days);
+            } else {
+              handleConfirmDays(days);
+            }
+          }}
+          onClose={() => setShowDayPicker(null)}
+        />
       </SafeAreaView>
     );
   }
@@ -653,6 +706,120 @@ export default function GoalsScreen() {
     </SafeAreaView>
   );
 }
+
+// ═══════════════════════════════════════════════════
+// DAY PICKER MODAL COMPONENT
+// ═══════════════════════════════════════════════════
+function DayPickerModal({ visible, colors, initialDays, isEditing, onConfirm, onClose }) {
+  const [selectedDays, setSelectedDays] = React.useState([]);
+  const [everyDay, setEveryDay] = React.useState(true);
+
+  React.useEffect(() => {
+    if (visible) {
+      if (initialDays && initialDays.length > 0 && initialDays.length < 7) {
+        setSelectedDays(initialDays);
+        setEveryDay(false);
+      } else {
+        setSelectedDays([]);
+        setEveryDay(true);
+      }
+    }
+  }, [visible, initialDays]);
+
+  const toggleDay = (dayIdx) => {
+    setSelectedDays(prev =>
+      prev.includes(dayIdx) ? prev.filter(d => d !== dayIdx) : [...prev, dayIdx].sort()
+    );
+  };
+
+  const handleConfirm = () => {
+    if (everyDay) {
+      onConfirm(null);
+    } else {
+      if (selectedDays.length === 0) return;
+      onConfirm(selectedDays);
+    }
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <TouchableOpacity style={dpStyles.overlay} activeOpacity={1} onPress={onClose}>
+        <View style={[dpStyles.content, { backgroundColor: colors.bgCard }]} onStartShouldSetResponder={() => true}>
+          <Text style={[dpStyles.title, { color: colors.text }]}>{isEditing ? 'Edit Schedule' : 'Repeat Schedule'}</Text>
+
+          <TouchableOpacity
+            style={[dpStyles.option, everyDay && { backgroundColor: colors.accent + '15' }]}
+            onPress={() => setEveryDay(true)}
+          >
+            <Ionicons name={everyDay ? 'radio-button-on' : 'radio-button-off'} size={20} color={everyDay ? colors.accent : colors.textMuted} />
+            <Text style={[dpStyles.optionText, { color: colors.text }]}>Every day</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[dpStyles.option, !everyDay && { backgroundColor: colors.accent + '15' }]}
+            onPress={() => setEveryDay(false)}
+          >
+            <Ionicons name={!everyDay ? 'radio-button-on' : 'radio-button-off'} size={20} color={!everyDay ? colors.accent : colors.textMuted} />
+            <Text style={[dpStyles.optionText, { color: colors.text }]}>Specific days</Text>
+          </TouchableOpacity>
+
+          {!everyDay && (
+            <View style={dpStyles.daysRow}>
+              {DAY_LABELS.map((label, idx) => (
+                <TouchableOpacity
+                  key={idx}
+                  style={[
+                    dpStyles.dayChip,
+                    { borderColor: colors.border },
+                    selectedDays.includes(idx) && { backgroundColor: colors.accent, borderColor: colors.accent },
+                  ]}
+                  onPress={() => toggleDay(idx)}
+                >
+                  <Text style={[
+                    dpStyles.dayChipText,
+                    { color: selectedDays.includes(idx) ? '#fff' : colors.text },
+                  ]}>{label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          <View style={dpStyles.actions}>
+            <TouchableOpacity onPress={onClose} style={[dpStyles.cancelBtn, { backgroundColor: colors.bgInput }]}>
+              <Text style={[dpStyles.cancelText, { color: colors.textSecondary }]}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleConfirm}
+              style={[dpStyles.confirmBtn, { backgroundColor: colors.accent }]}
+              disabled={!everyDay && selectedDays.length === 0}
+            >
+              <Text style={dpStyles.confirmText}>{isEditing ? 'Update' : 'Add to Daily'}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+}
+
+const dpStyles = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center' },
+  content: { borderRadius: 20, padding: 24, marginHorizontal: 16 },
+  title: { fontSize: SIZES.lg, fontWeight: '700', marginBottom: 16 },
+  option: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 10, marginBottom: 8 },
+  optionText: { fontSize: SIZES.base, fontWeight: '600' },
+  daysRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, marginBottom: 16, gap: 4 },
+  dayChip: {
+    width: 40, height: 40, borderRadius: 20, borderWidth: 1.5,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  dayChipText: { fontSize: SIZES.xs, fontWeight: '700' },
+  actions: { flexDirection: 'row', gap: 12, marginTop: 16 },
+  cancelBtn: { flex: 1, padding: 14, borderRadius: 12, alignItems: 'center' },
+  cancelText: { fontSize: SIZES.base, fontWeight: '600' },
+  confirmBtn: { flex: 1, padding: 14, borderRadius: 12, alignItems: 'center' },
+  confirmText: { fontSize: SIZES.base, fontWeight: '700', color: '#fff' },
+});
 
 // ═══════════════════════════════════════════════════
 // STYLES
