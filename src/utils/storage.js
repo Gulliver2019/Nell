@@ -734,6 +734,9 @@ export const addGoal = async (goal) => {
     createdAt: new Date().toISOString(),
     title: '',
     description: '',
+    ninetyDayTarget: '',
+    isPriority: true,
+    linkedProjectIds: [],
     dailyDisciplines: [],
     weeklyTasks: [],
     standards: [],
@@ -742,6 +745,36 @@ export const addGoal = async (goal) => {
   goals.push(newGoal);
   await saveGoals(goals);
   return newGoal;
+};
+
+export const toggleGoalPriority = async (id) => {
+  const goals = await getGoals();
+  const idx = goals.findIndex(g => g.id === id);
+  if (idx === -1) return;
+  goals[idx].isPriority = !goals[idx].isPriority;
+  goals[idx].updatedAt = new Date().toISOString();
+  await saveGoals(goals);
+};
+
+export const linkProjectToGoal = async (goalId, projectId) => {
+  const goals = await getGoals();
+  const goal = goals.find(g => g.id === goalId);
+  if (!goal) return;
+  if (!goal.linkedProjectIds) goal.linkedProjectIds = [];
+  if (!goal.linkedProjectIds.includes(projectId)) {
+    goal.linkedProjectIds.push(projectId);
+    goal.updatedAt = new Date().toISOString();
+    await saveGoals(goals);
+  }
+};
+
+export const unlinkProjectFromGoal = async (goalId, projectId) => {
+  const goals = await getGoals();
+  const goal = goals.find(g => g.id === goalId);
+  if (!goal) return;
+  goal.linkedProjectIds = (goal.linkedProjectIds || []).filter(id => id !== projectId);
+  goal.updatedAt = new Date().toISOString();
+  await saveGoals(goals);
 };
 
 export const updateGoal = async (id, updates) => {

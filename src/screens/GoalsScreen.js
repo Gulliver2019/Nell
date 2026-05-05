@@ -15,7 +15,9 @@ import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
 export default function GoalsScreen() {
   const { colors } = useTheme();
   const {
-    goals, addGoal, updateGoal, deleteGoal,
+    goals, projects,
+    addGoal, updateGoal, deleteGoal, toggleGoalPriority,
+    linkProjectToGoal, unlinkProjectFromGoal,
     addGoalDiscipline, updateGoalDiscipline, deleteGoalDiscipline,
     addGoalWeeklyTask, updateGoalWeeklyTask, deleteGoalWeeklyTask,
     addGoalStandard, updateGoalStandard, deleteGoalStandard,
@@ -25,27 +27,34 @@ export default function GoalsScreen() {
   const [selectedGoal, setSelectedGoal] = useState(null);
   const [showNewModal, setShowNewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showProjectPicker, setShowProjectPicker] = useState(false);
 
   // Form state
   const [formTitle, setFormTitle] = useState('');
   const [formDescription, setFormDescription] = useState('');
+  const [formNinetyDayTarget, setFormNinetyDayTarget] = useState('');
 
   // Add item state
-  const [addingSection, setAddingSection] = useState(null); // 'discipline' | 'weeklyTask' | 'standard'
+  const [addingSection, setAddingSection] = useState(null);
   const [newItemText, setNewItemText] = useState('');
-  const [editingItem, setEditingItem] = useState(null); // { section, id, text }
+  const [editingItem, setEditingItem] = useState(null);
   const [editItemText, setEditItemText] = useState('');
 
   const resetForm = () => {
     setFormTitle('');
     setFormDescription('');
+    setFormNinetyDayTarget('');
   };
 
   // ─── Goal CRUD ────────────────────────────────────
   const handleCreateGoal = async () => {
     if (!formTitle.trim()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await addGoal({ title: formTitle.trim(), description: formDescription.trim() });
+    await addGoal({
+      title: formTitle.trim(),
+      description: formDescription.trim(),
+      ninetyDayTarget: formNinetyDayTarget.trim(),
+    });
     resetForm();
     setShowNewModal(false);
   };
@@ -53,6 +62,7 @@ export default function GoalsScreen() {
   const openEditModal = (goal) => {
     setFormTitle(goal.title);
     setFormDescription(goal.description || '');
+    setFormNinetyDayTarget(goal.ninetyDayTarget || '');
     setShowEditModal(true);
   };
 
@@ -62,6 +72,7 @@ export default function GoalsScreen() {
     await updateGoal(selectedGoal.id, {
       title: formTitle.trim(),
       description: formDescription.trim(),
+      ninetyDayTarget: formNinetyDayTarget.trim(),
     });
     setShowEditModal(false);
   };
@@ -72,6 +83,28 @@ export default function GoalsScreen() {
       { text: 'Delete', style: 'destructive', onPress: async () => {
         if (selectedGoal?.id === goal.id) setSelectedGoal(null);
         await deleteGoal(goal.id);
+      }},
+    ]);
+  };
+
+  const handleTogglePriority = async (goal) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await toggleGoalPriority(goal.id);
+  };
+
+  // ─── Linked Projects ──────────────────────────────
+  const handleLinkProject = async (projectId) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await linkProjectToGoal(selectedGoal.id, projectId);
+    setShowProjectPicker(false);
+  };
+
+  const handleUnlinkProject = (projectId) => {
+    const proj = projects.find(p => p.id === projectId);
+    Alert.alert('Unlink Project', `Remove "${proj?.title || 'project'}" from this goal?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Remove', style: 'destructive', onPress: async () => {
+        await unlinkProjectFromGoal(selectedGoal.id, projectId);
       }},
     ]);
   };
@@ -147,6 +180,12 @@ export default function GoalsScreen() {
     const disciplines = goal.dailyDisciplines || [];
     const weeklyTasks = goal.weeklyTasks || [];
     const standards = goal.standards || [];
+    const linkedProjects = (goal.linkedProjectIds || [])
+      .map(id => projects.find(p => p.id === id))
+      .filter(Boolean);
+    const availableProjects = projects.filter(
+      p => !(goal.linkedProjectIds || []).includes(p.id)
+    );
 
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
@@ -161,6 +200,9 @@ export default function GoalsScreen() {
               <Text style={[styles.detailDescription, { color: colors.textSecondary }]}>{goal.description}</Text>
             ) : null}
           </View>
+          <TouchableOpacity onPress={() => handleTogglePriority(goal)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ marginRight: 12 }}>
+            <Ionicons name={goal.isPriority !== false ? 'star' : 'star-outline'} size={20} color={goal.isPriority !== false ? '#F59E0B' : colors.textMuted} />
+          </TouchableOpacity>
           <TouchableOpacity onPress={() => openEditModal(goal)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ marginRight: 12 }}>
             <Ionicons name="pencil-outline" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
@@ -171,8 +213,56 @@ export default function GoalsScreen() {
 
         <ScrollView style={styles.detailScroll} contentContainerStyle={{ paddingBottom: 100 }} keyboardShouldPersistTaps="handled">
 
+          {/* ──── 90-Day Target ──── */}
+          {goal.ninetyDayTarget ? (
+            <View style={[styles.targetCard, { backgroundColor: colors.accent + '12', borderColor: colors.accent + '30' }]}>
+              <View style={styles.targetHeader}>
+                <Ionicons name="flag" size={16} color={colors.accent} />
+                <Text style={[styles.targetLabel, { color: colors.accent }]}>90-DAY TARGET</Text>
+              </View>
+              <Text style={[styles.targetText, { color: colors.text }]}>{goal.ninetyDayTarget}</Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={[styles.targetCardEmpty, { borderColor: colors.accent + '30' }]}
+              onPress={() => openEditModal(goal)}
+            >
+              <Ionicons name="flag-outline" size={16} color={colors.accent} />
+              <Text style={[styles.targetEmptyText, { color: colors.accent }]}>Set a 90-day target...</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* ──── Linked Projects ──── */}
+          <View style={[styles.sectionHeader, { marginTop: 20 }]}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>LINKED PROJECTS</Text>
+            {availableProjects.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setShowProjectPicker(true)}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              >
+                <Ionicons name="add-circle-outline" size={22} color={colors.accent} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {linkedProjects.length === 0 && (
+            <Text style={[styles.emptyText, { color: colors.textMuted }]}>
+              {availableProjects.length > 0 ? 'Link a project to track progress' : 'No projects created yet'}
+            </Text>
+          )}
+
+          {linkedProjects.map(proj => (
+            <View key={proj.id} style={[styles.projectRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+              <Text style={styles.projectEmoji}>{proj.emoji || '🎯'}</Text>
+              <Text style={[styles.projectName, { color: colors.text }]} numberOfLines={1}>{proj.title}</Text>
+              <TouchableOpacity onPress={() => handleUnlinkProject(proj.id)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+                <Ionicons name="close-circle" size={20} color={colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+          ))}
+
           {/* ──── Daily Disciplines ──── */}
-          <View style={styles.sectionHeader}>
+          <View style={[styles.sectionHeader, { marginTop: 24 }]}>
             <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>DAILY DISCIPLINES</Text>
             <TouchableOpacity
               onPress={() => { setAddingSection(addingSection === 'discipline' ? null : 'discipline'); setNewItemText(''); }}
@@ -385,6 +475,30 @@ export default function GoalsScreen() {
 
         {/* Edit Goal Modal */}
         {renderGoalModal(true)}
+
+        {/* Project Picker Modal */}
+        <Modal visible={showProjectPicker} transparent animationType="fade">
+          <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowProjectPicker(false)}>
+            <View style={[styles.pickerContent, { backgroundColor: colors.bgCard }]}>
+              <Text style={[styles.pickerTitle, { color: colors.text }]}>Link a Project</Text>
+              <ScrollView style={{ maxHeight: 300 }}>
+                {availableProjects.map(proj => (
+                  <TouchableOpacity
+                    key={proj.id}
+                    style={[styles.pickerItem, { borderColor: colors.border }]}
+                    onPress={() => handleLinkProject(proj.id)}
+                  >
+                    <Text style={styles.pickerEmoji}>{proj.emoji || '🎯'}</Text>
+                    <Text style={[styles.pickerItemText, { color: colors.text }]}>{proj.title}</Text>
+                  </TouchableOpacity>
+                ))}
+                {availableProjects.length === 0 && (
+                  <Text style={[styles.emptyText, { color: colors.textMuted, textAlign: 'center', paddingVertical: 20 }]}>All projects already linked</Text>
+                )}
+              </ScrollView>
+            </View>
+          </TouchableOpacity>
+        </Modal>
       </SafeAreaView>
     );
   }
@@ -427,6 +541,17 @@ export default function GoalsScreen() {
                 numberOfLines={3}
               />
 
+              <TextInput
+                style={[styles.modalInput, { backgroundColor: colors.bgInput, color: colors.text }]}
+                placeholder="90-day target — what does success look like?"
+                placeholderTextColor={colors.textMuted}
+                value={formNinetyDayTarget}
+                onChangeText={setFormNinetyDayTarget}
+                selectionColor={colors.accent}
+                multiline
+                numberOfLines={2}
+              />
+
               <View style={styles.modalActions}>
                 <TouchableOpacity onPress={onClose} style={[styles.cancelBtn, { backgroundColor: colors.bgInput }]}>
                   <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Cancel</Text>
@@ -447,24 +572,47 @@ export default function GoalsScreen() {
   // ═══════════════════════════════════════════════════
   // GOAL CARDS LIST
   // ═══════════════════════════════════════════════════
+  // Sort: priority goals first
+  const sortedGoals = [...goals].sort((a, b) => {
+    const aPri = a.isPriority !== false ? 1 : 0;
+    const bPri = b.isPriority !== false ? 1 : 0;
+    return bPri - aPri;
+  });
+
   const renderGoal = ({ item }) => {
     const disciplineCount = (item.dailyDisciplines || []).length;
     const weeklyCount = (item.weeklyTasks || []).length;
-    const standardCount = (item.standards || []).length;
+    const linkedCount = (item.linkedProjectIds || []).length;
+    const isPriority = item.isPriority !== false;
+    const dimmed = !isPriority;
 
     return (
       <TouchableOpacity
-        style={[styles.goalCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
+        style={[
+          styles.goalCard,
+          { backgroundColor: colors.bgCard, borderColor: dimmed ? colors.border + '60' : colors.border },
+          dimmed && { opacity: 0.5 },
+        ]}
         onPress={() => setSelectedGoal(item)}
+        onLongPress={() => handleTogglePriority(item)}
         activeOpacity={0.7}
       >
-        <Text style={[styles.goalCardTitle, { color: colors.text }]}>{item.title}</Text>
+        <View style={styles.goalCardHeader}>
+          <Text style={[styles.goalCardTitle, { color: colors.text }]}>{item.title}</Text>
+          {isPriority && <Ionicons name="star" size={14} color="#F59E0B" />}
+        </View>
         {item.description ? (
           <Text style={[styles.goalCardDesc, { color: colors.textSecondary }]} numberOfLines={2}>{item.description}</Text>
         ) : null}
+        {item.ninetyDayTarget ? (
+          <View style={[styles.goalCardTarget, { backgroundColor: colors.accent + '10' }]}>
+            <Ionicons name="flag" size={12} color={colors.accent} />
+            <Text style={[styles.goalCardTargetText, { color: colors.accent }]} numberOfLines={1}>{item.ninetyDayTarget}</Text>
+          </View>
+        ) : null}
         <View style={styles.goalCardFooter}>
           <Text style={[styles.goalCardStat, { color: colors.textMuted }]}>
-            {disciplineCount} discipline{disciplineCount !== 1 ? 's' : ''} · {weeklyCount} weekly · {standardCount} standard{standardCount !== 1 ? 's' : ''}
+            {disciplineCount} discipline{disciplineCount !== 1 ? 's' : ''} · {weeklyCount} weekly{linkedCount > 0 ? ` · ${linkedCount} project${linkedCount !== 1 ? 's' : ''}` : ''}
           </Text>
         </View>
       </TouchableOpacity>
@@ -476,9 +624,10 @@ export default function GoalsScreen() {
       <View style={styles.header}>
         <LinearGradient colors={[colors.accent + '20', 'transparent']} style={StyleSheet.absoluteFillObject} />
         <Text style={[styles.headerTitle, { color: colors.text }]}>Goals</Text>
+        <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>Long press to toggle priority</Text>
       </View>
       <FlatList
-        data={goals}
+        data={sortedGoals}
         keyExtractor={item => item.id}
         renderItem={renderGoal}
         contentContainerStyle={styles.listContent}
@@ -486,7 +635,7 @@ export default function GoalsScreen() {
           <View style={styles.empty}>
             <Text style={styles.emptyIcon}>🎯</Text>
             <Text style={[styles.emptyLabel, { color: colors.textMuted }]}>Set your first goal</Text>
-            <Text style={[styles.emptySubLabel, { color: colors.textMuted }]}>Define disciplines, weekly tasks & standards</Text>
+            <Text style={[styles.emptySubLabel, { color: colors.textMuted }]}>Define a 90-day target, link projects & add disciplines</Text>
           </View>
         }
         ListFooterComponent={
@@ -512,12 +661,16 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, position: 'relative' },
   headerTitle: { fontSize: SIZES.xxxl, fontWeight: '800', letterSpacing: -1 },
+  headerSubtitle: { fontSize: SIZES.xs, marginTop: 2 },
   listContent: { paddingHorizontal: 16, paddingBottom: 100, gap: 12 },
 
   // Goal card
   goalCard: { borderRadius: 16, padding: 16, borderWidth: 1 },
-  goalCardTitle: { fontSize: SIZES.lg, fontWeight: '700' },
+  goalCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  goalCardTitle: { fontSize: SIZES.lg, fontWeight: '700', flex: 1 },
   goalCardDesc: { fontSize: SIZES.sm, marginTop: 4 },
+  goalCardTarget: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  goalCardTargetText: { fontSize: SIZES.xs, fontWeight: '600', flex: 1 },
   goalCardFooter: { marginTop: 10 },
   goalCardStat: { fontSize: SIZES.sm },
 
@@ -530,7 +683,7 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingTop: 80 },
   emptyIcon: { fontSize: 56, marginBottom: 12 },
   emptyLabel: { fontSize: SIZES.lg, fontWeight: '700', marginBottom: 4 },
-  emptySubLabel: { fontSize: SIZES.sm },
+  emptySubLabel: { fontSize: SIZES.sm, textAlign: 'center', paddingHorizontal: 40 },
 
   // Detail view
   detailHeader: {
@@ -542,6 +695,27 @@ const styles = StyleSheet.create({
   detailTitle: { fontSize: SIZES.xl, fontWeight: '700' },
   detailDescription: { fontSize: SIZES.sm, marginTop: 2 },
   detailScroll: { flex: 1 },
+
+  // 90-day target card
+  targetCard: {
+    marginHorizontal: 16, marginTop: 16, padding: 14, borderRadius: 12, borderWidth: 1,
+  },
+  targetHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
+  targetLabel: { fontSize: SIZES.xs, fontWeight: '700', letterSpacing: 0.5 },
+  targetText: { fontSize: SIZES.base, fontWeight: '600', lineHeight: 22 },
+  targetCardEmpty: {
+    marginHorizontal: 16, marginTop: 16, padding: 14, borderRadius: 12,
+    borderWidth: 1, borderStyle: 'dashed', flexDirection: 'row', alignItems: 'center', gap: 8,
+  },
+  targetEmptyText: { fontSize: SIZES.sm, fontWeight: '600' },
+
+  // Linked projects
+  projectRow: {
+    marginHorizontal: 16, marginBottom: 8, borderRadius: 12,
+    borderWidth: 1, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10,
+  },
+  projectEmoji: { fontSize: 20 },
+  projectName: { fontSize: SIZES.base, fontWeight: '600', flex: 1 },
 
   // Section header
   sectionHeader: {
@@ -564,7 +738,7 @@ const styles = StyleSheet.create({
   itemText: { fontSize: SIZES.base, fontWeight: '600', flex: 1 },
   itemActions: { flexDirection: 'row', gap: 12, marginLeft: 8, alignItems: 'center' },
 
-  // Active badge (discipline added to daily)
+  // Active badge
   activeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
   activeBadgeText: { fontSize: SIZES.xs, fontWeight: '700' },
   addDailyBtn: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
@@ -598,4 +772,14 @@ const styles = StyleSheet.create({
   createBtn: { flex: 1, borderRadius: SIZES.radius, overflow: 'hidden' },
   createGradient: { padding: 14, alignItems: 'center' },
   createText: { fontSize: SIZES.base, fontWeight: '700' },
+
+  // Project picker modal
+  pickerContent: { borderRadius: SIZES.radiusXl, padding: 24, marginHorizontal: 16 },
+  pickerTitle: { fontSize: SIZES.lg, fontWeight: '700', marginBottom: 16 },
+  pickerItem: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingVertical: 12, paddingHorizontal: 12, borderBottomWidth: 1,
+  },
+  pickerEmoji: { fontSize: 24 },
+  pickerItemText: { fontSize: SIZES.base, fontWeight: '600' },
 });

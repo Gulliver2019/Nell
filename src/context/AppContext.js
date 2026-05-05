@@ -468,6 +468,24 @@ export function AppProvider({ children }) {
     dispatch({ type: 'SET_GOALS', payload: goals });
   }, []);
 
+  const toggleGoalPriority = useCallback(async (id) => {
+    await Storage.toggleGoalPriority(id);
+    const goals = await Storage.getGoals();
+    dispatch({ type: 'SET_GOALS', payload: goals });
+  }, []);
+
+  const linkProjectToGoal = useCallback(async (goalId, projectId) => {
+    await Storage.linkProjectToGoal(goalId, projectId);
+    const goals = await Storage.getGoals();
+    dispatch({ type: 'SET_GOALS', payload: goals });
+  }, []);
+
+  const unlinkProjectFromGoal = useCallback(async (goalId, projectId) => {
+    await Storage.unlinkProjectFromGoal(goalId, projectId);
+    const goals = await Storage.getGoals();
+    dispatch({ type: 'SET_GOALS', payload: goals });
+  }, []);
+
   const addMonthlyFocus = useCallback(async (goalId, monthKey, text) => {
     const focus = await Storage.addMonthlyFocus(goalId, monthKey, text);
     const goals = await Storage.getGoals();
@@ -639,6 +657,9 @@ export function AppProvider({ children }) {
     addGoal,
     updateGoal,
     deleteGoal,
+    toggleGoalPriority,
+    linkProjectToGoal,
+    unlinkProjectFromGoal,
     addMonthlyFocus,
     updateMonthlyFocus,
     deleteMonthlyFocus,
