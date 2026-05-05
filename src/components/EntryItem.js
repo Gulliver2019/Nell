@@ -10,7 +10,7 @@ import TargetIcon from './TargetIcon';
 
 const SWIPE_THRESHOLD = 80;
 
-export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSchedule, onAddToDaily, onEdit, onPress, drag, isActive, isNextUp, isAdminTask }) {
+export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSchedule, onAddToDaily, onEdit, onPress, drag, isActive, isNextUp, isAdminTask, isQuickWin }) {
   const { colors } = useTheme();
   const BULLET_TYPES = getBulletTypes(colors);
   const TASK_STATES = getTaskStates(colors);
@@ -223,6 +223,9 @@ export default function EntryItem({ entry, onUpdate, onDelete, onMigrate, onSche
             </Text>
             {isAdminTask && (
               <Text style={[styles.adminBadge, { color: colors.accentOrange }]}>📋</Text>
+            )}
+            {isQuickWin && (
+              <Text style={[styles.adminBadge, { color: colors.accentGreen }]}>⚡</Text>
             )}
             {(entry.pomodoros || 0) > 0 && (
               <TouchableOpacity onPress={handlePomodoroTap} hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}>

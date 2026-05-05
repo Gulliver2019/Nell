@@ -47,6 +47,7 @@ export default function EntryFormFlyout({
   const [signifier, setSignifier] = useState(null);
   const [pomodoros, setPomodoros] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isQuickWin, setIsQuickWin] = useState(false);
   const [timeBlock, setTimeBlock] = useState(null);
   const [date, setDate] = useState(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -67,6 +68,7 @@ export default function EntryFormFlyout({
         setSignifier(entry.signifier || null);
         setPomodoros(entry.pomodoros || 0);
         setIsAdmin(!!entry.isAdmin);
+        setIsQuickWin(!!entry.isQuickWin);
         setTimeBlock(entry.timeBlock || null);
         setDate(entry.date ? new Date(entry.date + 'T00:00:00') : null);
         setRepeatDaily(entry.source === 'routine' || !!entry.routineId);
@@ -83,6 +85,7 @@ export default function EntryFormFlyout({
         setSignifier(null);
         setPomodoros(0);
         setIsAdmin(false);
+        setIsQuickWin(false);
         setTimeBlock(null);
         setDate(null);
         setRepeatDaily(false);
@@ -101,7 +104,7 @@ export default function EntryFormFlyout({
   const handleSubmit = () => {
     if (!text.trim()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const data = { text: text.trim(), type, signifier, isAdmin, ...extraData };
+    const data = { text: text.trim(), type, signifier, isAdmin, isQuickWin, ...extraData };
     if (show('pomodoros')) data.pomodoros = pomodoros;
     if (show('timeBlock')) data.timeBlock = timeBlock || null;
     if (show('date') && date) {
@@ -329,18 +332,31 @@ export default function EntryFormFlyout({
             {/* Admin task toggle */}
             {isEdit && entry.type === 'task' && (
               <View style={styles.fieldRow}>
-                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Admin Task</Text>
-                <TouchableOpacity
-                  style={[styles.toggleRow, { backgroundColor: colors.bgInput }]}
-                  onPress={() => { setIsAdmin(!isAdmin); Haptics.selectionAsync(); }}
-                >
-                  <Text style={[styles.toggleText, { color: isAdmin ? colors.accentOrange : colors.textMuted }]}>
-                    {isAdmin ? '📋 Grouped under Admin block' : 'Off — standalone task'}
-                  </Text>
-                  <View style={[styles.toggleSwitch, { backgroundColor: isAdmin ? colors.accentOrange : colors.border }]}>
-                    <View style={[styles.toggleKnob, { transform: [{ translateX: isAdmin ? 18 : 2 }] }]} />
-                  </View>
-                </TouchableOpacity>
+                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Group</Text>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TouchableOpacity
+                    style={[styles.toggleRow, { backgroundColor: colors.bgInput, flex: 1 }]}
+                    onPress={() => { setIsQuickWin(!isQuickWin); if (!isQuickWin) setIsAdmin(false); Haptics.selectionAsync(); }}
+                  >
+                    <Text style={[styles.toggleText, { color: isQuickWin ? colors.accentGreen : colors.textMuted }]}>
+                      {isQuickWin ? '⚡ Quick Win' : '⚡'}
+                    </Text>
+                    <View style={[styles.toggleSwitch, { backgroundColor: isQuickWin ? colors.accentGreen : colors.border }]}>
+                      <View style={[styles.toggleKnob, { transform: [{ translateX: isQuickWin ? 18 : 2 }] }]} />
+                    </View>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.toggleRow, { backgroundColor: colors.bgInput, flex: 1 }]}
+                    onPress={() => { setIsAdmin(!isAdmin); if (!isAdmin) setIsQuickWin(false); Haptics.selectionAsync(); }}
+                  >
+                    <Text style={[styles.toggleText, { color: isAdmin ? colors.accentOrange : colors.textMuted }]}>
+                      {isAdmin ? '📋 Admin' : '📋'}
+                    </Text>
+                    <View style={[styles.toggleSwitch, { backgroundColor: isAdmin ? colors.accentOrange : colors.border }]}>
+                      <View style={[styles.toggleKnob, { transform: [{ translateX: isAdmin ? 18 : 2 }] }]} />
+                    </View>
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
 

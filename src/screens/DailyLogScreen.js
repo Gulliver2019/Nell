@@ -142,8 +142,9 @@ export default function DailyLogScreen() {
       });
   }, [entries, selectedDate]);
 
-  // Split into regular entries and admin sub-tasks
-  const regularEntries = useMemo(() => dayEntries.filter(e => !e.isAdmin), [dayEntries]);
+  // Split into regular entries, quick wins, and admin sub-tasks
+  const regularEntries = useMemo(() => dayEntries.filter(e => !e.isAdmin && !e.isQuickWin), [dayEntries]);
+  const quickWinEntries = useMemo(() => dayEntries.filter(e => e.isQuickWin && !e.isAdmin), [dayEntries]);
   const adminEntries = useMemo(() => dayEntries.filter(e => e.isAdmin), [dayEntries]);
 
   const stats = useMemo(() => {
@@ -248,18 +249,31 @@ export default function DailyLogScreen() {
     updateEntry(id, { state: 'migrated' });
   }, [updateEntry]);
 
-  // Combined list: regular entries + admin header + admin entries
+  // Combined list: regular entries + quick wins header + quick wins + admin header + admin entries
   const listData = useMemo(() => {
-    if (adminEntries.length === 0) return regularEntries;
-    return [
-      ...regularEntries,
-      { id: '__admin_header__', _isHeader: true },
-      ...adminEntries,
-    ];
-  }, [regularEntries, adminEntries]);
+    let data = [...regularEntries];
+    if (quickWinEntries.length > 0) {
+      data.push({ id: '__quickwin_header__', _isHeader: true, _headerType: 'quickwin' });
+      data.push(...quickWinEntries);
+    }
+    if (adminEntries.length > 0) {
+      data.push({ id: '__admin_header__', _isHeader: true, _headerType: 'admin' });
+      data.push(...adminEntries);
+    }
+    return data;
+  }, [regularEntries, quickWinEntries, adminEntries]);
 
   const renderEntry = useCallback(({ item, drag, isActive }) => {
     if (item._isHeader) {
+      if (item._headerType === 'quickwin') {
+        return (
+          <View style={styles.adminHeader}>
+            <View style={[styles.adminHeaderLine, { backgroundColor: colors.accentGreen + '40' }]} />
+            <Text style={[styles.adminHeaderText, { color: colors.accentGreen }]}>⚡ QUICK WINS</Text>
+            <View style={[styles.adminHeaderLine, { backgroundColor: colors.accentGreen + '40' }]} />
+          </View>
+        );
+      }
       return (
         <View style={styles.adminHeader}>
           <View style={[styles.adminHeaderLine, { backgroundColor: colors.accentOrange + '40' }]} />
@@ -281,6 +295,7 @@ export default function DailyLogScreen() {
           isActive={isActive}
           isNextUp={item.id === nextUpId}
           isAdminTask={!!item.isAdmin}
+          isQuickWin={!!item.isQuickWin}
         />
       </ScaleDecorator>
     );
