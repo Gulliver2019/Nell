@@ -656,6 +656,7 @@ export default function GoalsScreen() {
     const linkedCount = (item.linkedProjectIds || []).length;
     const isPriority = item.isPriority !== false;
     const dimmed = !isPriority;
+    const firstStandard = (item.standards || [])[0];
 
     return (
       <TouchableOpacity
@@ -679,6 +680,12 @@ export default function GoalsScreen() {
           <View style={[styles.goalCardTarget, { backgroundColor: colors.accent + '10' }]}>
             <Ionicons name="flag" size={12} color={colors.accent} />
             <Text style={[styles.goalCardTargetText, { color: colors.accent }]} numberOfLines={1}>{item.ninetyDayTarget}</Text>
+          </View>
+        ) : null}
+        {firstStandard ? (
+          <View style={[styles.goalCardStandard, { backgroundColor: colors.accentOrange + '12', borderColor: colors.accentOrange + '30' }]}>
+            <Text style={[styles.goalCardStandardLabel, { color: colors.accentOrange }]}>⚡ STANDARD</Text>
+            <Text style={[styles.goalCardStandardText, { color: colors.text }]}>{firstStandard.text}</Text>
           </View>
         ) : null}
         <View style={styles.goalCardFooter}>
@@ -856,6 +863,9 @@ const styles = StyleSheet.create({
   goalCardDesc: { fontSize: SIZES.sm, marginTop: 4 },
   goalCardTarget: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
   goalCardTargetText: { fontSize: SIZES.xs, fontWeight: '600', flex: 1 },
+  goalCardStandard: { marginTop: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1 },
+  goalCardStandardLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 0.8, marginBottom: 3 },
+  goalCardStandardText: { fontSize: SIZES.sm, fontWeight: '600', fontStyle: 'italic' },
   goalCardFooter: { marginTop: 10 },
   goalCardStat: { fontSize: SIZES.sm },
 
