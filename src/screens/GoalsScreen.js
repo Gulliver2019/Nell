@@ -24,6 +24,7 @@ export default function GoalsScreen() {
     addGoalWeeklyTask, updateGoalWeeklyTask, deleteGoalWeeklyTask,
     addGoalStandard, updateGoalStandard, deleteGoalStandard,
     addRoutine, updateRoutine, deleteRoutine, routines,
+    addEntry, selectedDate,
   } = useApp();
 
   const [selectedGoal, setSelectedGoal] = useState(null);
@@ -149,6 +150,18 @@ export default function GoalsScreen() {
         else if (section === 'standard') await deleteGoalStandard(goalId, item.id);
       }},
     ]);
+  };
+
+  // ─── Send weekly task to today's daily ────
+  const handleSendToToday = async (task) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await addEntry({
+      text: task.text,
+      type: 'task',
+      state: 'open',
+      date: selectedDate,
+    });
+    Alert.alert('Added ✓', `"${task.text}" added to today's daily.`);
   };
 
   // ─── Add discipline to daily (creates routine) ────
@@ -414,6 +427,11 @@ export default function GoalsScreen() {
                 <View style={styles.itemContent}>
                   <Text style={[styles.itemText, { color: colors.text }]}>{t.text}</Text>
                   <View style={styles.itemActions}>
+                    <TouchableOpacity onPress={() => handleSendToToday(t)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+                      <View style={[styles.addDailyBtn, { backgroundColor: colors.accent + '15' }]}>
+                        <Text style={[styles.addDailyText, { color: colors.accent }]}>→ Today</Text>
+                      </View>
+                    </TouchableOpacity>
                     <TouchableOpacity onPress={() => { setEditingItem({ section: 'weeklyTask', id: t.id }); setEditItemText(t.text); }} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
                       <Ionicons name="pencil-outline" size={18} color={colors.textSecondary} />
                     </TouchableOpacity>
