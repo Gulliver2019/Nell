@@ -164,7 +164,7 @@ export default function EntryFormFlyout({
 
       <Animated.View style={[styles.flyout, { backgroundColor: colors.bgCard, borderColor: colors.border, transform: [{ translateY: slideAnim }] }]}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }} keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}>
-          <ScrollView keyboardShouldPersistTaps="handled" bounces={false} showsVerticalScrollIndicator={false}>
+          <ScrollView keyboardShouldPersistTaps="handled" bounces={true} showsVerticalScrollIndicator={true} contentContainerStyle={{ paddingBottom: 60 }}>
             {/* Header */}
             <View style={styles.flyoutHeader}>
               <Text style={[styles.flyoutTitle, { color: colors.text }]}>{isEdit ? 'Edit Entry' : 'New Entry'}</Text>
@@ -460,8 +460,6 @@ export default function EntryFormFlyout({
                 {isEdit ? 'Save Changes' : 'Add Entry'}
               </Text>
             </TouchableOpacity>
-
-            <View style={{ height: 40 }} />
           </ScrollView>
         </KeyboardAvoidingView>
       </Animated.View>
@@ -479,13 +477,13 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    maxHeight: SCREEN_HEIGHT * 0.9,
+    maxHeight: SCREEN_HEIGHT * 0.92,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     borderBottomWidth: 1,
     paddingTop: 60,
     paddingHorizontal: 20,
-    paddingBottom: 34,
+    paddingBottom: 0,
     flex: 1,
   },
   flyoutHeader: {
