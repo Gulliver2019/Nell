@@ -111,6 +111,7 @@ export function AppProvider({ children }) {
         && (e.state === 'open' || (e.state === 'migrated' && !e._migratedToToday))
         && e.date && e.date < today
         && !e.collection
+        && !e.routineId
     );
     if (toMigrate.length === 0) return;
 
@@ -195,6 +196,7 @@ export function AppProvider({ children }) {
         && (e.state === 'open' || (e.state === 'migrated' && !e._migratedToToday))
         && e.date && e.date < today
         && !e.collection
+        && !e.routineId
     );
     if (toMigrate.length === 0) return 0;
 
@@ -236,6 +238,7 @@ export function AppProvider({ children }) {
         && (e.state === 'open' || e.state === 'migrated')
         && e.date === today
         && !e.collection
+        && !e.routineId
     );
 
     let count = 0;

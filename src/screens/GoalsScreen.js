@@ -145,7 +145,10 @@ export default function GoalsScreen() {
     Alert.alert('Delete', `Remove "${item.text}"?`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
-        if (section === 'discipline') await deleteGoalDiscipline(goalId, item.id);
+        if (section === 'discipline') {
+          if (item.routineId) await deleteRoutine(item.routineId);
+          await deleteGoalDiscipline(goalId, item.id);
+        }
         else if (section === 'weeklyTask') await deleteGoalWeeklyTask(goalId, item.id);
         else if (section === 'standard') await deleteGoalStandard(goalId, item.id);
       }},
@@ -162,6 +165,19 @@ export default function GoalsScreen() {
       date: selectedDate,
     });
     Alert.alert('Added ✓', `"${task.text}" added to today's daily.`);
+  };
+
+  // ─── Send item to daily as a quick win ────
+  const handleSendAsQuickWin = async (item) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await addEntry({
+      text: item.text,
+      type: 'task',
+      state: 'open',
+      date: selectedDate,
+      isQuickWin: true,
+    });
+    Alert.alert('Quick Win ⚡', `"${item.text}" added to today's quick wins.`);
   };
 
   // ─── Add discipline to daily (creates routine) ────
@@ -361,6 +377,11 @@ export default function GoalsScreen() {
                         </View>
                       </TouchableOpacity>
                     )}
+                    <TouchableOpacity onPress={() => handleSendAsQuickWin(d)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+                      <View style={[styles.addDailyBtn, { backgroundColor: colors.accentGreen + '15' }]}>
+                        <Text style={[styles.addDailyText, { color: colors.accentGreen }]}>⚡</Text>
+                      </View>
+                    </TouchableOpacity>
                     <TouchableOpacity onPress={() => { setEditingItem({ section: 'discipline', id: d.id }); setEditItemText(d.text); }} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
                       <Ionicons name="pencil-outline" size={18} color={colors.textSecondary} />
                     </TouchableOpacity>
@@ -432,6 +453,11 @@ export default function GoalsScreen() {
                         <Text style={[styles.addDailyText, { color: colors.accent }]}>→ Today</Text>
                       </View>
                     </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleSendAsQuickWin(t)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+                      <View style={[styles.addDailyBtn, { backgroundColor: colors.accentGreen + '15' }]}>
+                        <Text style={[styles.addDailyText, { color: colors.accentGreen }]}>⚡</Text>
+                      </View>
+                    </TouchableOpacity>
                     <TouchableOpacity onPress={() => { setEditingItem({ section: 'weeklyTask', id: t.id }); setEditItemText(t.text); }} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
                       <Ionicons name="pencil-outline" size={18} color={colors.textSecondary} />
                     </TouchableOpacity>
@@ -498,6 +524,11 @@ export default function GoalsScreen() {
                 <View style={styles.itemContent}>
                   <Text style={[styles.itemText, { color: colors.text }]}>{s.text}</Text>
                   <View style={styles.itemActions}>
+                    <TouchableOpacity onPress={() => handleSendAsQuickWin(s)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+                      <View style={[styles.addDailyBtn, { backgroundColor: colors.accentGreen + '15' }]}>
+                        <Text style={[styles.addDailyText, { color: colors.accentGreen }]}>⚡</Text>
+                      </View>
+                    </TouchableOpacity>
                     <TouchableOpacity onPress={() => { setEditingItem({ section: 'standard', id: s.id }); setEditItemText(s.text); }} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
                       <Ionicons name="pencil-outline" size={18} color={colors.textSecondary} />
                     </TouchableOpacity>

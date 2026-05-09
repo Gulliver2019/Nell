@@ -196,12 +196,12 @@ function AppContent() {
           },
         })}
       >
+        {enabledFeatures.projects !== false && <Tab.Screen name="Goals" component={GoalsScreen} />}
         <Tab.Screen name="Daily" component={DailyLogScreen} />
+        {enabledFeatures.projects !== false && <Tab.Screen name="Projects" component={ProjectsScreen} />}
         {enabledFeatures.weekly !== false && <Tab.Screen name="Weekly" component={WeeklyIntentionScreen} />}
         {enabledFeatures.logging !== false && <Tab.Screen name="Monthly" component={MonthlyLogScreen} />}
         {enabledFeatures.logging !== false && <Tab.Screen name="Future" component={FutureLogScreen} />}
-        {enabledFeatures.projects !== false && <Tab.Screen name="Projects" component={ProjectsScreen} />}
-        {enabledFeatures.projects !== false && <Tab.Screen name="Goals" component={GoalsScreen} />}
         {enabledFeatures.collections !== false && <Tab.Screen name="Collections" component={CollectionsScreen} />}
         {/* TODO: Re-enable when ready */}
         {/* {enabledFeatures.shopping !== false && <Tab.Screen name="Shopping" component={ShoppingListScreen} />} */}

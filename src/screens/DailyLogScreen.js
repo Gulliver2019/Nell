@@ -175,7 +175,7 @@ export default function DailyLogScreen() {
   const migrateableCount = useMemo(() => {
     if (isToday) return 0;
     return dayEntries.filter(
-      e => e.type === 'task' && (e.state === 'open' || (e.state === 'migrated' && !e._migratedToToday))
+      e => e.type === 'task' && (e.state === 'open' || (e.state === 'migrated' && !e._migratedToToday)) && !e.routineId
     ).length;
   }, [dayEntries, isToday]);
 
