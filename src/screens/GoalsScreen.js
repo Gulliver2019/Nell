@@ -176,6 +176,7 @@ export default function GoalsScreen() {
       state: 'open',
       date: selectedDate,
       isQuickWin: true,
+      routineId: item.routineId || null,
     });
     Alert.alert('Quick Win ⚡', `"${item.text}" added to today's quick wins.`);
   };
