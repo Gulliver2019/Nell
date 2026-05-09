@@ -922,6 +922,29 @@ export const deleteGoalStandard = async (goalId, standardId) => {
   await saveGoals(goals);
 };
 
+export const addGoalHabit = async (goalId, habitId) => {
+  const goals = await getGoals();
+  const goal = goals.find(g => g.id === goalId);
+  if (!goal) return;
+  if (!goal.habitIds) goal.habitIds = [];
+  if (!goal.habitIds.includes(habitId)) goal.habitIds.push(habitId);
+  goal.updatedAt = new Date().toISOString();
+  await saveGoals(goals);
+};
+
+export const updateGoalHabit = async (goalId, habitId, updates) => {
+  // Not needed for linked habits — update via habit system directly
+};
+
+export const deleteGoalHabit = async (goalId, habitId) => {
+  const goals = await getGoals();
+  const goal = goals.find(g => g.id === goalId);
+  if (!goal) return;
+  goal.habitIds = (goal.habitIds || []).filter(id => id !== habitId);
+  goal.updatedAt = new Date().toISOString();
+  await saveGoals(goals);
+};
+
 // ─── Routines ───────────────────────────────────────────
 
 export const getRoutines = async () => {

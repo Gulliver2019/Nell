@@ -566,6 +566,22 @@ export function AppProvider({ children }) {
     dispatch({ type: 'SET_GOALS', payload: goals });
   }, []);
 
+  const addGoalHabit = useCallback(async (goalId, habitId) => {
+    await Storage.addGoalHabit(goalId, habitId);
+    const goals = await Storage.getGoals();
+    dispatch({ type: 'SET_GOALS', payload: goals });
+  }, []);
+
+  const updateGoalHabit = useCallback(async () => {
+    // Habits are updated via the habit system directly
+  }, []);
+
+  const deleteGoalHabit = useCallback(async (goalId, habitId) => {
+    await Storage.deleteGoalHabit(goalId, habitId);
+    const goals = await Storage.getGoals();
+    dispatch({ type: 'SET_GOALS', payload: goals });
+  }, []);
+
   // Routine actions
   const addRoutine = useCallback(async (routine) => {
     const newRoutine = await Storage.addRoutine(routine);
@@ -675,6 +691,9 @@ export function AppProvider({ children }) {
     addGoalStandard,
     updateGoalStandard,
     deleteGoalStandard,
+    addGoalHabit,
+    updateGoalHabit,
+    deleteGoalHabit,
     addRoutine,
     updateRoutine,
     deleteRoutine,

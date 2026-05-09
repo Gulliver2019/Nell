@@ -24,6 +24,8 @@ export default function GoalsScreen() {
     addGoalDiscipline, updateGoalDiscipline, deleteGoalDiscipline,
     addGoalWeeklyTask, updateGoalWeeklyTask, deleteGoalWeeklyTask,
     addGoalStandard, updateGoalStandard, deleteGoalStandard,
+    addGoalHabit, deleteGoalHabit,
+    addHabit, deleteHabit, habits: allHabits,
     addRoutine, updateRoutine, deleteRoutine, routines,
     addEntry, selectedDate,
   } = useApp();
@@ -45,7 +47,7 @@ export default function GoalsScreen() {
   const [newItemText, setNewItemText] = useState('');
   const [editingItem, setEditingItem] = useState(null);
   const [editItemText, setEditItemText] = useState('');
-
+  const [newHabitTimeOfDay, setNewHabitTimeOfDay] = useState('morning');
   const resetForm = () => {
     setFormTitle('');
     setFormDescription('');
@@ -125,6 +127,15 @@ export default function GoalsScreen() {
       await addGoalWeeklyTask(goalId, newItemText.trim());
     } else if (addingSection === 'standard') {
       await addGoalStandard(goalId, newItemText.trim());
+    } else if (addingSection === 'habit') {
+      const newHabit = await addHabit({
+        name: newItemText.trim(),
+        icon: '🔄',
+        timeOfDay: newHabitTimeOfDay,
+        twoMinVersion: '',
+      });
+      if (newHabit?.id) await addGoalHabit(goalId, newHabit.id);
+      setNewHabitTimeOfDay('morning');
     }
     setNewItemText('');
     setAddingSection(null);
@@ -144,7 +155,8 @@ export default function GoalsScreen() {
   };
 
   const handleDeleteItem = (goalId, section, item) => {
-    Alert.alert('Delete', `Remove "${item.text}"?`, [
+    const label = item.text || item.name || 'this item';
+    Alert.alert('Delete', `Remove "${label}"?`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
         if (section === 'discipline') {
@@ -153,6 +165,10 @@ export default function GoalsScreen() {
         }
         else if (section === 'weeklyTask') await deleteGoalWeeklyTask(goalId, item.id);
         else if (section === 'standard') await deleteGoalStandard(goalId, item.id);
+        else if (section === 'habit') {
+          await deleteHabit(item.id);
+          await deleteGoalHabit(goalId, item.id);
+        }
       }},
     ]);
   };
@@ -239,6 +255,9 @@ export default function GoalsScreen() {
     const disciplines = goal.dailyDisciplines || [];
     const weeklyTasks = goal.weeklyTasks || [];
     const standards = goal.standards || [];
+    const habits = (goal.habitIds || [])
+      .map(id => allHabits.find(h => h.id === id))
+      .filter(Boolean);
     const linkedProjects = (goal.linkedProjectIds || [])
       .map(id => projects.find(p => p.id === id))
       .filter(Boolean);
@@ -572,6 +591,81 @@ export default function GoalsScreen() {
               </TouchableOpacity>
             </View>
           )}
+
+          {/* ──── Habits ──── */}
+          <View style={[styles.sectionHeader, { marginTop: 24 }]}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>🔄 HABITS</Text>
+            <TouchableOpacity
+              onPress={() => { setAddingSection(addingSection === 'habit' ? null : 'habit'); setNewItemText(''); setNewHabitTimeOfDay('morning'); }}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            >
+              <Ionicons name={addingSection === 'habit' ? 'close-circle' : 'add-circle-outline'} size={22} color={colors.accent} />
+            </TouchableOpacity>
+          </View>
+
+          {habits.length === 0 && addingSection !== 'habit' && (
+            <Text style={[styles.emptyText, { color: colors.textMuted }]}>No habits linked yet — add behavioural habits here</Text>
+          )}
+
+          {habits.map(h => (
+            <View key={h.id} style={[styles.itemRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+              <View style={styles.itemContent}>
+                <Text style={[styles.itemText, { color: colors.text }]}>
+                  {h.icon || '🔄'} {h.name}
+                </Text>
+                <View style={styles.itemActions}>
+                  <View style={[styles.habitTimeBadge, { backgroundColor: colors.accent + '20' }]}>
+                    <Text style={{ fontSize: 11, color: colors.accent }}>
+                      {h.timeOfDay === 'morning' ? '☀️' : h.timeOfDay === 'afternoon' ? '🌤️' : '🌙'}
+                    </Text>
+                  </View>
+                  <TouchableOpacity onPress={() => handleDeleteItem(goal.id, 'habit', h)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+                    <Ionicons name="trash-outline" size={18} color={colors.accentRed} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          ))}
+
+          {addingSection === 'habit' && (
+            <View>
+              <View style={styles.addRow}>
+                <TextInput
+                  style={[styles.addInput, { backgroundColor: colors.bgInput, color: colors.text, flex: 1 }]}
+                  placeholder="New habit name..."
+                  placeholderTextColor={colors.textMuted}
+                  value={newItemText}
+                  onChangeText={setNewItemText}
+                  selectionColor={colors.accent}
+                  autoFocus
+                />
+                <TouchableOpacity onPress={() => handleAddItem(goal.id)} style={[styles.addBtn, { backgroundColor: colors.accent }]}>
+                  <Ionicons name="add" size={20} color="#fff" />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.habitTimeRow}>
+                {[
+                  { key: 'morning', label: '☀️ AM' },
+                  { key: 'afternoon', label: '🌤️ PM' },
+                  { key: 'evening', label: '🌙 Eve' },
+                ].map(t => (
+                  <TouchableOpacity
+                    key={t.key}
+                    onPress={() => setNewHabitTimeOfDay(t.key)}
+                    style={[
+                      styles.habitTimeChip,
+                      { borderColor: colors.border },
+                      newHabitTimeOfDay === t.key && { backgroundColor: colors.accent + '30', borderColor: colors.accent },
+                    ]}
+                  >
+                    <Text style={{ fontSize: 13, color: newHabitTimeOfDay === t.key ? colors.accent : colors.textSecondary }}>
+                      {t.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
         </ScrollView>
 
         {/* Edit Goal Modal */}
@@ -741,6 +835,7 @@ export default function GoalsScreen() {
     const disciplineCount = (item.dailyDisciplines || []).length;
     const weeklyCount = (item.weeklyTasks || []).length;
     const linkedCount = (item.linkedProjectIds || []).length;
+    const habitCount = (item.habitIds || []).length;
     const isPriority = item.isPriority !== false;
     const dimmed = !isPriority;
     const firstStandard = (item.standards || [])[0];
@@ -777,7 +872,7 @@ export default function GoalsScreen() {
         ) : null}
         <View style={styles.goalCardFooter}>
           <Text style={[styles.goalCardStat, { color: colors.textMuted }]}>
-            {disciplineCount} discipline{disciplineCount !== 1 ? 's' : ''} · {weeklyCount} weekly{linkedCount > 0 ? ` · ${linkedCount} project${linkedCount !== 1 ? 's' : ''}` : ''}
+            {disciplineCount} discipline{disciplineCount !== 1 ? 's' : ''} · {weeklyCount} weekly{habitCount > 0 ? ` · 🔄 ${habitCount}` : ''}{linkedCount > 0 ? ` · ${linkedCount} project${linkedCount !== 1 ? 's' : ''}` : ''}
           </Text>
         </View>
       </TouchableOpacity>
@@ -1068,4 +1163,9 @@ const styles = StyleSheet.create({
   },
   pickerEmoji: { fontSize: 24 },
   pickerItemText: { fontSize: SIZES.base, fontWeight: '600' },
+
+  // Habit section
+  habitTimeBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, marginRight: 4 },
+  habitTimeRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 4, marginTop: 6, marginBottom: 8 },
+  habitTimeChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1 },
 });
