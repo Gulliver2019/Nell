@@ -13,6 +13,7 @@ import { SIZES, SHADOWS } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { getDateKey, formatDate } from '../utils/storage';
+import CATEGORIES, { CATEGORY_MAP, UNCATEGORISED } from '../utils/categories';
 import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
 import EntryItem from '../components/EntryItem';
 import FAB from '../components/FAB';
@@ -142,10 +143,27 @@ export default function DailyLogScreen() {
       });
   }, [entries, selectedDate]);
 
-  // Split into regular entries, quick wins, and admin sub-tasks
-  const regularEntries = useMemo(() => dayEntries.filter(e => !e.isAdmin && !e.isQuickWin), [dayEntries]);
-  const quickWinEntries = useMemo(() => dayEntries.filter(e => e.isQuickWin && !e.isAdmin), [dayEntries]);
-  const adminEntries = useMemo(() => dayEntries.filter(e => e.isAdmin), [dayEntries]);
+  // Group entries by category, maintaining category order
+  const categorisedData = useMemo(() => {
+    const catOrder = [...CATEGORIES.map(c => c.key), null]; // null = uncategorised at end
+    const buckets = {};
+    for (const cat of catOrder) buckets[cat] = [];
+
+    dayEntries.forEach(e => {
+      const key = e.category && catOrder.includes(e.category) ? e.category : null;
+      buckets[key].push(e);
+    });
+
+    let data = [];
+    for (const catKey of catOrder) {
+      const items = buckets[catKey];
+      if (items.length === 0) continue;
+      const catInfo = catKey ? CATEGORY_MAP[catKey] : UNCATEGORISED;
+      data.push({ id: `__cat_header_${catKey}__`, _isHeader: true, _headerType: 'category', _catInfo: catInfo });
+      data.push(...items);
+    }
+    return data;
+  }, [dayEntries]);
 
   const stats = useMemo(() => {
     const tasks = dayEntries.filter(e => e.type === 'task');
@@ -249,36 +267,18 @@ export default function DailyLogScreen() {
     updateEntry(id, { state: 'migrated' });
   }, [updateEntry]);
 
-  // Combined list: regular entries + quick wins header + quick wins + admin header + admin entries
-  const listData = useMemo(() => {
-    let data = [...regularEntries];
-    if (quickWinEntries.length > 0) {
-      data.push({ id: '__quickwin_header__', _isHeader: true, _headerType: 'quickwin' });
-      data.push(...quickWinEntries);
-    }
-    if (adminEntries.length > 0) {
-      data.push({ id: '__admin_header__', _isHeader: true, _headerType: 'admin' });
-      data.push(...adminEntries);
-    }
-    return data;
-  }, [regularEntries, quickWinEntries, adminEntries]);
+  // Use category-grouped data for the list
+  const listData = categorisedData;
 
   const renderEntry = useCallback(({ item, drag, isActive }) => {
     if (item._isHeader) {
-      if (item._headerType === 'quickwin') {
-        return (
-          <View style={styles.adminHeader}>
-            <View style={[styles.adminHeaderLine, { backgroundColor: colors.accentGreen + '40' }]} />
-            <Text style={[styles.adminHeaderText, { color: colors.accentGreen }]}>⚡ QUICK WINS</Text>
-            <View style={[styles.adminHeaderLine, { backgroundColor: colors.accentGreen + '40' }]} />
-          </View>
-        );
-      }
+      const catInfo = item._catInfo;
+      const catColor = catInfo?.color || colors.textMuted;
       return (
         <View style={styles.adminHeader}>
-          <View style={[styles.adminHeaderLine, { backgroundColor: colors.accentOrange + '40' }]} />
-          <Text style={[styles.adminHeaderText, { color: colors.accentOrange }]}>📋 ADMIN</Text>
-          <View style={[styles.adminHeaderLine, { backgroundColor: colors.accentOrange + '40' }]} />
+          <View style={[styles.adminHeaderLine, { backgroundColor: catColor + '40' }]} />
+          <Text style={[styles.adminHeaderText, { color: catColor }]}>{catInfo.emoji} {catInfo.label.toUpperCase()}</Text>
+          <View style={[styles.adminHeaderLine, { backgroundColor: catColor + '40' }]} />
         </View>
       );
     }

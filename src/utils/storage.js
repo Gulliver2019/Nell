@@ -114,6 +114,7 @@ export const addEntry = async (entry) => {
     timeBlock: null,     // start time string e.g. "09:00" for time blocking
     isAdmin: false,      // true = grouped under Admin block in time blocking
     isQuickWin: false,   // true = grouped under Quick Wins section
+    category: null,      // category key e.g. 'launch', 'deepwork', 'exercise'
     ...entry,
   };
   entries.push(newEntry);
@@ -947,6 +948,7 @@ export const addRoutine = async (routine) => {
     pomodoros: 0,
     enabled: true,
     repeatDays: null, // null = every day, or array of day numbers [0=Sun,1=Mon,...6=Sat]
+    category: null,   // category key e.g. 'launch', 'deepwork'
     sortOrder: routines.length,
     ...routine,
   };
@@ -996,6 +998,7 @@ export const generateRoutineEntries = async (dateKey) => {
         timeBlock: routine.timeBlock,
         source: 'routine',
         routineId: routine.id,
+        category: routine.category || null,
       });
       added++;
     }

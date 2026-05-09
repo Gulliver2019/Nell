@@ -7,6 +7,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { SIZES, getBulletTypes, getSignifiers } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
+import CATEGORIES from '../utils/categories';
 import * as Haptics from 'expo-haptics';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -48,6 +49,7 @@ export default function EntryFormFlyout({
   const [pomodoros, setPomodoros] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isQuickWin, setIsQuickWin] = useState(false);
+  const [category, setCategory] = useState(null);
   const [timeBlock, setTimeBlock] = useState(null);
   const [date, setDate] = useState(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -69,6 +71,7 @@ export default function EntryFormFlyout({
         setPomodoros(entry.pomodoros || 0);
         setIsAdmin(!!entry.isAdmin);
         setIsQuickWin(!!entry.isQuickWin);
+        setCategory(entry.category || null);
         setTimeBlock(entry.timeBlock || null);
         setDate(entry.date ? new Date(entry.date + 'T00:00:00') : null);
         setRepeatDaily(entry.source === 'routine' || !!entry.routineId);
@@ -86,6 +89,7 @@ export default function EntryFormFlyout({
         setPomodoros(0);
         setIsAdmin(false);
         setIsQuickWin(false);
+        setCategory(null);
         setTimeBlock(null);
         setDate(null);
         setRepeatDaily(false);
@@ -104,7 +108,7 @@ export default function EntryFormFlyout({
   const handleSubmit = () => {
     if (!text.trim()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const data = { text: text.trim(), type, signifier, isAdmin, isQuickWin, ...extraData };
+    const data = { text: text.trim(), type, signifier, isAdmin, isQuickWin, category, ...extraData };
     if (show('pomodoros')) data.pomodoros = pomodoros;
     if (show('timeBlock')) data.timeBlock = timeBlock || null;
     if (show('date') && date) {
@@ -329,6 +333,35 @@ export default function EntryFormFlyout({
               </View>
             )}
 
+            {/* Category selector */}
+            {show('type') && (
+              <View style={styles.fieldRow}>
+                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Category</Text>
+                <View style={styles.chipRow}>
+                  <TouchableOpacity
+                    style={[styles.chip, { backgroundColor: colors.bgInput }, !category && { backgroundColor: colors.accent + '20', borderColor: colors.accent }]}
+                    onPress={() => { setCategory(null); Haptics.selectionAsync(); }}
+                  >
+                    <Text style={[styles.chipBullet]}>📝</Text>
+                    <Text style={[styles.chipText, { color: !category ? colors.text : colors.textMuted }]}>None</Text>
+                  </TouchableOpacity>
+                  {CATEGORIES.map(c => {
+                    const active = category === c.key;
+                    return (
+                      <TouchableOpacity
+                        key={c.key}
+                        style={[styles.chip, { backgroundColor: colors.bgInput }, active && { backgroundColor: c.color + '20', borderColor: c.color }]}
+                        onPress={() => { setCategory(c.key); Haptics.selectionAsync(); }}
+                      >
+                        <Text style={styles.chipBullet}>{c.emoji}</Text>
+                        <Text style={[styles.chipText, { color: active ? colors.text : colors.textMuted }]}>{c.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+
             {/* Admin task toggle */}
             {isEdit && entry.type === 'task' && (
               <View style={styles.fieldRow}>
@@ -428,7 +461,7 @@ export default function EntryFormFlyout({
               </Text>
             </TouchableOpacity>
 
-            <View style={{ height: 20 }} />
+            <View style={{ height: 40 }} />
           </ScrollView>
         </KeyboardAvoidingView>
       </Animated.View>
@@ -446,13 +479,13 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    maxHeight: SCREEN_HEIGHT * 0.85,
+    maxHeight: SCREEN_HEIGHT * 0.9,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     borderBottomWidth: 1,
     paddingTop: 60,
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 34,
     flex: 1,
   },
   flyoutHeader: {

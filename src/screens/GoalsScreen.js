@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SIZES } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
+import CATEGORIES, { CATEGORY_MAP, UNCATEGORISED } from '../utils/categories';
 import * as Haptics from 'expo-haptics';
 import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
 
@@ -32,6 +33,7 @@ export default function GoalsScreen() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showProjectPicker, setShowProjectPicker] = useState(false);
   const [showDayPicker, setShowDayPicker] = useState(null); // holds discipline object when picking days
+  const [showCategoryPicker, setShowCategoryPicker] = useState(null); // holds { goalId, section, item }
 
   // Form state
   const [formTitle, setFormTitle] = useState('');
@@ -163,6 +165,7 @@ export default function GoalsScreen() {
       type: 'task',
       state: 'open',
       date: selectedDate,
+      category: task.category || null,
     });
     Alert.alert('Added ✓', `"${task.text}" added to today's daily.`);
   };
@@ -177,6 +180,7 @@ export default function GoalsScreen() {
       date: selectedDate,
       isQuickWin: true,
       routineId: item.routineId || null,
+      category: item.category || null,
     });
     Alert.alert('Quick Win ⚡', `"${item.text}" added to today's quick wins.`);
   };
@@ -195,7 +199,7 @@ export default function GoalsScreen() {
     if (!showDayPicker) return;
     const { goalId, discipline } = showDayPicker;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const routine = await addRoutine({ text: discipline.text, enabled: true, repeatDays });
+    const routine = await addRoutine({ text: discipline.text, enabled: true, repeatDays, category: discipline.category || null });
     await updateGoalDiscipline(goalId, discipline.id, { routineId: routine.id });
     setShowDayPicker(null);
     const label = repeatDays ? DAY_LABELS.filter((_, i) => repeatDays.includes(i)).join(', ') : 'every day';
@@ -351,7 +355,17 @@ export default function GoalsScreen() {
                 </View>
               ) : (
                 <View style={styles.itemContent}>
-                  <Text style={[styles.itemText, { color: colors.text }]}>{d.text}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 6 }}>
+                    <TouchableOpacity
+                      onPress={() => setShowCategoryPicker({ goalId: goal.id, section: 'discipline', item: d })}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    >
+                      <View style={[styles.categoryBadge, { backgroundColor: (CATEGORY_MAP[d.category]?.color || UNCATEGORISED.color) + '20' }]}>
+                        <Text style={styles.categoryBadgeText}>{CATEGORY_MAP[d.category]?.emoji || UNCATEGORISED.emoji}</Text>
+                      </View>
+                    </TouchableOpacity>
+                    <Text style={[styles.itemText, { color: colors.text, flex: 1 }]}>{d.text}</Text>
+                  </View>
                   <View style={styles.itemActions}>
                     {d.routineId ? (
                       <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
@@ -602,6 +616,47 @@ export default function GoalsScreen() {
           }}
           onClose={() => setShowDayPicker(null)}
         />
+
+        {/* Category Picker Modal */}
+        <Modal visible={!!showCategoryPicker} transparent animationType="fade">
+          <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowCategoryPicker(null)}>
+            <View style={[styles.pickerContent, { backgroundColor: colors.bgCard }]}>
+              <Text style={[styles.pickerTitle, { color: colors.text }]}>Set Category</Text>
+              <TouchableOpacity
+                style={[styles.pickerItem, { borderColor: colors.border }]}
+                onPress={async () => {
+                  const { goalId, section, item } = showCategoryPicker;
+                  if (section === 'discipline') await updateGoalDiscipline(goalId, item.id, { category: null });
+                  else if (section === 'weeklyTask') await updateGoalWeeklyTask(goalId, item.id, { category: null });
+                  else if (section === 'standard') await updateGoalStandard(goalId, item.id, { category: null });
+                  if (item.routineId) await updateRoutine(item.routineId, { category: null });
+                  setShowCategoryPicker(null);
+                }}
+              >
+                <Text style={styles.pickerEmoji}>{UNCATEGORISED.emoji}</Text>
+                <Text style={[styles.pickerItemText, { color: colors.text }]}>None</Text>
+              </TouchableOpacity>
+              {CATEGORIES.map(c => (
+                <TouchableOpacity
+                  key={c.key}
+                  style={[styles.pickerItem, { borderColor: colors.border },
+                    showCategoryPicker?.item?.category === c.key && { backgroundColor: c.color + '15' }]}
+                  onPress={async () => {
+                    const { goalId, section, item } = showCategoryPicker;
+                    if (section === 'discipline') await updateGoalDiscipline(goalId, item.id, { category: c.key });
+                    else if (section === 'weeklyTask') await updateGoalWeeklyTask(goalId, item.id, { category: c.key });
+                    else if (section === 'standard') await updateGoalStandard(goalId, item.id, { category: c.key });
+                    if (item.routineId) await updateRoutine(item.routineId, { category: c.key });
+                    setShowCategoryPicker(null);
+                  }}
+                >
+                  <Text style={styles.pickerEmoji}>{c.emoji}</Text>
+                  <Text style={[styles.pickerItemText, { color: colors.text }]}>{c.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </TouchableOpacity>
+        </Modal>
       </SafeAreaView>
     );
   }
@@ -970,6 +1025,10 @@ const styles = StyleSheet.create({
   activeBadgeText: { fontSize: SIZES.xs, fontWeight: '700' },
   addDailyBtn: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
   addDailyText: { fontSize: SIZES.xs, fontWeight: '700' },
+
+  // Category badge
+  categoryBadge: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  categoryBadgeText: { fontSize: 14 },
 
   // Edit inline
   editRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
