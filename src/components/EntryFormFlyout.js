@@ -168,9 +168,19 @@ export default function EntryFormFlyout({
             {/* Header */}
             <View style={styles.flyoutHeader}>
               <Text style={[styles.flyoutTitle, { color: colors.text }]}>{isEdit ? 'Edit Entry' : 'New Entry'}</Text>
-              <TouchableOpacity onPress={handleClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                <Text style={[styles.closeBtn, { color: colors.textMuted }]}>✕</Text>
-              </TouchableOpacity>
+              <View style={styles.headerActions}>
+                <TouchableOpacity
+                  onPress={handleSubmit}
+                  disabled={!text.trim()}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  style={[styles.headerSaveBtn, { backgroundColor: colors.accent }, !text.trim() && { opacity: 0.3 }]}
+                >
+                  <Text style={styles.headerSaveTick}>✓</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                  <Text style={[styles.closeBtn, { color: colors.textMuted }]}>✕</Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Text input */}
@@ -491,6 +501,23 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  headerSaveBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerSaveTick: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#fff',
   },
   flyoutTitle: {
     fontSize: SIZES.xl,
