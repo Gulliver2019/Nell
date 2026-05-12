@@ -20,6 +20,8 @@ import FAB from '../components/FAB';
 import EntryFormFlyout from '../components/EntryFormFlyout';
 import TimeBlockView from '../components/TimeBlockView';
 import CompleteDayModal from '../components/CompleteDayModal';
+import UnifiedEODReview from '../components/UnifiedEODReview';
+import MissedBlockModal from '../components/MissedBlockModal';
 import * as Haptics from 'expo-haptics';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -44,6 +46,7 @@ export default function DailyLogScreen() {
   const [editingEntry, setEditingEntry] = useState(null);
   const [completeDayVisible, setCompleteDayVisible] = useState(false);
   const [dayCompleted, setDayCompleted] = useState(false);
+  const [missedBlockEntry, setMissedBlockEntry] = useState(null);
   const listRef = useRef(null);
   const shouldScrollRef = useRef(false);
 
@@ -188,6 +191,52 @@ export default function DailyLogScreen() {
     if (timeBlocked.length > 0) return timeBlocked[0].id;
     return null;
   }, [dayEntries, isToday]);
+
+  // Detect missed time blocks (past time, still open)
+  const missedBlocks = useMemo(() => {
+    if (!isToday) return [];
+    const now = new Date();
+    const nowMins = now.getHours() * 60 + now.getMinutes();
+    return dayEntries.filter(e => {
+      if (!e.timeBlock || e.state !== 'open' || e.type !== 'task') return false;
+      const [h, m] = e.timeBlock.split(':').map(Number);
+      const blockMins = h * 60 + m;
+      const pomDuration = (e.pomodoros || 1) * 30;
+      return (blockMins + pomDuration) < nowMins;
+    });
+  }, [dayEntries, isToday]);
+
+  // Show missed block prompt for the first missed block (one at a time)
+  useEffect(() => {
+    if (missedBlocks.length > 0 && !missedBlockEntry) {
+      // Only prompt once per entry per session — use a ref set
+      const first = missedBlocks[0];
+      setMissedBlockEntry(first);
+    }
+  }, [missedBlocks]);
+
+  const handleMissedBlockSkip = useCallback(async (id) => {
+    await updateEntry(id, { state: 'cancelled' });
+    setMissedBlockEntry(null);
+  }, [updateEntry]);
+
+  const handleMissedBlockReschedule = useCallback(async (id) => {
+    // Move to next available 30-min slot from now
+    const now = new Date();
+    const nextH = now.getMinutes() >= 30 ? now.getHours() + 1 : now.getHours();
+    const nextM = now.getMinutes() >= 30 ? '00' : '30';
+    const newTime = `${String(nextH).padStart(2, '0')}:${nextM}`;
+    await updateEntry(id, { timeBlock: newTime });
+    setMissedBlockEntry(null);
+  }, [updateEntry]);
+
+  const handleMissedBlockShorten = useCallback(async (id) => {
+    // Set to 1 pomodoro (25 min) and reschedule to now
+    const now = new Date();
+    const newTime = `${String(now.getHours()).padStart(2, '0')}:${now.getMinutes() >= 30 ? '30' : '00'}`;
+    await updateEntry(id, { pomodoros: 1, timeBlock: newTime });
+    setMissedBlockEntry(null);
+  }, [updateEntry]);
 
   // Count open tasks on past days that can be migrated to today
   const migrateableCount = useMemo(() => {
@@ -594,11 +643,20 @@ export default function DailyLogScreen() {
           onChange={handleDatePicked}
         />
       )}
-      <CompleteDayModal
+      <UnifiedEODReview
         visible={completeDayVisible}
         onClose={() => setCompleteDayVisible(false)}
         onComplete={handleCompleteDay}
         stats={stats}
+        colors={colors}
+      />
+      <MissedBlockModal
+        visible={!!missedBlockEntry}
+        entry={missedBlockEntry}
+        onSkip={handleMissedBlockSkip}
+        onReschedule={handleMissedBlockReschedule}
+        onShorten={handleMissedBlockShorten}
+        onClose={() => setMissedBlockEntry(null)}
         colors={colors}
       />
       </KeyboardAvoidingView>

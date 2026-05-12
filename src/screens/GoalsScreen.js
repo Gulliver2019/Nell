@@ -96,6 +96,18 @@ export default function GoalsScreen() {
   };
 
   const handleTogglePriority = async (goal) => {
+    // Soft cap: if making priority and already at max, prompt to deprioritise one
+    if (goal.isPriority === false) {
+      const currentPriority = goals.filter(g => g.isPriority !== false && g.id !== goal.id);
+      if (currentPriority.length >= MAX_PRIORITY) {
+        Alert.alert(
+          'Focus Limit',
+          `You already have ${MAX_PRIORITY} priority goals. Deprioritise one first to keep your focus sharp.`,
+          [{ text: 'OK', style: 'default' }]
+        );
+        return;
+      }
+    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await toggleGoalPriority(goal.id);
   };
@@ -831,6 +843,10 @@ export default function GoalsScreen() {
     return bPri - aPri;
   });
 
+  const priorityGoals = sortedGoals.filter(g => g.isPriority !== false);
+  const parkedGoals = sortedGoals.filter(g => g.isPriority === false);
+  const MAX_PRIORITY = 3;
+
   const renderGoal = ({ item }) => {
     const disciplineCount = (item.dailyDisciplines || []).length;
     const weeklyCount = (item.weeklyTasks || []).length;
@@ -884,10 +900,12 @@ export default function GoalsScreen() {
       <View style={styles.header}>
         <LinearGradient colors={[colors.accent + '20', 'transparent']} style={StyleSheet.absoluteFillObject} />
         <Text style={[styles.headerTitle, { color: colors.text }]}>Goals</Text>
-        <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>Long press to toggle priority</Text>
+        <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
+          {priorityGoals.length}/{MAX_PRIORITY} priority · Long press to toggle
+        </Text>
       </View>
       <FlatList
-        data={sortedGoals}
+        data={priorityGoals}
         keyExtractor={item => item.id}
         renderItem={renderGoal}
         contentContainerStyle={styles.listContent}
@@ -899,13 +917,29 @@ export default function GoalsScreen() {
           </View>
         }
         ListFooterComponent={
-          <TouchableOpacity
-            style={[styles.newGoalBtn, { borderColor: colors.accent + '40' }]}
-            onPress={() => { resetForm(); setShowNewModal(true); }}
-          >
-            <Ionicons name="add" size={24} color={colors.accent} />
-            <Text style={[styles.newGoalBtnText, { color: colors.accent }]}>New Goal</Text>
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity
+              style={[styles.newGoalBtn, { borderColor: colors.accent + '40' }]}
+              onPress={() => { resetForm(); setShowNewModal(true); }}
+            >
+              <Ionicons name="add" size={24} color={colors.accent} />
+              <Text style={[styles.newGoalBtnText, { color: colors.accent }]}>New Goal</Text>
+            </TouchableOpacity>
+
+            {/* Parked goals section */}
+            {parkedGoals.length > 0 && (
+              <View style={{ marginTop: 24 }}>
+                <View style={styles.parkedHeader}>
+                  <View style={[styles.parkedLine, { backgroundColor: colors.border }]} />
+                  <Text style={[styles.parkedLabel, { color: colors.textMuted }]}>PARKED</Text>
+                  <View style={[styles.parkedLine, { backgroundColor: colors.border }]} />
+                </View>
+                {parkedGoals.map(item => (
+                  <View key={item.id}>{renderGoal({ item })}</View>
+                ))}
+              </View>
+            )}
+          </>
         }
       />
       {renderGoalModal(false)}
@@ -1037,6 +1071,15 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: SIZES.xxxl, fontWeight: '800', letterSpacing: -1 },
   headerSubtitle: { fontSize: SIZES.xs, marginTop: 2 },
   listContent: { paddingHorizontal: 16, paddingBottom: 100, gap: 12 },
+  parkedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  parkedLine: { flex: 1, height: 1 },
+  parkedLabel: { fontSize: SIZES.xs, fontWeight: '700', letterSpacing: 1 },
 
   // Goal card
   goalCard: { borderRadius: 16, padding: 16, borderWidth: 1 },

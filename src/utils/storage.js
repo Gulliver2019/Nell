@@ -40,6 +40,9 @@ const STORAGE_KEYS = {
   WELLNESS_TEMPLATES: 'nell_wellness_templates',
   WEEKLY_INTENTIONS: 'nell_weekly_intentions',
   GOALS: 'nell_goals',
+  MORNING_STEPS: 'nell_morning_steps',
+  JOB_APPLICATIONS: 'nell_job_applications',
+  SEEDED: 'nell_data_seeded',
 };
 
 // Generate unique ID
@@ -1097,3 +1100,250 @@ export const getDailyWellnessSelection = async (dateKey) => {
 export const saveDailyWellnessSelection = async (dateKey, ids) => {
   await AsyncStorage.setItem(dailyWellnessSelKey(dateKey), JSON.stringify(ids));
 };
+
+// ─── Morning Launch Sequence ────────────────────────────
+
+export const getMorningSteps = async () => {
+  try {
+    const data = await AsyncStorage.getItem(STORAGE_KEYS.MORNING_STEPS);
+    return data ? JSON.parse(data) : [];
+  } catch (e) { return []; }
+};
+
+export const saveMorningSteps = async (steps) => {
+  await AsyncStorage.setItem(STORAGE_KEYS.MORNING_STEPS, JSON.stringify(steps));
+};
+
+export const addMorningStep = async (step) => {
+  const steps = await getMorningSteps();
+  const newStep = {
+    id: generateId(),
+    text: '',
+    icon: '☀️',
+    sortOrder: steps.length,
+    enabled: true,
+    ...step,
+  };
+  steps.push(newStep);
+  await saveMorningSteps(steps);
+  return newStep;
+};
+
+export const updateMorningStep = async (id, updates) => {
+  const steps = await getMorningSteps();
+  const idx = steps.findIndex(s => s.id === id);
+  if (idx === -1) return;
+  steps[idx] = { ...steps[idx], ...updates };
+  await saveMorningSteps(steps);
+};
+
+export const deleteMorningStep = async (id) => {
+  const steps = await getMorningSteps();
+  await saveMorningSteps(steps.filter(s => s.id !== id));
+};
+
+export const reorderMorningSteps = async (orderedIds) => {
+  const steps = await getMorningSteps();
+  const sorted = orderedIds.map((id, i) => {
+    const s = steps.find(st => st.id === id);
+    return s ? { ...s, sortOrder: i } : null;
+  }).filter(Boolean);
+  await saveMorningSteps(sorted);
+};
+
+const morningDoneKey = (dateKey) => `nell_morning_done_${dateKey}`;
+
+export const isMorningComplete = async (dateKey) => {
+  try {
+    const val = await AsyncStorage.getItem(morningDoneKey(dateKey));
+    return val === 'true';
+  } catch { return false; }
+};
+
+export const completeMorning = async (dateKey) => {
+  await AsyncStorage.setItem(morningDoneKey(dateKey), 'true');
+};
+
+// ─── Daily Commitment ───────────────────────────────────
+
+const commitmentKey = (dateKey) => `nell_commitment_${dateKey}`;
+const commitmentCheckKey = (dateKey) => `nell_commitment_check_${dateKey}`;
+
+export const getCommitment = async (dateKey) => {
+  try {
+    const data = await AsyncStorage.getItem(commitmentKey(dateKey));
+    return data ? JSON.parse(data) : null;
+  } catch { return null; }
+};
+
+export const saveCommitment = async (dateKey, text) => {
+  await AsyncStorage.setItem(commitmentKey(dateKey), JSON.stringify({
+    text,
+    createdAt: new Date().toISOString(),
+  }));
+};
+
+export const getCommitmentCheck = async (dateKey) => {
+  try {
+    const data = await AsyncStorage.getItem(commitmentCheckKey(dateKey));
+    return data ? JSON.parse(data) : null;
+  } catch { return null; }
+};
+
+export const saveCommitmentCheck = async (dateKey, honoured) => {
+  await AsyncStorage.setItem(commitmentCheckKey(dateKey), JSON.stringify({
+    honoured,
+    checkedAt: new Date().toISOString(),
+  }));
+};
+
+// ─── Job Search Applications ────────────────────────────
+
+const JOB_STAGES = ['identified', 'applied', 'interviewing', 'offered'];
+export { JOB_STAGES };
+
+export const getJobApplications = async () => {
+  try {
+    const data = await AsyncStorage.getItem(STORAGE_KEYS.JOB_APPLICATIONS);
+    return data ? JSON.parse(data) : [];
+  } catch (e) { return []; }
+};
+
+export const saveJobApplications = async (apps) => {
+  await AsyncStorage.setItem(STORAGE_KEYS.JOB_APPLICATIONS, JSON.stringify(apps));
+};
+
+export const addJobApplication = async (app) => {
+  const apps = await getJobApplications();
+  const newApp = {
+    id: generateId(),
+    createdAt: new Date().toISOString(),
+    company: '',
+    role: '',
+    dayRate: '',
+    recruiter: '',
+    nextAction: '',
+    nextActionDate: '',
+    stage: 'identified',
+    notes: '',
+    isContract: true,
+    ...app,
+  };
+  apps.push(newApp);
+  await saveJobApplications(apps);
+  return newApp;
+};
+
+export const updateJobApplication = async (id, updates) => {
+  const apps = await getJobApplications();
+  const idx = apps.findIndex(a => a.id === id);
+  if (idx === -1) return;
+  apps[idx] = { ...apps[idx], ...updates, updatedAt: new Date().toISOString() };
+  await saveJobApplications(apps);
+};
+
+export const deleteJobApplication = async (id) => {
+  const apps = await getJobApplications();
+  await saveJobApplications(apps.filter(a => a.id !== id));
+};
+
+export const moveJobApplication = async (id, newStage) => {
+  await updateJobApplication(id, { stage: newStage });
+};
+
+// ─── Seed Data (first-launch defaults) ──────────────────
+
+export const hasBeenSeeded = async () => {
+  try {
+    const val = await AsyncStorage.getItem(STORAGE_KEYS.SEEDED);
+    return val === 'true';
+  } catch { return false; }
+};
+
+export const markSeeded = async () => {
+  await AsyncStorage.setItem(STORAGE_KEYS.SEEDED, 'true');
+};
+
+export const seedDefaultData = async () => {
+  const seeded = await hasBeenSeeded();
+  if (seeded) return false;
+
+  // Only seed if no goals exist yet
+  const existingGoals = await getGoals();
+  if (existingGoals.length > 0) {
+    await markSeeded();
+    return false;
+  }
+
+  // ── Habits ──
+  const habitSupplements = await addHabit({ name: 'Take supplements', icon: '💊', timeOfDay: 'morning', twoMinVersion: 'Set them out on the counter' });
+  const habitWalk = await addHabit({ name: '20-minute walk', icon: '🚶', timeOfDay: 'morning', twoMinVersion: 'Put shoes on and step outside for 2 mins' });
+  const habitPhoneDown = await addHabit({ name: 'Phone-down time with wife', icon: '📱', timeOfDay: 'evening', twoMinVersion: 'Put phone in another room for 5 mins' });
+  const habitYNAB = await addHabit({ name: 'Log expenses in YNAB', icon: '💰', timeOfDay: 'evening', twoMinVersion: 'Open YNAB and log one transaction' });
+  const habitFlyLady = await addHabit({ name: 'FlyLady daily task', icon: '🏠', timeOfDay: 'morning', twoMinVersion: 'Wipe one surface' });
+
+  // ── Priority Goal 1: Secure Contract Role ──
+  const goal1 = await addGoal({
+    title: 'Secure a Contract Role',
+    description: 'Find and sign a contract role to stabilise income and demonstrate action.',
+    ninetyDayTarget: 'Signed a contract at a competitive day rate',
+    isPriority: true,
+  });
+  await addGoalDiscipline(goal1.id, 'Apply to 3 contract roles');
+  await addGoalDiscipline(goal1.id, 'Contact 2 recruiters or connections');
+  await addGoalWeeklyTask(goal1.id, 'Review and refine CV/LinkedIn');
+  await addGoalWeeklyTask(goal1.id, 'Update job search tracker');
+  await addGoalStandard(goal1.id, 'CV always up to date');
+  await addGoalStandard(goal1.id, 'Respond to recruiters within 24 hours');
+
+  // ── Priority Goal 2: Build Kynd ──
+  const goal2 = await addGoal({
+    title: 'Build Kynd',
+    description: 'Progress the Kynd software company with co-founder — gaining traction.',
+    ninetyDayTarget: 'Kynd MVP launched with first users onboarded',
+    isPriority: true,
+  });
+  await addGoalDiscipline(goal2.id, '2 hours focused Kynd development');
+  await addGoalWeeklyTask(goal2.id, 'Weekly sync with co-founder');
+  await addGoalWeeklyTask(goal2.id, 'Ship one feature or deliverable');
+  await addGoalStandard(goal2.id, 'Review Kynd roadmap priorities weekly');
+
+  // ── Priority Goal 3: Rebuild Trust ──
+  const goal3 = await addGoal({
+    title: 'Rebuild Trust & Be Present',
+    description: 'Show up for wife consistently through daily actions, not words.',
+    ninetyDayTarget: 'Wife feels consistently supported — demonstrated through daily actions',
+    isPriority: true,
+  });
+  await addGoalDiscipline(goal3.id, 'Phone-down time with wife (20+ mins)');
+  await addGoalDiscipline(goal3.id, 'Honour daily commitment');
+  await addGoalStandard(goal3.id, 'No inappropriate messaging — zero tolerance');
+  await addGoalStandard(goal3.id, 'Be honest and transparent');
+  await addGoalHabit(goal3.id, habitPhoneDown.id);
+
+  // ── Parked Goal: Health Foundation ──
+  await addGoal({
+    title: 'Health Foundation',
+    description: 'Build basic health habits — not trying to transform, just lay foundations.',
+    ninetyDayTarget: 'Lost 1 stone, taking supplements daily, walking regularly',
+    isPriority: false,
+  });
+
+  // ── Morning Launch Steps ──
+  const defaultSteps = [
+    { text: 'Take supplements', icon: '💊' },
+    { text: 'Glass of water', icon: '💧' },
+    { text: 'Set daily intention', icon: '🎯' },
+    { text: 'Morning commitment', icon: '🤝' },
+    { text: 'Review today\'s top 3', icon: '📋' },
+    { text: 'Check FlyLady zone', icon: '🏠' },
+    { text: 'First focus block (25 min)', icon: '⏱️' },
+  ];
+  for (const step of defaultSteps) {
+    await addMorningStep(step);
+  }
+
+  await markSeeded();
+  return true;
+};
+

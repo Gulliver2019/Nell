@@ -29,6 +29,8 @@ import ShoppingListScreen from './src/screens/ShoppingListScreen';
 import WeeklyIntentionScreen from './src/screens/WeeklyIntentionScreen';
 import PaywallScreen from './src/screens/PaywallScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
+import MorningLaunchScreen from './src/screens/MorningLaunchScreen';
+import JobSearchScreen from './src/screens/JobSearchScreen';
 // import AIGuidanceButton from './src/components/AIGuidanceButton'; // AI disabled
 
 const Tab = createBottomTabNavigator();
@@ -57,6 +59,7 @@ const TAB_ICONS = {
   Future: { focused: 'rocket', unfocused: 'rocket-outline' },
   Projects: { focused: 'briefcase', unfocused: 'briefcase-outline' },
   Goals: { focused: 'flag', unfocused: 'flag-outline' },
+  'Job Search': { focused: 'search-circle', unfocused: 'search-circle-outline' },
   Collections: { focused: 'folder', unfocused: 'folder-outline' },
   Shopping: { focused: 'cart', unfocused: 'cart-outline' },
   Habits: { focused: 'checkmark-circle', unfocused: 'checkmark-circle-outline' },
@@ -112,10 +115,11 @@ const DEFAULT_SCREEN_KEY = '@default_screen';
 function AppContent() {
   const { colors, hasChosenTheme, loading } = useTheme();
   const { isProUser, isReady: rcReady } = useRevenueCat();
-  const { enabledFeatures } = useApp();
+  const { enabledFeatures, morningDone } = useApp();
   const [paywallDismissed, setPaywallDismissed] = useState(null);
   const [onboardingDone, setOnboardingDone] = useState(null);
   const [defaultScreen, setDefaultScreen] = useState('Daily');
+  const [morningLaunched, setMorningLaunched] = useState(false);
   // const jarvisRef = useRef(null); // AI disabled
   // const didOpenJarvisDefault = useRef(false); // AI disabled
 
@@ -180,6 +184,15 @@ function AppContent() {
 
   const initialRoute = (defaultScreen === 'Jarvis') ? 'Daily' : defaultScreen; // AI disabled — Jarvis always falls back to Daily
 
+  // Morning Launch gate — show step-by-step morning routine before main app
+  if (!morningDone && !morningLaunched) {
+    return (
+      <SafeAreaProvider>
+        <MorningLaunchScreen onComplete={() => setMorningLaunched(true)} />
+      </SafeAreaProvider>
+    );
+  }
+
   return (
     <NavigationContainer>
       <StatusBar style="light" />
@@ -199,6 +212,7 @@ function AppContent() {
         {enabledFeatures.projects !== false && <Tab.Screen name="Goals" component={GoalsScreen} />}
         <Tab.Screen name="Daily" component={DailyLogScreen} />
         {enabledFeatures.projects !== false && <Tab.Screen name="Projects" component={ProjectsScreen} />}
+        <Tab.Screen name="Job Search" component={JobSearchScreen} />
         {enabledFeatures.weekly !== false && <Tab.Screen name="Weekly" component={WeeklyIntentionScreen} />}
         {enabledFeatures.logging !== false && <Tab.Screen name="Monthly" component={MonthlyLogScreen} />}
         {enabledFeatures.logging !== false && <Tab.Screen name="Future" component={FutureLogScreen} />}

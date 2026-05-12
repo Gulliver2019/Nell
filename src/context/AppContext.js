@@ -27,6 +27,9 @@ const initialState = {
   goals: [],
   routines: [],
   wellnessTemplates: { nutrition: [], exercise: [], meditation: { enabled: true } },
+  morningSteps: [],
+  jobApplications: [],
+  morningDone: false,
   enabledFeatures: DEFAULT_FEATURES,
   personalityEnabled: true,
   selectedDate: Storage.getDateKey(),
@@ -70,6 +73,12 @@ function reducer(state, action) {
       return { ...state, enabledFeatures: action.payload };
     case 'SET_PERSONALITY':
       return { ...state, personalityEnabled: action.payload };
+    case 'SET_MORNING_STEPS':
+      return { ...state, morningSteps: action.payload };
+    case 'SET_JOB_APPLICATIONS':
+      return { ...state, jobApplications: action.payload };
+    case 'SET_MORNING_DONE':
+      return { ...state, morningDone: action.payload };
     default:
       return state;
   }
@@ -80,7 +89,11 @@ export function AppProvider({ children }) {
 
   const loadAll = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
-    const [entries, collections, habits, reflections, habitReflections, futureLog, projects, goals, routines, wellnessTemplates, weeklyIntentions, featuresJson, personalityJson] = await Promise.all([
+
+    // Seed default data on first launch
+    await Storage.seedDefaultData();
+
+    const [entries, collections, habits, reflections, habitReflections, futureLog, projects, goals, routines, wellnessTemplates, weeklyIntentions, morningSteps, jobApplications, featuresJson, personalityJson] = await Promise.all([
       Storage.getAllEntries(),
       Storage.getCollections(),
       Storage.getHabits(),
@@ -92,12 +105,15 @@ export function AppProvider({ children }) {
       Storage.getRoutines(),
       Storage.getWellnessTemplates(),
       Storage.getAllWeeklyIntentions(),
+      Storage.getMorningSteps(),
+      Storage.getJobApplications(),
       AsyncStorage.getItem(ENABLED_FEATURES_KEY),
       AsyncStorage.getItem(PERSONALITY_KEY),
     ]);
     const enabledFeatures = featuresJson ? { ...DEFAULT_FEATURES, ...JSON.parse(featuresJson) } : DEFAULT_FEATURES;
     const personalityEnabled = personalityJson !== null ? personalityJson === 'true' : true;
-    dispatch({ type: 'LOAD_ALL', payload: { entries, collections, habits, reflections, habitReflections, futureLog, projects, goals, routines, wellnessTemplates, weeklyIntentions, enabledFeatures, personalityEnabled } });
+    const morningDone = await Storage.isMorningComplete(Storage.getDateKey());
+    dispatch({ type: 'LOAD_ALL', payload: { entries, collections, habits, reflections, habitReflections, futureLog, projects, goals, routines, wellnessTemplates, weeklyIntentions, morningSteps, jobApplications, morningDone, enabledFeatures, personalityEnabled } });
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
@@ -611,6 +627,63 @@ export function AppProvider({ children }) {
     return added;
   }, []);
 
+  // Morning Launch actions
+  const addMorningStep = useCallback(async (step) => {
+    await Storage.addMorningStep(step);
+    const morningSteps = await Storage.getMorningSteps();
+    dispatch({ type: 'SET_MORNING_STEPS', payload: morningSteps });
+  }, []);
+
+  const updateMorningStep = useCallback(async (id, updates) => {
+    await Storage.updateMorningStep(id, updates);
+    const morningSteps = await Storage.getMorningSteps();
+    dispatch({ type: 'SET_MORNING_STEPS', payload: morningSteps });
+  }, []);
+
+  const deleteMorningStep = useCallback(async (id) => {
+    await Storage.deleteMorningStep(id);
+    const morningSteps = await Storage.getMorningSteps();
+    dispatch({ type: 'SET_MORNING_STEPS', payload: morningSteps });
+  }, []);
+
+  const reorderMorningSteps = useCallback(async (orderedIds) => {
+    await Storage.reorderMorningSteps(orderedIds);
+    const morningSteps = await Storage.getMorningSteps();
+    dispatch({ type: 'SET_MORNING_STEPS', payload: morningSteps });
+  }, []);
+
+  const completeMorningLaunch = useCallback(async () => {
+    const today = Storage.getDateKey();
+    await Storage.completeMorning(today);
+    dispatch({ type: 'SET_MORNING_DONE', payload: true });
+  }, []);
+
+  // Job Application actions
+  const addJobApplication = useCallback(async (app) => {
+    const newApp = await Storage.addJobApplication(app);
+    const jobApplications = await Storage.getJobApplications();
+    dispatch({ type: 'SET_JOB_APPLICATIONS', payload: jobApplications });
+    return newApp;
+  }, []);
+
+  const updateJobApplication = useCallback(async (id, updates) => {
+    await Storage.updateJobApplication(id, updates);
+    const jobApplications = await Storage.getJobApplications();
+    dispatch({ type: 'SET_JOB_APPLICATIONS', payload: jobApplications });
+  }, []);
+
+  const deleteJobApplication = useCallback(async (id) => {
+    await Storage.deleteJobApplication(id);
+    const jobApplications = await Storage.getJobApplications();
+    dispatch({ type: 'SET_JOB_APPLICATIONS', payload: jobApplications });
+  }, []);
+
+  const moveJobApplication = useCallback(async (id, newStage) => {
+    await Storage.moveJobApplication(id, newStage);
+    const jobApplications = await Storage.getJobApplications();
+    dispatch({ type: 'SET_JOB_APPLICATIONS', payload: jobApplications });
+  }, []);
+
   // Wellness actions
   const saveWellnessTemplates = useCallback(async (templates) => {
     await Storage.saveWellnessTemplates(templates);
@@ -704,6 +777,15 @@ export function AppProvider({ children }) {
     setSearchQuery,
     toggleFeature,
     togglePersonality,
+    addMorningStep,
+    updateMorningStep,
+    deleteMorningStep,
+    reorderMorningSteps,
+    completeMorningLaunch,
+    addJobApplication,
+    updateJobApplication,
+    deleteJobApplication,
+    moveJobApplication,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -12,6 +12,7 @@ import { useApp } from '../context/AppContext';
 import { getWeekKey } from '../utils/storage';
 import { SIZES, FONTS } from '../utils/theme';
 import KnowledgeBaseButton from '../components/KnowledgeBaseButton';
+import WeeklyReviewModal from '../components/WeeklyReviewModal';
 
 const AREA_SUGGESTIONS = [
   'Work & Career',
@@ -43,6 +44,7 @@ export default function WeeklyIntentionScreen() {
   const [editText, setEditText] = useState('');
   const [schedulingTask, setSchedulingTask] = useState(null); // { areaId, task }
   const [scheduleDate, setScheduleDate] = useState(new Date());
+  const [showWeeklyReview, setShowWeeklyReview] = useState(false);
 
   const weekLabel = useMemo(() => {
     const sunday = new Date(weekKey + 'T00:00:00');
@@ -174,6 +176,13 @@ export default function WeeklyIntentionScreen() {
             <Text style={[styles.headerTitle, { color: colors.text }]}>Weekly Intention</Text>
             <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>{weekLabel}</Text>
           </View>
+          <TouchableOpacity
+            style={[styles.reviewBtn, { backgroundColor: colors.accent + '15' }]}
+            onPress={() => setShowWeeklyReview(true)}
+          >
+            <Ionicons name="clipboard-outline" size={16} color={colors.accent} />
+            <Text style={[styles.reviewBtnText, { color: colors.accent }]}>Review</Text>
+          </TouchableOpacity>
         </View>
 
         <ScrollView
@@ -431,6 +440,10 @@ export default function WeeklyIntentionScreen() {
           </View>
         </View>
       </Modal>
+      <WeeklyReviewModal
+        visible={showWeeklyReview}
+        onClose={() => setShowWeeklyReview(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -447,6 +460,15 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: SIZES.xl, fontFamily: FONTS.bold },
   headerSubtitle: { fontSize: SIZES.sm, fontFamily: FONTS.regular, marginTop: 2 },
+  reviewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  reviewBtnText: { fontSize: SIZES.sm, fontWeight: '600' },
   content: { flex: 1, paddingHorizontal: SIZES.md },
   // Empty state
   emptyState: {
