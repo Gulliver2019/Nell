@@ -25,7 +25,7 @@ export default function MoreScreen({ navigation }) {
   const { isProUser, restorePurchases } = useRevenueCat();
   const [showCustomerCenter, setShowCustomerCenter] = useState(false);
   const TASK_STATES = getTaskStates(colors);
-  const { entries, enabledFeatures, toggleFeature, personalityEnabled, togglePersonality } = useApp();
+  const { entries, enabledFeatures, toggleFeature, personalityEnabled, togglePersonality, resetMorningLaunch } = useApp();
   const [defaultScreen, setDefaultScreen] = useState('Daily');
 
   useEffect(() => {
@@ -309,6 +309,21 @@ export default function MoreScreen({ navigation }) {
         )}
 
 
+
+        {/* Contact & Support */}
+        <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>☀️ Morning Launch</Text>
+          <TouchableOpacity
+            onPress={async () => {
+              await resetMorningLaunch();
+              Alert.alert('Done', 'Morning Launch will show next time you open the app.');
+            }}
+            style={[styles.contactRow, { borderBottomColor: colors.border }]}
+          >
+            <Text style={[styles.contactLabel, { color: colors.textSecondary }]}>Re-launch Morning Routine</Text>
+            <Text style={[styles.contactValue, { color: colors.accent }]}>Reset →</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Contact & Support */}
         <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>

@@ -658,6 +658,12 @@ export function AppProvider({ children }) {
     dispatch({ type: 'SET_MORNING_DONE', payload: true });
   }, []);
 
+  const resetMorningLaunch = useCallback(async () => {
+    const today = Storage.getDateKey();
+    await Storage.resetMorning(today);
+    dispatch({ type: 'SET_MORNING_DONE', payload: false });
+  }, []);
+
   // Job Application actions
   const addJobApplication = useCallback(async (app) => {
     const newApp = await Storage.addJobApplication(app);
@@ -782,6 +788,7 @@ export function AppProvider({ children }) {
     deleteMorningStep,
     reorderMorningSteps,
     completeMorningLaunch,
+    resetMorningLaunch,
     addJobApplication,
     updateJobApplication,
     deleteJobApplication,

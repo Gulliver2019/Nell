@@ -1164,6 +1164,10 @@ export const completeMorning = async (dateKey) => {
   await AsyncStorage.setItem(morningDoneKey(dateKey), 'true');
 };
 
+export const resetMorning = async (dateKey) => {
+  await AsyncStorage.removeItem(morningDoneKey(dateKey));
+};
+
 // ─── Daily Commitment ───────────────────────────────────
 
 const commitmentKey = (dateKey) => `nell_commitment_${dateKey}`;
