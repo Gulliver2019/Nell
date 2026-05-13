@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, StyleSheet, Modal, ScrollView,
-  KeyboardAvoidingView, Platform,
+  KeyboardAvoidingView, Platform, Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -82,30 +82,35 @@ export default function UnifiedEODReview({ visible, onClose, onComplete, stats, 
   };
 
   const handleComplete = async () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    try {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-    // Save habit reflection
-    if (habits.length > 0) {
-      await saveHabitReflection({
-        date: todayKey,
-        completedCount: completedHabits.length,
-        totalCount: habits.length,
-        missedHabits: missedHabits.map(h => ({ habitId: h.id, habitName: h.name, habitIcon: h.icon })),
-      });
+      // Save habit reflection
+      if (habits && habits.length > 0) {
+        await saveHabitReflection({
+          date: todayKey,
+          completedCount: completedHabits.length,
+          totalCount: habits.length,
+          missedHabits: missedHabits.map(h => ({ habitId: h.id, habitName: h.name, habitIcon: h.icon })),
+        });
+      }
+
+      const reflection = (wins.trim() || tomorrow.trim()) ? {
+        type: 'daily',
+        mood,
+        wins: wins.trim(),
+        tomorrow: tomorrow.trim(),
+      } : null;
+
+      onComplete(reflection);
+      setStep(0);
+      setMood(3);
+      setWins('');
+      setTomorrow('');
+    } catch (e) {
+      Alert.alert('Error', 'Something went wrong saving your review. Please try again.');
+      console.error('EOD Review error:', e);
     }
-
-    const reflection = (wins.trim() || tomorrow.trim()) ? {
-      type: 'daily',
-      mood,
-      wins: wins.trim(),
-      tomorrow: tomorrow.trim(),
-    } : null;
-
-    onComplete(reflection);
-    setStep(0);
-    setMood(3);
-    setWins('');
-    setTomorrow('');
   };
 
   const handleClose = () => {

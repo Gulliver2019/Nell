@@ -115,7 +115,7 @@ const DEFAULT_SCREEN_KEY = '@default_screen';
 function AppContent() {
   const { colors, hasChosenTheme, loading } = useTheme();
   const { isProUser, isReady: rcReady } = useRevenueCat();
-  const { enabledFeatures, morningDone } = useApp();
+  const { enabledFeatures, morningDone, loading: appLoading } = useApp();
   const [paywallDismissed, setPaywallDismissed] = useState(null);
   const [onboardingDone, setOnboardingDone] = useState(null);
   const [defaultScreen, setDefaultScreen] = useState('Daily');
@@ -185,7 +185,7 @@ function AppContent() {
   const initialRoute = (defaultScreen === 'Jarvis') ? 'Daily' : defaultScreen; // AI disabled — Jarvis always falls back to Daily
 
   // Morning Launch gate — show step-by-step morning routine before main app
-  if (!morningDone && !morningLaunched) {
+  if (!appLoading && !morningDone && !morningLaunched) {
     return (
       <SafeAreaProvider>
         <MorningLaunchScreen onComplete={() => setMorningLaunched(true)} />

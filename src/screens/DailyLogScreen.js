@@ -116,12 +116,17 @@ export default function DailyLogScreen() {
   }, [selectedDate, generateRoutineEntries]);
 
   const handleCompleteDay = useCallback(async (reflection) => {
-    const count = await completeDayAndMigrate(reflection);
-    await AsyncStorage.setItem(completedDayKey, 'true').catch(() => {});
-    setDayCompleted(true);
-    setCompleteDayVisible(false);
-    if (count > 0) {
-      Alert.alert('Day Complete', `${count} open task${count > 1 ? 's' : ''} migrated to tomorrow.`);
+    try {
+      const count = await completeDayAndMigrate(reflection);
+      await AsyncStorage.setItem(completedDayKey, 'true').catch(() => {});
+      setDayCompleted(true);
+      setCompleteDayVisible(false);
+      if (count > 0) {
+        Alert.alert('Day Complete', `${count} open task${count > 1 ? 's' : ''} migrated to tomorrow.`);
+      }
+    } catch (e) {
+      console.error('Complete day error:', e);
+      Alert.alert('Error', 'Could not complete day. Please try again.');
     }
   }, [completeDayAndMigrate, completedDayKey]);
 

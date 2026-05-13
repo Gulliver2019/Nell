@@ -36,7 +36,7 @@ export default function MorningLaunchScreen({ onComplete }) {
   const [commitment, setCommitment] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
 
-  const enabledSteps = morningSteps
+  const enabledSteps = (morningSteps || [])
     .filter(s => s.enabled !== false)
     .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 
@@ -78,11 +78,13 @@ export default function MorningLaunchScreen({ onComplete }) {
   }, [completeMorningLaunch, onComplete]);
 
   if (enabledSteps.length === 0) {
-    // No steps configured — skip
-    useEffect(() => {
-      completeMorningLaunch().then(onComplete);
-    }, []);
-    return null;
+    // No steps configured — auto-complete and skip
+    completeMorningLaunch().then(onComplete);
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ color: colors.textSecondary }}>Starting...</Text>
+      </View>
+    );
   }
 
   const isCommitmentStep = step?.text?.toLowerCase().includes('commitment');
