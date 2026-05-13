@@ -58,18 +58,23 @@ export default function UnifiedEODReview({ visible, onClose, onComplete, stats, 
     }
   }, [visible, todayKey]);
 
-  const totalSteps = commitment && !commitmentChecked ? 4 : 3;
+  // Build dynamic step list based on whether commitment exists
+  const hasCommitmentStep = commitment && !commitmentChecked;
+  const stepOrder = useMemo(() => {
+    const steps = ['tasks', 'habits'];
+    if (hasCommitmentStep) steps.push('commitment');
+    steps.push('reflection');
+    return steps;
+  }, [hasCommitmentStep]);
+
+  const totalSteps = stepOrder.length;
+  const currentStepType = stepOrder[step] || 'reflection';
   const openTasks = stats.open || 0;
 
   const handleNext = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (step < totalSteps - 1) {
-      // Skip commitment step if no commitment or already checked
-      let nextStep = step + 1;
-      if (nextStep === 2 && (!commitment || commitmentChecked)) {
-        nextStep = 3;
-      }
-      setStep(nextStep);
+      setStep(step + 1);
     }
   };
 
@@ -77,8 +82,8 @@ export default function UnifiedEODReview({ visible, onClose, onComplete, stats, 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setCommitmentHonoured(honoured);
     await saveCommitmentCheck(todayKey, honoured);
-    // Auto-advance after a moment
-    setTimeout(() => setStep(3), 300);
+    // Auto-advance to reflection
+    setTimeout(() => setStep(step + 1), 300);
   };
 
   const handleComplete = async () => {
@@ -122,8 +127,8 @@ export default function UnifiedEODReview({ visible, onClose, onComplete, stats, 
   };
 
   const renderStepContent = () => {
-    switch (step) {
-      case 0: // Tasks overview
+    switch (currentStepType) {
+      case 'tasks':
         return (
           <>
             <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Today's Tasks</Text>
@@ -146,7 +151,7 @@ export default function UnifiedEODReview({ visible, onClose, onComplete, stats, 
           </>
         );
 
-      case 1: // Habits
+      case 'habits':
         return (
           <>
             <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Habits</Text>
@@ -183,7 +188,7 @@ export default function UnifiedEODReview({ visible, onClose, onComplete, stats, 
           </>
         );
 
-      case 2: // Commitment check
+      case 'commitment':
         return (
           <>
             <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Commitment Check</Text>
@@ -213,7 +218,7 @@ export default function UnifiedEODReview({ visible, onClose, onComplete, stats, 
           </>
         );
 
-      case 3: // Quick reflection
+      case 'reflection':
         return (
           <>
             <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>How did today feel?</Text>
@@ -317,7 +322,7 @@ export default function UnifiedEODReview({ visible, onClose, onComplete, stats, 
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>
-            ) : step !== 2 ? (
+            ) : currentStepType !== 'commitment' ? (
               <TouchableOpacity onPress={handleNext} activeOpacity={0.8}>
                 <View style={[styles.nextBtn, { backgroundColor: colors.accent }]}>
                   <Text style={[styles.nextBtnText, { color: colors.text }]}>Next</Text>
