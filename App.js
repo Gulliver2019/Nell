@@ -120,6 +120,11 @@ function AppContent() {
   const [onboardingDone, setOnboardingDone] = useState(null);
   const [defaultScreen, setDefaultScreen] = useState('Daily');
   const [morningLaunched, setMorningLaunched] = useState(false);
+
+  // Reset local morningLaunched when morningDone is cleared (e.g. via More > Reset)
+  useEffect(() => {
+    if (!morningDone) setMorningLaunched(false);
+  }, [morningDone]);
   // const jarvisRef = useRef(null); // AI disabled
   // const didOpenJarvisDefault = useRef(false); // AI disabled
 
