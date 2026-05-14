@@ -217,6 +217,7 @@ function AppContent() {
         {enabledFeatures.projects !== false && <Tab.Screen name="Goals" component={GoalsScreen} />}
         <Tab.Screen name="Daily" component={DailyLogScreen} />
         {enabledFeatures.projects !== false && <Tab.Screen name="Projects" component={ProjectsScreen} />}
+        {enabledFeatures.habits !== false && <Tab.Screen name="Habits" component={HabitTrackerScreen} />}
         <Tab.Screen name="Job Search" component={JobSearchScreen} />
         {enabledFeatures.weekly !== false && <Tab.Screen name="Weekly" component={WeeklyIntentionScreen} />}
         {enabledFeatures.logging !== false && <Tab.Screen name="Monthly" component={MonthlyLogScreen} />}
@@ -224,7 +225,6 @@ function AppContent() {
         {enabledFeatures.collections !== false && <Tab.Screen name="Collections" component={CollectionsScreen} />}
         {/* TODO: Re-enable when ready */}
         {/* {enabledFeatures.shopping !== false && <Tab.Screen name="Shopping" component={ShoppingListScreen} />} */}
-        {enabledFeatures.habits !== false && <Tab.Screen name="Habits" component={HabitTrackerScreen} />}
         {/* {enabledFeatures.reflections !== false && <Tab.Screen name="Reflect" component={ReflectionScreen} />} */}
         <Tab.Screen name="Index" component={IndexScreen} />
         <Tab.Screen name="More" component={MoreStackScreen} />
