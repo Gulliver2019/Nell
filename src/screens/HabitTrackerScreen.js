@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { NestableScrollContainer, NestableDraggableFlatList, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { SIZES } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
@@ -29,7 +30,7 @@ const MILESTONES = [
 
 export default function HabitTrackerScreen() {
   const { colors } = useTheme();
-  const { habits, addHabit, toggleHabitDay, deleteHabit, habitReflections } = useApp();
+  const { habits, addHabit, toggleHabitDay, deleteHabit, reorderHabits, habitReflections } = useApp();
   const [showAdd, setShowAdd] = useState(false);
   const [showEndOfDay, setShowEndOfDay] = useState(false);
   const [newName, setNewName] = useState('');
@@ -146,7 +147,7 @@ export default function HabitTrackerScreen() {
     return MILESTONES.filter(m => best >= m.days);
   };
 
-  // Group habits by time of day
+  // Group habits by time of day, preserving array order within each group
   const groupedHabits = useMemo(() => {
     const groups = { morning: [], afternoon: [], evening: [] };
     habits.forEach(h => {
@@ -157,9 +158,27 @@ export default function HabitTrackerScreen() {
     return groups;
   }, [habits]);
 
+  const handleDragEnd = useCallback((timeGroup, { data: reorderedGroup }) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Rebuild full habits array with reordered group in place
+    const newHabits = [];
+    const groups = { morning: [], afternoon: [], evening: [] };
+    habits.forEach(h => {
+      const tod = h.timeOfDay || 'morning';
+      if (groups[tod]) groups[tod].push(h);
+      else groups.morning.push(h);
+    });
+    groups[timeGroup] = reorderedGroup;
+    // Reassemble in time-group order
+    ['morning', 'afternoon', 'evening'].forEach(key => {
+      newHabits.push(...groups[key]);
+    });
+    reorderHabits(newHabits);
+  }, [habits, reorderHabits]);
+
   const hasHabits = habits.length > 0;
 
-  const renderHabitRow = (habit) => {
+  const renderHabitRow = useCallback(({ item: habit, drag, isActive }) => {
     const streak = getStreak(habit);
     const missed = getMissedDays(habit);
     const achieved = getAchievedMilestones(habit);
@@ -170,88 +189,98 @@ export default function HabitTrackerScreen() {
       (habit.twoMinVersion && missed >= 1);
 
     return (
-      <TouchableOpacity
-        key={habit.id}
-        style={[styles.habitRow, { borderBottomColor: colors.border }]}
-        onLongPress={() => handleDelete(habit)}
-        activeOpacity={0.7}
-      >
-        {/* Row 1: Emoji + Name */}
-        <View style={styles.habitTitleRow}>
-          <Text style={styles.habitIcon}>{habit.icon}</Text>
-          <Text style={[styles.habitName, { color: colors.text }]} numberOfLines={1}>{habit.name}</Text>
-          {achieved.length > 0 && (
-            <Text style={styles.milestoneBadges}>{achieved[achieved.length - 1].emoji}</Text>
-          )}
-        </View>
-
-        {/* Row 2: Checkboxes — full width */}
-        <View style={styles.checksRow}>
-          {days.map(d => {
-            const val = habit.completions?.[d.key];
-            const done = val === 'done' || val === true;
-            const manualMissed = val === 'missed';
-            const isPast = !d.isToday && d.key < getDateKey();
-            const autoFailed = isPast && !done && !manualMissed && d.key >= (habit.createdAt ? getDateKey(new Date(habit.createdAt)) : '');
-            const failed = manualMissed || autoFailed;
-            return (
-              <TouchableOpacity
-                key={d.key}
-                style={[
-                  styles.cell,
-                  { backgroundColor: colors.bgInput },
-                  done && { backgroundColor: colors.accentGreen + '30' },
-                  failed && { backgroundColor: colors.accentRed + '15' },
-                  d.isToday && { borderWidth: 1, borderColor: colors.accent + '40' },
-                ]}
-                onPress={() => handleToggle(habit.id, d.key)}
-              >
-                {done && <Text style={[styles.cellCheck, { color: colors.accentGreen }]}>✓</Text>}
-                {failed && <Text style={[styles.cellCheck, { color: colors.accentRed }]}>✕</Text>}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* Row 3: Streak / missed / nudge — full width under checkboxes */}
-        {hasMeta && (
-          <View style={styles.habitMeta}>
-            {streak > 0 && (
-              <Text style={[styles.streakText, { color: colors.accentOrange }]}>🔥 {streak}d</Text>
+      <ScaleDecorator>
+        <TouchableOpacity
+          style={[styles.habitRow, { borderBottomColor: colors.border }, isActive && { opacity: 0.8, backgroundColor: colors.bgElevated }]}
+          onLongPress={drag}
+          delayLongPress={200}
+          activeOpacity={0.7}
+        >
+          {/* Row 1: Emoji + Name */}
+          <View style={styles.habitTitleRow}>
+            <Text style={styles.habitIcon}>{habit.icon}</Text>
+            <Text style={[styles.habitName, { color: colors.text }]} numberOfLines={1}>{habit.name}</Text>
+            {achieved.length > 0 && (
+              <Text style={styles.milestoneBadges}>{achieved[achieved.length - 1].emoji}</Text>
             )}
-            {bestStreak > streak && bestStreak > 0 && (
-              <Text style={[styles.bestStreakText, { color: colors.textMuted }]}>Best: {bestStreak}d</Text>
-            )}
-            {missed === 1 && streak === 0 && (
-              <Text style={[styles.missedWarning, { color: '#F0A500' }]}>⚠️ Don't miss two days running!</Text>
-            )}
-            {missed >= 2 && streak === 0 && (
-              <Text style={[styles.missedWarning, { color: colors.accentRed }]}>🔴 {missed}d missed</Text>
-            )}
-            {habit.twoMinVersion && missed >= 1 && (
-              <Text style={[styles.twoMinNudge, { color: colors.accent }]}>
-                💡 Just do: {habit.twoMinVersion}
-              </Text>
-            )}
+            <TouchableOpacity onPress={() => handleDelete(habit)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.deleteBtn}>
+              <Text style={{ color: colors.accentRed, fontSize: 14 }}>✕</Text>
+            </TouchableOpacity>
           </View>
-        )}
-      </TouchableOpacity>
+
+          {/* Row 2: Checkboxes — full width */}
+          <View style={styles.checksRow}>
+            {days.map(d => {
+              const val = habit.completions?.[d.key];
+              const done = val === 'done' || val === true;
+              const manualMissed = val === 'missed';
+              const isPast = !d.isToday && d.key < getDateKey();
+              const autoFailed = isPast && !done && !manualMissed && d.key >= (habit.createdAt ? getDateKey(new Date(habit.createdAt)) : '');
+              const failed = manualMissed || autoFailed;
+              return (
+                <TouchableOpacity
+                  key={d.key}
+                  style={[
+                    styles.cell,
+                    { backgroundColor: colors.bgInput },
+                    done && { backgroundColor: colors.accentGreen + '30' },
+                    failed && { backgroundColor: colors.accentRed + '15' },
+                    d.isToday && { borderWidth: 1, borderColor: colors.accent + '40' },
+                  ]}
+                  onPress={() => handleToggle(habit.id, d.key)}
+                >
+                  {done && <Text style={[styles.cellCheck, { color: colors.accentGreen }]}>✓</Text>}
+                  {failed && <Text style={[styles.cellCheck, { color: colors.accentRed }]}>✕</Text>}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Row 3: Streak / missed / nudge */}
+          {hasMeta && (
+            <View style={styles.habitMeta}>
+              {streak > 0 && (
+                <Text style={[styles.streakText, { color: colors.accentOrange }]}>🔥 {streak}d</Text>
+              )}
+              {bestStreak > streak && bestStreak > 0 && (
+                <Text style={[styles.bestStreakText, { color: colors.textMuted }]}>Best: {bestStreak}d</Text>
+              )}
+              {missed === 1 && streak === 0 && (
+                <Text style={[styles.missedWarning, { color: '#F0A500' }]}>⚠️ Don't miss two days running!</Text>
+              )}
+              {missed >= 2 && streak === 0 && (
+                <Text style={[styles.missedWarning, { color: colors.accentRed }]}>🔴 {missed}d missed</Text>
+              )}
+              {habit.twoMinVersion && missed >= 1 && (
+                <Text style={[styles.twoMinNudge, { color: colors.accent }]}>
+                  💡 Just do: {habit.twoMinVersion}
+                </Text>
+              )}
+            </View>
+          )}
+        </TouchableOpacity>
+      </ScaleDecorator>
     );
-  };
+  }, [colors, days, handleToggle, handleDelete]);
 
   const renderTimeGroup = (key, label, groupHabits) => {
     if (groupHabits.length === 0) return null;
     return (
       <View key={key} style={styles.timeGroup}>
         <Text style={[styles.timeGroupLabel, { color: colors.textMuted }]}>{label}</Text>
-        {groupHabits.map(renderHabitRow)}
+        <NestableDraggableFlatList
+          data={groupHabits}
+          keyExtractor={(item) => item.id}
+          renderItem={renderHabitRow}
+          onDragEnd={(params) => handleDragEnd(key, params)}
+        />
       </View>
     );
   };
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+      <NestableScrollContainer showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         <View style={styles.headerBar}>
           <LinearGradient
             colors={[colors.accentGreen + '15', 'transparent']}
@@ -454,7 +483,7 @@ export default function HabitTrackerScreen() {
             </LinearGradient>
           </TouchableOpacity>
         )}
-      </ScrollView>
+      </NestableScrollContainer>
       <EndOfDayReflection visible={showEndOfDay} onClose={() => setShowEndOfDay(false)} />
       <KnowledgeBaseButton sectionId="habit-tracker" />
     </SafeAreaView>
@@ -528,6 +557,7 @@ const styles = StyleSheet.create({
   habitIcon: { fontSize: 18 },
   habitName: { fontSize: SIZES.sm, fontWeight: '600', flex: 1 },
   milestoneBadges: { fontSize: 12 },
+  deleteBtn: { padding: 4, marginLeft: 4 },
   checksRow: {
     flexDirection: 'row',
   },

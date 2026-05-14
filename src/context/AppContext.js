@@ -332,6 +332,11 @@ export function AppProvider({ children }) {
     dispatch({ type: 'SET_HABITS', payload: habits });
   }, []);
 
+  const reorderHabits = useCallback(async (reorderedHabits) => {
+    await Storage.saveHabits(reorderedHabits);
+    dispatch({ type: 'SET_HABITS', payload: reorderedHabits });
+  }, []);
+
   // Reflection actions
   const saveReflection = useCallback(async (ref) => {
     await Storage.saveReflection(ref);
@@ -731,6 +736,7 @@ export function AppProvider({ children }) {
     addHabit,
     toggleHabitDay,
     deleteHabit,
+    reorderHabits,
     saveReflection,
     saveHabitReflection,
     addFutureLogEntry,
