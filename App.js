@@ -31,6 +31,7 @@ import PaywallScreen from './src/screens/PaywallScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import MorningLaunchScreen from './src/screens/MorningLaunchScreen';
 import JobSearchScreen from './src/screens/JobSearchScreen';
+import MedicationScreen from './src/screens/MedicationScreen';
 // import AIGuidanceButton from './src/components/AIGuidanceButton'; // AI disabled
 
 const Tab = createBottomTabNavigator();
@@ -63,6 +64,7 @@ const TAB_ICONS = {
   Collections: { focused: 'folder', unfocused: 'folder-outline' },
   Shopping: { focused: 'cart', unfocused: 'cart-outline' },
   Habits: { focused: 'checkmark-circle', unfocused: 'checkmark-circle-outline' },
+  Meds: { focused: 'medkit', unfocused: 'medkit-outline' },
   Reflect: { focused: 'heart', unfocused: 'heart-outline' },
   Index: { focused: 'search', unfocused: 'search-outline' },
   More: { focused: 'sparkles', unfocused: 'sparkles-outline' },
@@ -218,6 +220,7 @@ function AppContent() {
         <Tab.Screen name="Daily" component={DailyLogScreen} />
         {enabledFeatures.projects !== false && <Tab.Screen name="Projects" component={ProjectsScreen} />}
         {enabledFeatures.habits !== false && <Tab.Screen name="Habits" component={HabitTrackerScreen} />}
+        <Tab.Screen name="Meds" component={MedicationScreen} />
         <Tab.Screen name="Job Search" component={JobSearchScreen} />
         {enabledFeatures.weekly !== false && <Tab.Screen name="Weekly" component={WeeklyIntentionScreen} />}
         {enabledFeatures.logging !== false && <Tab.Screen name="Monthly" component={MonthlyLogScreen} />}
