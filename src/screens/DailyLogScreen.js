@@ -22,6 +22,8 @@ import TimeBlockView from '../components/TimeBlockView';
 import CompleteDayModal from '../components/CompleteDayModal';
 import UnifiedEODReview from '../components/UnifiedEODReview';
 import MissedBlockModal from '../components/MissedBlockModal';
+import NextThree from '../components/NextThree';
+import EntryPickerModal from '../components/EntryPickerModal';
 import * as Haptics from 'expo-haptics';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -47,6 +49,8 @@ export default function DailyLogScreen() {
   const [completeDayVisible, setCompleteDayVisible] = useState(false);
   const [dayCompleted, setDayCompleted] = useState(false);
   const [missedBlockEntry, setMissedBlockEntry] = useState(null);
+  const [entryPickerVisible, setEntryPickerVisible] = useState(false);
+  const [entryPickerCallback, setEntryPickerCallback] = useState(null);
   const listRef = useRef(null);
   const shouldScrollRef = useRef(false);
 
@@ -506,6 +510,19 @@ export default function DailyLogScreen() {
         )
       )}
 
+      {/* Next 3 — priority queue */}
+      {isToday && (
+        <NextThree
+          entries={dayEntries}
+          dateKey={selectedDate}
+          onComplete={(id) => updateEntry(id, { state: 'complete' })}
+          onSelectEntry={(callback) => {
+            setEntryPickerCallback(() => callback);
+            setEntryPickerVisible(true);
+          }}
+        />
+      )}
+
       {/* Stats bar */}
       <View style={styles.statsBar}>
         {stats.total > 0 && (
@@ -662,6 +679,17 @@ export default function DailyLogScreen() {
         onReschedule={handleMissedBlockReschedule}
         onShorten={handleMissedBlockShorten}
         onClose={() => setMissedBlockEntry(null)}
+        colors={colors}
+      />
+      <EntryPickerModal
+        visible={entryPickerVisible}
+        entries={dayEntries.filter(e => e.type === 'task' && e.state === 'open')}
+        onSelect={(id) => {
+          if (entryPickerCallback) entryPickerCallback(id);
+          setEntryPickerVisible(false);
+          setEntryPickerCallback(null);
+        }}
+        onClose={() => { setEntryPickerVisible(false); setEntryPickerCallback(null); }}
         colors={colors}
       />
       </KeyboardAvoidingView>

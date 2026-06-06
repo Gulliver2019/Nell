@@ -14,24 +14,18 @@ import { RevenueCatProvider, useRevenueCat } from './src/context/RevenueCatConte
 import { migrateStorageKeys } from './src/utils/storage';
 
 import DailyLogScreen from './src/screens/DailyLogScreen';
-import MonthlyLogScreen from './src/screens/MonthlyLogScreen';
 import FutureLogScreen from './src/screens/FutureLogScreen';
 import CollectionsScreen from './src/screens/CollectionsScreen';
-import HabitTrackerScreen from './src/screens/HabitTrackerScreen';
-import ReflectionScreen from './src/screens/ReflectionScreen';
 import IndexScreen from './src/screens/IndexScreen';
 import MoreScreen from './src/screens/MoreScreen';
 import HelpScreen from './src/screens/HelpScreen';
 import ThemePickerScreen from './src/screens/ThemePickerScreen';
 import ProjectsScreen from './src/screens/ProjectsScreen';
 import GoalsScreen from './src/screens/GoalsScreen';
-import ShoppingListScreen from './src/screens/ShoppingListScreen';
-import WeeklyIntentionScreen from './src/screens/WeeklyIntentionScreen';
 import PaywallScreen from './src/screens/PaywallScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import MorningLaunchScreen from './src/screens/MorningLaunchScreen';
 import JobSearchScreen from './src/screens/JobSearchScreen';
-import MedicationScreen from './src/screens/MedicationScreen';
 // import AIGuidanceButton from './src/components/AIGuidanceButton'; // AI disabled
 
 const Tab = createBottomTabNavigator();
@@ -55,17 +49,11 @@ function MoreStackScreen() {
 
 const TAB_ICONS = {
   Daily: { focused: 'today', unfocused: 'today-outline' },
-  Weekly: { focused: 'calendar-clear', unfocused: 'calendar-clear-outline' },
-  Monthly: { focused: 'calendar', unfocused: 'calendar-outline' },
   Future: { focused: 'rocket', unfocused: 'rocket-outline' },
   Projects: { focused: 'briefcase', unfocused: 'briefcase-outline' },
   Goals: { focused: 'flag', unfocused: 'flag-outline' },
   'Job Search': { focused: 'search-circle', unfocused: 'search-circle-outline' },
   Collections: { focused: 'folder', unfocused: 'folder-outline' },
-  Shopping: { focused: 'cart', unfocused: 'cart-outline' },
-  Habits: { focused: 'checkmark-circle', unfocused: 'checkmark-circle-outline' },
-  Meds: { focused: 'medkit', unfocused: 'medkit-outline' },
-  Reflect: { focused: 'heart', unfocused: 'heart-outline' },
   Index: { focused: 'search', unfocused: 'search-outline' },
   More: { focused: 'sparkles', unfocused: 'sparkles-outline' },
 };
@@ -219,16 +207,9 @@ function AppContent() {
         {enabledFeatures.projects !== false && <Tab.Screen name="Goals" component={GoalsScreen} />}
         <Tab.Screen name="Daily" component={DailyLogScreen} />
         {enabledFeatures.projects !== false && <Tab.Screen name="Projects" component={ProjectsScreen} />}
-        {enabledFeatures.habits !== false && <Tab.Screen name="Habits" component={HabitTrackerScreen} />}
-        <Tab.Screen name="Meds" component={MedicationScreen} />
         <Tab.Screen name="Job Search" component={JobSearchScreen} />
-        {enabledFeatures.weekly !== false && <Tab.Screen name="Weekly" component={WeeklyIntentionScreen} />}
-        {enabledFeatures.logging !== false && <Tab.Screen name="Monthly" component={MonthlyLogScreen} />}
         {enabledFeatures.logging !== false && <Tab.Screen name="Future" component={FutureLogScreen} />}
         {enabledFeatures.collections !== false && <Tab.Screen name="Collections" component={CollectionsScreen} />}
-        {/* TODO: Re-enable when ready */}
-        {/* {enabledFeatures.shopping !== false && <Tab.Screen name="Shopping" component={ShoppingListScreen} />} */}
-        {/* {enabledFeatures.reflections !== false && <Tab.Screen name="Reflect" component={ReflectionScreen} />} */}
         <Tab.Screen name="Index" component={IndexScreen} />
         <Tab.Screen name="More" component={MoreStackScreen} />
       </Tab.Navigator>
