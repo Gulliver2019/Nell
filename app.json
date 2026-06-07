@@ -15,6 +15,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.gulliver2019.goaldigger",
+      "buildNumber": "142",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
