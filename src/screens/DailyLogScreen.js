@@ -510,77 +510,6 @@ export default function DailyLogScreen() {
         )
       )}
 
-      {/* Next 3 — priority queue */}
-      {isToday && (
-        <NextThree
-          entries={dayEntries}
-          dateKey={selectedDate}
-          onComplete={(id) => updateEntry(id, { state: 'complete' })}
-          onSelectEntry={(callback) => {
-            setEntryPickerCallback(() => callback);
-            setEntryPickerVisible(true);
-          }}
-        />
-      )}
-
-      {/* Stats bar */}
-      <View style={styles.statsBar}>
-        {stats.total > 0 && (
-          <View style={styles.statsRow}>
-            <View style={[styles.progressBar, { backgroundColor: colors.border }]}>
-              <View
-                style={[
-                  styles.progressFill,
-                  { width: `${(stats.done / stats.total) * 100}%`, backgroundColor: colors.accentGreen },
-                ]}
-              />
-            </View>
-            <Text style={[styles.statsText, { color: colors.textSecondary }]}>
-              {stats.done}/{stats.total} done
-            </Text>
-            {/* View toggle */}
-            <TouchableOpacity
-              onPress={() => { setViewMode(v => v === 'list' ? 'timeblock' : 'list'); Haptics.selectionAsync(); }}
-              style={styles.viewToggle}
-            >
-              <Ionicons
-                name={viewMode === 'list' ? 'time-outline' : 'list-outline'}
-                size={20}
-                color={colors.accent}
-              />
-            </TouchableOpacity>
-          </View>
-        )}
-        {stats.total === 0 && (
-          <View style={styles.toggleOnly}>
-            <TouchableOpacity
-              onPress={() => { setViewMode(v => v === 'list' ? 'timeblock' : 'list'); Haptics.selectionAsync(); }}
-              style={styles.viewToggle}
-            >
-              <Ionicons
-                name={viewMode === 'list' ? 'time-outline' : 'list-outline'}
-                size={20}
-                color={colors.accent}
-              />
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
-
-      {/* Migrate to Today button for past days */}
-      {!isToday && migrateableCount > 0 && (
-        <TouchableOpacity
-          style={[styles.migrateBar, { backgroundColor: colors.accent + '20', borderColor: colors.accent + '40' }]}
-          onPress={handleMigrateAll}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="arrow-forward-circle-outline" size={18} color={colors.accent} />
-          <Text style={[styles.migrateBarText, { color: colors.accent }]}>
-            Migrate {migrateableCount} task{migrateableCount > 1 ? 's' : ''} to today
-          </Text>
-        </TouchableOpacity>
-      )}
-
       {/* Entries */}
       {viewMode === 'list' ? (
         <DraggableFlatList
@@ -597,6 +526,80 @@ export default function DailyLogScreen() {
           }}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            <>
+              {/* Next 3 — priority queue */}
+              {isToday && (
+                <NextThree
+                  entries={dayEntries}
+                  dateKey={selectedDate}
+                  onComplete={(id) => updateEntry(id, { state: 'complete' })}
+                  onSelectEntry={(callback) => {
+                    setEntryPickerCallback(() => callback);
+                    setEntryPickerVisible(true);
+                  }}
+                />
+              )}
+
+              {/* Stats bar */}
+              <View style={styles.statsBar}>
+                {stats.total > 0 && (
+                  <View style={styles.statsRow}>
+                    <View style={[styles.progressBar, { backgroundColor: colors.border }]}>
+                      <View
+                        style={[
+                          styles.progressFill,
+                          { width: `${(stats.done / stats.total) * 100}%`, backgroundColor: colors.accentGreen },
+                        ]}
+                      />
+                    </View>
+                    <Text style={[styles.statsText, { color: colors.textSecondary }]}>
+                      {stats.done}/{stats.total} done
+                    </Text>
+                    {/* View toggle */}
+                    <TouchableOpacity
+                      onPress={() => { setViewMode(v => v === 'list' ? 'timeblock' : 'list'); Haptics.selectionAsync(); }}
+                      style={styles.viewToggle}
+                    >
+                      <Ionicons
+                        name={viewMode === 'list' ? 'time-outline' : 'list-outline'}
+                        size={20}
+                        color={colors.accent}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                )}
+                {stats.total === 0 && (
+                  <View style={styles.toggleOnly}>
+                    <TouchableOpacity
+                      onPress={() => { setViewMode(v => v === 'list' ? 'timeblock' : 'list'); Haptics.selectionAsync(); }}
+                      style={styles.viewToggle}
+                    >
+                      <Ionicons
+                        name={viewMode === 'list' ? 'time-outline' : 'list-outline'}
+                        size={20}
+                        color={colors.accent}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+
+              {/* Migrate to Today button for past days */}
+              {!isToday && migrateableCount > 0 && (
+                <TouchableOpacity
+                  style={[styles.migrateBar, { backgroundColor: colors.accent + '20', borderColor: colors.accent + '40' }]}
+                  onPress={handleMigrateAll}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="arrow-forward-circle-outline" size={18} color={colors.accent} />
+                  <Text style={[styles.migrateBarText, { color: colors.accent }]}>
+                    Migrate {migrateableCount} task{migrateableCount > 1 ? 's' : ''} to today
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </>
+          }
           ListEmptyComponent={
             <View style={styles.empty}>
               <Text style={[styles.emptyIcon, { color: colors.accent }]}>✦</Text>

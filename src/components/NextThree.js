@@ -108,7 +108,6 @@ export default function NextThree({ entries, onComplete, onSelectEntry, dateKey 
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: 16,
     marginBottom: 12,
     borderRadius: 16,
     borderWidth: 1,
