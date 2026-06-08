@@ -14,9 +14,7 @@ import { RevenueCatProvider, useRevenueCat } from './src/context/RevenueCatConte
 import { migrateStorageKeys } from './src/utils/storage';
 
 import DailyLogScreen from './src/screens/DailyLogScreen';
-import FutureLogScreen from './src/screens/FutureLogScreen';
 import CollectionsScreen from './src/screens/CollectionsScreen';
-import IndexScreen from './src/screens/IndexScreen';
 import MoreScreen from './src/screens/MoreScreen';
 import HelpScreen from './src/screens/HelpScreen';
 import ThemePickerScreen from './src/screens/ThemePickerScreen';
@@ -25,7 +23,6 @@ import GoalsScreen from './src/screens/GoalsScreen';
 import PaywallScreen from './src/screens/PaywallScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import MorningLaunchScreen from './src/screens/MorningLaunchScreen';
-import JobSearchScreen from './src/screens/JobSearchScreen';
 // import AIGuidanceButton from './src/components/AIGuidanceButton'; // AI disabled
 
 const Tab = createBottomTabNavigator();
@@ -49,12 +46,9 @@ function MoreStackScreen() {
 
 const TAB_ICONS = {
   Daily: { focused: 'today', unfocused: 'today-outline' },
-  Future: { focused: 'rocket', unfocused: 'rocket-outline' },
   Projects: { focused: 'briefcase', unfocused: 'briefcase-outline' },
   Goals: { focused: 'flag', unfocused: 'flag-outline' },
-  'Job Search': { focused: 'search-circle', unfocused: 'search-circle-outline' },
   Collections: { focused: 'folder', unfocused: 'folder-outline' },
-  Index: { focused: 'search', unfocused: 'search-outline' },
   More: { focused: 'sparkles', unfocused: 'sparkles-outline' },
 };
 
@@ -207,10 +201,7 @@ function AppContent() {
         {enabledFeatures.projects !== false && <Tab.Screen name="Goals" component={GoalsScreen} />}
         <Tab.Screen name="Daily" component={DailyLogScreen} />
         {enabledFeatures.projects !== false && <Tab.Screen name="Projects" component={ProjectsScreen} />}
-        <Tab.Screen name="Job Search" component={JobSearchScreen} />
-        {enabledFeatures.logging !== false && <Tab.Screen name="Future" component={FutureLogScreen} />}
         {enabledFeatures.collections !== false && <Tab.Screen name="Collections" component={CollectionsScreen} />}
-        <Tab.Screen name="Index" component={IndexScreen} />
         <Tab.Screen name="More" component={MoreStackScreen} />
       </Tab.Navigator>
       {/* <AIGuidanceButton ref={jarvisRef} /> */}{/* AI disabled */}
